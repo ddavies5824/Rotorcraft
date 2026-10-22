@@ -1,5 +1,6 @@
 // Flies one aircraft: reads the player's controls, steps the flight model at its fixed 1/120 s rate and poses
 // the model. The imported .glb keeps the parts grouped at their pivots, so the rotor spins about "blades".
+using System;
 using System.Collections.Generic;
 using Rotorcraft.Inputs;
 using Rotorcraft.Sim;
@@ -16,6 +17,15 @@ namespace Rotorcraft.Presentation
         [Tooltip("Start position in the sim's world (x east, z south) and heading in degrees.")]
         public Vector2 startXZ = Vector2.zero;
         public float startHeadingDeg = 0;
+        [Tooltip("Fuel at the start (kg); below zero means 80% of capacity.")]
+        public float startFuelKg = -1;
+        [Tooltip("Show the start-up hint (off when a mission gives its own briefing).")]
+        public bool startHint = true;
+
+        /// <summary>After every fixed sim step: the state, the step's events, the step length and the controls flown.</summary>
+        public event Action<HeliState, IList<SimEvent>, double, Controls> Stepped;
+        /// <summary>When the aircraft is put back at its start (Backspace, or a new flight).</summary>
+        public event Action WasReset;
         [Tooltip("The imported model, turned 180° about Y so its nose faces this object's forward.")]
         public Transform model;
         [Tooltip("Main rotor speed at 100% RPM, revolutions per minute (for the spinning blades only).")]
@@ -58,6 +68,7 @@ namespace Rotorcraft.Presentation
             {
                 FlightModel.Step(State, CurrentControls, Aircraft, Weather, new SimSettings(assist), dt);
                 foreach (var e in State.events) Report(e);
+                Stepped?.Invoke(State, State.events, dt, CurrentControls);
                 State.events.Clear();
             });
             ResetToStart();
@@ -85,14 +96,23 @@ namespace Rotorcraft.Presentation
             Say($"Controls: {c.name}");
         }
 
+        /// <summary>Where and how the next flight starts (call ResetToStart to begin it).</summary>
+        public void Configure(double x, double z, double headingDeg, double fuelKg, WeatherPreset weather)
+        {
+            startXZ = new Vector2((float)x, (float)z); startHeadingDeg = (float)headingDeg; startFuelKg = (float)fuelKg;
+            if (weather != null) Weather = weather;
+        }
+
         public void ResetToStart()
         {
-            State = FlightModel.CreateState(new CreateOptions { x = startXZ.x, z = startXZ.y, headingDeg = startHeadingDeg, fuel = Aircraft.fuelCapacity * 0.8 });
+            State = FlightModel.CreateState(new CreateOptions { x = startXZ.x, z = startXZ.y, headingDeg = startHeadingDeg, fuel = startFuelKg >= 0 ? startFuelKg : Aircraft.fuelCapacity * 0.8 });
             Input.ResetForFlight(0);
             stepper?.Reset();
+            Paused = false;
             Messages.Clear();
-            Say("On the pad, engine off. E (or button 5) starts the engine, R (button 6) opens the throttle.");
+            if (startHint) Say("On the pad, engine off. E (or button 5) starts the engine, R (button 6) opens the throttle.");
             ApplyPose();
+            WasReset?.Invoke();
         }
 
         void Update()
@@ -146,6 +166,9 @@ namespace Rotorcraft.Presentation
                 case GameAction.Pause: Paused = !Paused; break;
             }
         }
+
+        /// <summary>Hold the simulation (debrief and menus).</summary>
+        public void SetPaused(bool on) => Paused = on;
 
         void SetCockpitView(bool on)
         {

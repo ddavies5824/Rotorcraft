@@ -5,6 +5,8 @@
         "Unity.InputSystem",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime",
+        "Rotorcraft.Sim",
+        "Rotorcraft.World",
         "Rotorcraft.Presentation"
     ],
     "includePlatforms": [

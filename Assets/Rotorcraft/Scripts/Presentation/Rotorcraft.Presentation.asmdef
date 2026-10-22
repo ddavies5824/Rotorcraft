@@ -3,6 +3,8 @@
     "rootNamespace": "Rotorcraft.Presentation",
     "references": [
         "Rotorcraft.Sim",
+        "Rotorcraft.World",
+        "Rotorcraft.Game",
         "Rotorcraft.Inputs",
         "Unity.InputSystem"
     ],
