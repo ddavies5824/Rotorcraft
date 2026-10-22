@@ -52,6 +52,7 @@ namespace Rotorcraft.Presentation
             heli.SetPaused(false);
             Runtime = new MissionRuntime(Def, heli.Aircraft, heli.State.fuel, checklistDone, Def.timeOfDay);
             heli.State.payload = Def.payloadKg;
+            SkyEnvironment.Current?.Apply(Def.timeOfDay, heli.Weather);
         }
 
         void OnStepped(HeliState s, System.Collections.Generic.IList<SimEvent> events, double dt, Controls c)

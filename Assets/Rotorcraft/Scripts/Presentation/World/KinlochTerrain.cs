@@ -355,10 +355,7 @@ namespace Rotorcraft.Presentation
                 terrain.drawInstanced = true;
                 terrain.detailObjectDistance = 160;
                 terrain.detailObjectDensity = 1;
-                terrain.treeDistance = 3000;
-                terrain.treeBillboardDistance = 4000;
-                terrain.treeMaximumFullLODCount = 100000;
-                terrain.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
+                terrain.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;   // trees are drawn by TreeField
                 go.isStatic = true;
                 made.Add(terrain);
                 if (t.size == CORE) byCore[(t.x0, t.z0)] = terrain;

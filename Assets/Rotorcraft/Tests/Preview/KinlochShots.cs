@@ -37,8 +37,28 @@ namespace Rotorcraft.Preview.Tests
                 ("play-heliport", At(60, 110, 25), At(0, 0, 1), 55),
                 ("play-woods", At(-3600, -1200, 220), At(-4300, -300, 60), 55),
             };
-            foreach (var s in shots)
+            // the same at dusk and at night, with the Kestrel's lights on and the engine running
+            var heli = Object.FindAnyObjectByType<HelicopterController>();
+            var heliPos = heli.transform.position;
+            var night = new (string name, Vector3 from, Vector3 to, float fov)[]
             {
+                ("heliport", heliPos + heli.transform.rotation * new Vector3(9, 3.5f, 14), heliPos + Vector3.up * 1.2f, 55),
+                ("town", At(200, 300, 180), At(-700, -900, 0), 55),
+                ("village", At(-500, 300, 60), At(-1100, 700, 0), 60),
+            };
+            var list = new System.Collections.Generic.List<(string name, Vector3 from, Vector3 to, float fov)>(shots);
+            foreach (var tod in new[] { TimeOfDay.Dusk, TimeOfDay.Night }) foreach (var n in night) list.Add(($"{tod}:{n.name}", n.from, n.to, n.fov));
+            foreach (var s0 in list)
+            {
+                var s = s0;
+                var colon = s.name.IndexOf(':');
+                if (colon > 0)
+                {
+                    var tod = (TimeOfDay)System.Enum.Parse(typeof(TimeOfDay), s.name.Substring(0, colon));
+                    if (SkyEnvironment.Current.timeOfDay != tod) SkyEnvironment.Current.Apply(tod, Rotorcraft.Sim.Weather.Presets["calm"]);
+                    heli.State.sys.beacon = heli.State.sys.nav = heli.State.sys.strobe = heli.State.sys.landingLight = true;
+                    s.name = $"play-{tod.ToString().ToLowerInvariant()}-{s.name.Substring(colon + 1)}";
+                }
                 cam.fieldOfView = s.fov;
                 cam.transform.position = s.from;
                 cam.transform.LookAt(s.to);

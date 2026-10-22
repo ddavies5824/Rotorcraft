@@ -27,6 +27,7 @@ namespace Rotorcraft.Presentation
         void Awake()
         {
             Ground.Current = new WorldGround();
+            if (GetComponent<SkyEnvironment>() == null) gameObject.AddComponent<SkyEnvironment>();
             if (!Built) Build();
         }
 
@@ -36,9 +37,9 @@ namespace Rotorcraft.Presentation
             Ground.Current = new WorldGround();
             var t0 = Time.realtimeSinceStartup;
             var tiles = KinlochTerrain.Build(transform, terrainMaterial, surfaceLayers, grass ? GrassBlades.Prototypes(GrassBlades.Texture()) : null);
-            var protoHolder = new GameObject("Tree prototypes").transform; protoHolder.SetParent(transform, false);
-            KinlochTrees.Plant(tiles, trees, protoHolder, treeBudget);
+            KinlochTrees.Plant(transform, trees, treeBudget);
             KinlochDressing.Build(transform, WorldMaterials.Make(), landmarks);
+            WorldLightsRenderer.Build(transform);
             DynamicGI.UpdateEnvironment();
             if (reflectionProbe != null) reflectionProbe.RenderProbe();
             Built = true;

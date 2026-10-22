@@ -73,6 +73,9 @@ namespace Rotorcraft.Presentation
             });
             ResetToStart();
             SetCockpitView(false);
+            // every flyable aircraft has its sound and lights; scenes need not add them
+            if (GetComponent<RotorAudio>() == null) gameObject.AddComponent<RotorAudio>();
+            if (GetComponent<AircraftLights>() == null) gameObject.AddComponent<AircraftLights>();
         }
 
         void OnEnable() => InputSystem.onDeviceChange += OnDeviceChange;

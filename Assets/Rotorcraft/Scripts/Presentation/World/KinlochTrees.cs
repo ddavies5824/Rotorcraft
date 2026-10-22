@@ -54,10 +54,11 @@ namespace Rotorcraft.Presentation
             return mix[0].sp;
         }
 
-        sealed class Proto { public string name; public GameObject go; public float height; }
+        sealed class Proto { public string name; public TreeField.Kind kind; public float height; }
 
-        /// <summary>One prototype per tree variant: its parts merged into a single mesh (terrain trees need one renderer).</summary>
-        static List<Proto> Prototypes(GameObject library, Transform holder)
+        /// <summary>One prototype per tree variant: its parts merged into a single mesh, one submesh per material,
+        /// plus the low crown drawn far away.</summary>
+        static List<Proto> Prototypes(GameObject library)
         {
             var list = new List<Proto>();
             foreach (Transform part in library.transform)
@@ -85,11 +86,11 @@ namespace Rotorcraft.Presentation
                     var g = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
                     g.CombineMeshes(kv.Value.ToArray(), true, true);
                     subs.Add(new CombineInstance { mesh = g, transform = Matrix4x4.identity });
-                    // foliage is painted per species; bark stays as modelled
-                    var mat = kv.Key;
-                    if (mat != null && mat.name.Contains("leaf"))
+                    // foliage is painted per species; bark stays as modelled (every material is a copy, so instancing
+                    // can be switched on without touching the imported asset)
+                    var mat = new Material(kv.Key) { name = $"{kv.Key.name} {sp}" };
+                    if (kv.Key.name.Contains("leaf"))
                     {
-                        mat = new Material(mat) { name = $"{mat.name} {sp}" };
                         var c = mat.HasProperty("baseColorFactor") ? mat.GetColor("baseColorFactor") : mat.color;
                         var t = LEAF[sp];
                         var tinted = new Color(c.r * t.r, c.g * t.g, c.b * t.b, c.a);
@@ -100,12 +101,16 @@ namespace Rotorcraft.Presentation
                 var mesh = new Mesh { name = part.name, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
                 mesh.CombineMeshes(subs.ToArray(), false, false);
                 mesh.RecalculateBounds();
-                var go = new GameObject($"Tree {part.name}");
-                go.transform.SetParent(holder, false);
-                go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                var r = go.AddComponent<MeshRenderer>(); r.sharedMaterials = mats.ToArray();
-                go.SetActive(false);
-                list.Add(new Proto { name = part.name, go = go, height = Mathf.Max(1, mesh.bounds.max.y) });
+                var kind = new TreeField.Kind { name = part.name, near = mesh, nearMats = mats.ToArray() };
+                var leaf = mats.FindIndex(m => m.name.Contains("leaf"));
+                if (leaf >= 0)
+                {
+                    kind.far = TreeField.FarCrown(mesh, leaf, sp == "pine" || sp == "spruce" || sp == "larch");
+                    var bark = mats.FindIndex(m => !m.name.Contains("leaf"));
+                    kind.farMats = new[] { mats[leaf], mats[bark >= 0 ? bark : leaf] };
+                }
+                else { kind.far = mesh; kind.farMats = kind.nearMats; }
+                list.Add(new Proto { name = part.name, kind = kind, height = Mathf.Max(1, mesh.bounds.max.y) });
             }
             return list;
         }
@@ -188,39 +193,30 @@ namespace Rotorcraft.Presentation
             return o;
         }
 
-        /// <summary>Make the prototypes and plant the trees on the terrain tiles.</summary>
-        public static int Plant(IList<Terrain> tiles, GameObject library, Transform holder, int max = 14000)
+        /// <summary>Make the prototypes and plant the trees in an instanced tree field under the parent.</summary>
+        public static TreeField Plant(Transform parent, GameObject library, int max = 14000)
         {
-            if (library == null) return 0;
-            var protos = Prototypes(library, holder);
-            if (protos.Count == 0) return 0;
-            var index = protos.Select((p, i) => (p.name, i)).ToDictionary(t => t.name, t => t.i);
-            var treeProtos = protos.Select(p => new TreePrototype { prefab = p.go, bendFactor = 0 }).ToArray();
-            foreach (var t in tiles) t.terrainData.treePrototypes = treeProtos;
-            var byTile = new Dictionary<Terrain, List<TreeInstance>>();
+            if (library == null) return null;
+            var protos = Prototypes(library);
+            if (protos.Count == 0) return null;
+            var go = new GameObject("Trees"); go.transform.SetParent(parent, false);
+            var field = go.AddComponent<TreeField>();
+            var index = new Dictionary<string, int>();
+            foreach (var p in protos) index[p.name] = field.AddKind(p.kind);
             var all = Place(max);
             foreach (var t in all)
             {
                 var sp = PickSpecies(t.setting, t.seed);
                 var name = $"{sp}_{(IHash(t.seed, 3) < 0.5 ? 0 : 1)}";
-                if (!index.TryGetValue(name, out var pi)) continue;
-                var tile = KinlochTerrain.TileAt(tiles, t.x, t.z); if (tile == null) continue;
-                var p = tile.transform.position; var size = tile.terrainData.size;
-                var scale = (float)(t.h / protos[pi].height);
-                var inst = new TreeInstance
-                {
-                    prototypeIndex = pi,
-                    position = new Vector3((float)((t.x - p.x) / size.x), (float)((t.y - p.y) / size.y), (float)((-t.z - p.z) / size.z)),
-                    heightScale = scale, widthScale = scale * (0.9f + 0.2f * (float)IHash(t.seed, 13)),
-                    rotation = (float)(IHash(t.seed, 9) * Math.PI * 2),
-                    color = Color.white, lightmapColor = Color.white,
-                };
-                if (!byTile.TryGetValue(tile, out var l)) byTile[tile] = l = new List<TreeInstance>();
-                l.Add(inst);
+                if (!index.TryGetValue(name, out var ki)) continue;
+                var scale = (float)(t.h / protos[ki].height);
+                var width = scale * (0.9f + 0.2f * (float)IHash(t.seed, 13));
+                var pos = SimToUnity.Position(new Vec3(t.x, WorldMap.TerrainHeight(t.x, t.z), t.z));
+                field.Add(ki, pos, (float)(IHash(t.seed, 9) * 360), new Vector3(width, scale, width));
             }
-            foreach (var kv in byTile) kv.Key.terrainData.SetTreeInstances(kv.Value.ToArray(), true);
-            Debug.Log($"Kinloch trees: {all.Count} placed from {protos.Count} Blender trees");
-            return all.Count;
+            field.Finish();
+            Debug.Log($"Kinloch trees: {field.Count} placed from {protos.Count} Blender trees");
+            return field;
         }
     }
 }

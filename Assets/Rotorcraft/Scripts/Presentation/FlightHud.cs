@@ -33,6 +33,7 @@ namespace Rotorcraft.Presentation
             box = new GUIStyle(GUI.skin.box);
         }
 
+        static string OnOff(bool on) => on ? "<color=#90ee90>on</color>" : "off";
         static string Col(MessageKind k) => k == MessageKind.Warning ? "#ff7070" : k == MessageKind.Caution ? "#ffd070" : k == MessageKind.Good ? "#90ee90" : "#c8dcff";
 
         void Panel(Rect r, string text, GUIStyle st)
@@ -56,7 +57,8 @@ namespace Rotorcraft.Presentation
             sb.AppendLine($"RPM {o.rpm:F0}%   TQ {o.torque:F0}%   {FlightModel.TempLimitsOf(heli.Aircraft).label} {o.engineTemp:F0}°C   Fuel {s.fuel:F0} kg");
             sb.AppendLine($"IAS {o.iasKt:F0} kt   GS {o.gsKt:F0} kt   VS {o.vsFpm:F0} fpm");
             sb.AppendLine($"ALT {o.altFt:F0} ft   AGL {o.aglM * SimMath.FT:F0} ft   HDG {o.hdg:000}°");
-            sb.AppendLine($"Lever {c.collective * 100:F0}%   Engine {s.engine}   BCN {(s.sys.beacon ? "on" : "off")}   Throttle {(s.sys.throttle > 0.9 ? "open" : s.sys.throttle < 0.1 ? "idle" : "moving")}");
+            sb.AppendLine($"Lever {c.collective * 100:F0}%   Engine {s.engine}   Throttle {(s.sys.throttle > 0.9 ? "open" : s.sys.throttle < 0.1 ? "idle" : "moving")}");
+            sb.AppendLine($"Lights  BCN {OnOff(s.sys.beacon)}  NAV {OnOff(s.sys.nav)}  STROBE {OnOff(s.sys.strobe)}  LDG {OnOff(s.sys.landingLight)}");
             if (o.vrs > 0.2) sb.AppendLine("<color=#ff6060>VORTEX RING</color>");
             if (s.engine == EngineState.Running && o.rpm < heli.Aircraft.rpmMin && !s.onGround) sb.AppendLine("<color=#ff6060>LOW ROTOR RPM</color>");
             if (heli.Paused && mission?.Result == null) sb.AppendLine("<color=#ffd060>PAUSED</color>");
@@ -87,7 +89,11 @@ namespace Rotorcraft.Presentation
             // ---- messages
             sb.Clear();
             foreach (var m in rt.messages.Skip(System.Math.Max(0, rt.messages.Count - 4))) sb.AppendLine($"<color={Col(m.kind)}><b>{m.from}:</b> {m.text}</color>");
-            if (showHelp) sb.AppendLine("<color=#909090>B beacon · E engine · R/F throttle · W/S or lever: collective · Enter: end flight · Backspace: restart · F1 handling · F2 help</color>");
+            if (showHelp)
+            {
+                sb.AppendLine("<color=#909090>E engine · R/F throttle · W/S or lever: collective · Enter: end flight · Backspace: restart · F1 handling · F2 help</color>");
+                sb.AppendLine("<color=#909090>B beacon · N position lights · O strobes · L landing light · F4 day / dusk / night</color>");
+            }
             Panel(new Rect(Screen.width / 2f - 380, Screen.height - 150, 760, 0), sb.ToString(), small);
 
             if (mission.Result != null) Debrief(mission.Result);
