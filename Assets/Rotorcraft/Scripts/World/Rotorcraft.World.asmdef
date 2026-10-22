@@ -1,0 +1,16 @@
+{
+    "name": "Rotorcraft.World",
+    "rootNamespace": "Rotorcraft.World",
+    "references": [
+        "Rotorcraft.Sim"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
