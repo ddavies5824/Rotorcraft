@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 namespace Rotorcraft.EditorTools
@@ -15,6 +16,7 @@ namespace Rotorcraft.EditorTools
     {
         const string ScenePath = "Assets/Rotorcraft/Scenes/TestFlight.unity";
         const string MaterialDir = "Assets/Rotorcraft/Materials";
+        const string SettingsDir = "Assets/Rotorcraft/Settings";
         const string ModelPath = "Assets/Rotorcraft/Models/kestrel_k2.glb";
         const string PreviewPath = "Logs/test-scene-preview.png";
 
@@ -74,7 +76,45 @@ namespace Rotorcraft.EditorTools
             foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
                 if (l.type == LightType.Directional) { l.transform.rotation = Quaternion.Euler(42, 35, 0); l.intensity = 1.6f; l.shadows = LightShadows.Soft; }
 
+            // filmic colour (ACES), a little bloom on bright highlights, anti-aliasing
+            Directory.CreateDirectory(SettingsDir);
+            var profilePath = $"{SettingsDir}/TestFlight Volume.asset";
+            AssetDatabase.DeleteAsset(profilePath);
+            var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            AssetDatabase.CreateAsset(profile, profilePath);
+            var tonemap = profile.Add<Tonemapping>(true); tonemap.mode.Override(TonemappingMode.ACES);
+            var bloom = profile.Add<Bloom>(true); bloom.threshold.Override(1.1f); bloom.intensity.Override(0.25f);
+            var colour = profile.Add<ColorAdjustments>(true); colour.postExposure.Override(0.2f); colour.contrast.Override(8f); colour.saturation.Override(6f);
+            foreach (var c in profile.components) AssetDatabase.AddObjectToAsset(c, profile);
+            AssetDatabase.SaveAssets();
+            var volume = new GameObject("Post-processing").AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.sharedProfile = profile;
+            var camData = cam.GetUniversalAdditionalCameraData();
+            camData.renderPostProcessing = true;
+            camData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            camData.antialiasingQuality = AntialiasingQuality.High;
+
+            // a reflection probe, so the paint, metal and glass reflect the sky and the ground
+            var probe = new GameObject("Reflection probe").AddComponent<ReflectionProbe>();
+            probe.transform.position = new Vector3(0, 3, 0);
+            probe.mode = ReflectionProbeMode.Baked;
+            probe.size = new Vector3(600, 200, 600);
+            probe.resolution = 256;
+            probe.hdr = true;
+
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            // environment lighting and the probe, baked without the helicopter in them (no lightmaps: nothing is static)
+            var lightingPath = $"{SettingsDir}/TestFlight Lighting.lighting";
+            var lighting = AssetDatabase.LoadAssetAtPath<LightingSettings>(lightingPath);
+            if (lighting == null) { lighting = new LightingSettings(); AssetDatabase.CreateAsset(lighting, lightingPath); }
+            lighting.bakedGI = false;
+            lighting.realtimeGI = false;
+            Lightmapping.lightingSettings = lighting;
+            heli.SetActive(false);
+            Lightmapping.Bake();
+            heli.SetActive(true);
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             Debug.Log("Test scene saved to " + ScenePath);
@@ -93,6 +133,10 @@ namespace Rotorcraft.EditorTools
             cam.transform.position = heli.position + new Vector3(-6.5f, 2.6f, 6.5f);
             cam.transform.LookAt(heli.position + Vector3.up * 1.3f);
             Render(cam, "Logs/test-scene-closeup.png");
+            // from the right, level with the cabin: the cockpit should show through the canopy
+            cam.transform.position = heli.position + new Vector3(4.2f, 1.7f, 1.4f);
+            cam.transform.LookAt(heli.position + new Vector3(0, 1.35f, 0.5f));
+            Render(cam, "Logs/test-scene-canopy.png");
         }
 
         public static void BuildAndPreview() { Build(); Preview(); }

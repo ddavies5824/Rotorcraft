@@ -3,6 +3,8 @@
     "rootNamespace": "Rotorcraft.EditorTools",
     "references": [
         "Unity.InputSystem",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime",
         "Rotorcraft.Presentation"
     ],
     "includePlatforms": [

@@ -35,8 +35,10 @@ namespace Rotorcraft.Presentation
 
         ControlSettings inputSettings;
         FixedStepper stepper;
-        Transform blades, cockpitOnly;
-        float rotorAngle;
+        Transform blades, tailRotor, cockpitOnly;
+        float rotorAngle, tailAngle;
+        [Tooltip("Tail rotor revolutions per main rotor revolution.")]
+        public float tailRotorRatio = 6f;
 
         void Awake()
         {
@@ -48,6 +50,7 @@ namespace Rotorcraft.Presentation
             if (model != null)
             {
                 blades = FindDeep(model, "blades");
+                tailRotor = FindDeep(model, "tail_rotor");
                 cockpitOnly = FindDeep(model, "cockpit_only");
                 Eye = FindDeep(model, "eye");
             }
@@ -101,11 +104,14 @@ namespace Rotorcraft.Presentation
             CurrentControls = Input.Sample(dt);
             if (!Paused) stepper.Advance(dt);
             ApplyPose();
-            if (blades != null && !Paused)
+            if (!Paused)
             {
                 // the rotor turns anticlockwise seen from above (the fuselage torques the other way)
-                rotorAngle = (rotorAngle - (float)(State.@out.rpm / 100) * rotorRpmAt100 * 6f * dt) % 360f;
-                blades.localRotation = Quaternion.Euler(0, rotorAngle, 0);
+                var degrees = (float)(State.@out.rpm / 100) * rotorRpmAt100 * 6f * dt;
+                rotorAngle = (rotorAngle - degrees) % 360f;
+                tailAngle = (tailAngle + degrees * tailRotorRatio) % 360f;
+                if (blades != null) blades.localRotation = Quaternion.Euler(0, rotorAngle, 0);
+                if (tailRotor != null) tailRotor.localRotation = Quaternion.Euler(tailAngle, 0, 0);   // spins about its own x axis
             }
         }
 
