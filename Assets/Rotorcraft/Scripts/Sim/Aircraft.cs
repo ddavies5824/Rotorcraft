@@ -300,6 +300,9 @@ namespace Rotorcraft.Sim
             return a;
         }
 
+        /// <summary>The aircraft with this id, or null.</summary>
+        public static AircraftConfig Find(string id) => id != null && All.TryGetValue(id, out var a) ? a : null;
+
         /// <summary>The aircraft wearing one of its skins (unknown skin ids leave the standard livery).</summary>
         public static AircraftConfig WithSkin(AircraftConfig ac, string skinId)
         {

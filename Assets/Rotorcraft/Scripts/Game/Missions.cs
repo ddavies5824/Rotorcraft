@@ -1,6 +1,6 @@
 // Data-driven mission and training-exercise definitions (port of src/game/missions.ts). Adding a mission =
 // adding an entry here; the mission engine, briefing and debrief need no code changes.
-// The advanced and career missions (missionsAdvanced.ts, missionsCareer.ts) are still to be ported.
+// The advanced and career missions follow in MissionsAdvanced and MissionsCareer.
 using System.Collections.Generic;
 using System.Linq;
 using Rotorcraft.Sim;
@@ -22,6 +22,18 @@ namespace Rotorcraft.Game
             new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = label, phase = phase, name = name, x = x, z = z, radiusM = radiusM, altMinFt = altMinFt, altMaxFt = altMaxFt, say = say };
         public static ObjectiveDef Land(string label, string phase, string siteId, double maxDistM, string say = null) => new ObjectiveDef { kind = ObjectiveKind.Land, label = label, phase = phase, siteId = siteId, maxDistM = maxDistM, say = say };
         public static ObjectiveDef Shutdown(string label, string phase, string say = null) => new ObjectiveDef { kind = ObjectiveKind.Shutdown, label = label, phase = phase, say = say };
+
+        /// <summary>An objective list from single objectives and groups of them (the TypeScript tables spread helper groups in).</summary>
+        public static ObjectiveDef[] Objs(params object[] items)
+        {
+            var list = new List<ObjectiveDef>();
+            foreach (var it in items)
+            {
+                if (it is ObjectiveDef o) list.Add(o);
+                else if (it is IEnumerable<ObjectiveDef> many) list.AddRange(many);
+            }
+            return list.ToArray();
+        }
     }
 
     public static class Missions
@@ -286,7 +298,7 @@ namespace Rotorcraft.Game
                 assessment = Pass(0),
                 prerequisites = new Prerequisites(), estMinutes = 15, xp = 20, availableFromMilestone = 3, maxRangeM = 5000,
             },
-        };
+        }.Concat(MissionsAdvanced.All).Concat(MissionsCareer.All).ToList();
 
         public static MissionDef ById(string id) => All.FirstOrDefault(m => m.id == id);
     }
