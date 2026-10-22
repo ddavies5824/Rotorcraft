@@ -1,0 +1,17 @@
+{
+    "name": "Rotorcraft.Game",
+    "rootNamespace": "Rotorcraft.Game",
+    "references": [
+        "Rotorcraft.Sim",
+        "Rotorcraft.World"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
