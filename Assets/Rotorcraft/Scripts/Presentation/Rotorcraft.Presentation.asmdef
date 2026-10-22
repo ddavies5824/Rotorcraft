@@ -6,7 +6,9 @@
         "Rotorcraft.World",
         "Rotorcraft.Game",
         "Rotorcraft.Inputs",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

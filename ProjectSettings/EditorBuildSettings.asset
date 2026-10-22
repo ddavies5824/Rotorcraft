@@ -6,11 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Rotorcraft/Scenes/Kinloch.unity
-    guid: 3680c29a9e34928469af9dd81647d6f9
-  - enabled: 1
-    path: Assets/Rotorcraft/Scenes/TestFlight.unity
-    guid: 607eefd6e811b144fbec35a7068bb6b7
+    path: Assets/Rotorcraft/Scenes/Game.unity
+    guid: 5792ff771f8180746a68e3fa0c9df441
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

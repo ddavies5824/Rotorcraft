@@ -9,6 +9,7 @@ namespace Rotorcraft.Presentation
     {
         public static Vector3 Position(Vec3 v) => new Vector3((float)v.x, (float)v.y, (float)-v.z);
         public static Vector3 Direction(Vec3 v) => new Vector3((float)v.x, (float)v.y, (float)-v.z);
+        public static Vec3 ToSim(Vector3 p) => new Vec3(p.x, p.y, -p.z);
 
         /// <summary>The aircraft's attitude as a Unity rotation whose forward is the nose and whose up is the rotor mast.</summary>
         public static Quaternion Attitude(HeliState s)

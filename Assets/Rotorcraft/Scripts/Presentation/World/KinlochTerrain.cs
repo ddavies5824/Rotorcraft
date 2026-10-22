@@ -318,14 +318,19 @@ namespace Rotorcraft.Presentation
             var dir = CacheDir();
             System.IO.Directory.CreateDirectory(dir);
             int computed = 0;
-            Parallel.ForEach(tiles, t =>
+            void One(Tile t)
             {
                 var path = CachePath(dir, t);
                 if (Load(path, t)) return;
                 Compute(t);
                 Save(path, t);
                 System.Threading.Interlocked.Increment(ref computed);
-            });
+            }
+#if UNITY_WEBGL
+            foreach (var t in tiles) One(t);   // no worker threads in the browser
+#else
+            Parallel.ForEach(tiles, One);
+#endif
             if (layers == null || layers.Length != LAYERS) layers = GeneratedLayers();
             var made = new List<Terrain>();
             var byCore = new Dictionary<(int, int), Terrain>();

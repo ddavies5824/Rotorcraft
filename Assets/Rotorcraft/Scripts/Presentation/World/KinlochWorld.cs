@@ -22,27 +22,46 @@ namespace Rotorcraft.Presentation
         [Tooltip("Re-rendered once the world is built, so paint and glass reflect the real surroundings.")]
         public ReflectionProbe reflectionProbe;
 
+        [Tooltip("Build as soon as the scene starts (test scenes). The game builds behind its loading screen instead.")]
+        public bool buildOnAwake = true;
+
         public bool Built { get; private set; }
 
         void Awake()
         {
             Ground.Current = new WorldGround();
             if (GetComponent<SkyEnvironment>() == null) gameObject.AddComponent<SkyEnvironment>();
-            if (!Built) Build();
+            if (!Built && buildOnAwake) Build();
         }
 
         public void Build()
         {
+            var e = BuildRoutine(null);
+            while (e.MoveNext()) { }
+        }
+
+        /// <summary>Build in stages, a frame apart, reporting progress for the loading screen.</summary>
+        public System.Collections.IEnumerator BuildRoutine(System.Action<float, string> progress)
+        {
             Clear();
             Ground.Current = new WorldGround();
             var t0 = Time.realtimeSinceStartup;
-            var tiles = KinlochTerrain.Build(transform, terrainMaterial, surfaceLayers, grass ? GrassBlades.Prototypes(GrassBlades.Texture()) : null);
+            progress?.Invoke(0.05f, "Shaping the hills and the firth");
+            yield return null;
+            KinlochTerrain.Build(transform, terrainMaterial, surfaceLayers, grass ? GrassBlades.Prototypes(GrassBlades.Texture()) : null);
+            progress?.Invoke(0.45f, "Planting the forests");
+            yield return null;
             KinlochTrees.Plant(transform, trees, treeBudget);
+            progress?.Invoke(0.65f, "Building Kinloch, the roads and the heliport");
+            yield return null;
             KinlochDressing.Build(transform, WorldMaterials.Make(), landmarks);
+            progress?.Invoke(0.85f, "Switching on the lights");
+            yield return null;
             WorldLightsRenderer.Build(transform);
             DynamicGI.UpdateEnvironment();
             if (reflectionProbe != null) reflectionProbe.RenderProbe();
             Built = true;
+            progress?.Invoke(0.92f, "World ready");
             Debug.Log($"Kinloch built in {Time.realtimeSinceStartup - t0:F1} s");
         }
 

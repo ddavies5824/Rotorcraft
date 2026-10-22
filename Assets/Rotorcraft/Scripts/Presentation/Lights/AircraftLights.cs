@@ -3,6 +3,7 @@
 // render/scene.ts), position lights shining only into their own sectors, plus real lights after dark: the
 // beacon's red sweep and the strobe flashes washing the airframe and ground, and the landing light's beam.
 using System.Collections.Generic;
+using System.Linq;
 using Rotorcraft.Sim;
 using Rotorcraft.World;
 using UnityEngine;
@@ -50,13 +51,26 @@ namespace Rotorcraft.Presentation
         Light landing, search, beaconLight, strobeLight;
         readonly List<GlowPoint> glow = new List<GlowPoint>();
 
+        /// <summary>A larger version of another type's mounts (the Guardian is built from the Northstar's lines).</summary>
+        static Mounts Scaled(Mounts b, float k) => new Mounts
+        {
+            navL = b.navL * k, navR = b.navR * k, tail = b.tail * k, beacon = b.beacon * k, strobes = b.strobes.Select(s => s * k).ToArray(),
+            landing = b.landing * k, landingDir = b.landingDir, search = b.search * k, searchDir = b.searchDir, cabin = b.cabin * k,
+        };
+
         /// <summary>A model-space mount into this object's axes (the model is turned to face +z).</summary>
         static Vector3 Local(Vector3 v) => new Vector3(v.x, v.y, -v.z);
 
-        void Start()
+        void Start() => Configure();
+
+        /// <summary>(Re)build the lights for the aircraft being flown.</summary>
+        public void Configure()
         {
             if (heli == null) heli = GetComponent<HelicopterController>();
-            if (!MOUNTS.TryGetValue(heli.aircraftId, out m)) m = MOUNTS["kestrel"];
+            if (heli == null) return;
+            foreach (var l in new Component[] { glowMesh, landing, search, beaconLight, strobeLight }) if (l != null) Destroy(l.gameObject);
+            search = null;
+            if (!MOUNTS.TryGetValue(heli.aircraftId, out m)) m = heli.aircraftId == "guardian" ? Scaled(MOUNTS["northstar"], 1.12f) : MOUNTS["kestrel"];
             glowMesh = GlowPoints.Make("Aircraft light points", transform);
             landing = Spot("Landing light", m.landing, m.landingDir, 0.32f, 0.18f, landingRange);
             if (m.search.HasValue) search = Spot("Searchlight", m.search.Value, m.searchDir.Value, 0.2f, 0.1f, 400);
