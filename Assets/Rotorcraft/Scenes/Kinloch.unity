@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &385901495
+--- !u!1 &22239547
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,64 +127,70 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 385901497}
-  - component: {fileID: 385901496}
+  - component: {fileID: 22239550}
+  - component: {fileID: 22239549}
+  - component: {fileID: 22239548}
   m_Layer: 0
-  m_Name: Reflection probe
+  m_Name: Kestrel K2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!215 &385901496
-ReflectionProbe:
+--- !u!114 &22239548
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 385901495}
+  m_GameObject: {fileID: 22239547}
   m_Enabled: 1
-  serializedVersion: 2
-  m_Type: 0
-  m_Mode: 1
-  m_RefreshMode: 2
-  m_TimeSlicingMode: 0
-  m_Resolution: 256
-  m_UpdateFrequency: 0
-  m_BoxSize: {x: 3000, y: 800, z: 3000}
-  m_BoxOffset: {x: 0, y: 0, z: 0}
-  m_NearClip: 0.3
-  m_FarClip: 1000
-  m_ShadowDistance: 100
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IntensityMultiplier: 1
-  m_BlendDistance: 1
-  m_HDR: 1
-  m_BoxProjection: 0
-  m_RenderDynamicObjects: 0
-  m_UseOcclusionCulling: 1
-  m_Importance: 1
-  m_CustomBakedTexture: {fileID: 0}
---- !u!4 &385901497
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbdc4b4f45777b944b7d4b3337f402f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Rotorcraft.Presentation::Rotorcraft.Presentation.MissionDirector
+  heli: {fileID: 22239549}
+  missionId: ex01_controls
+  checklistDone: 1
+--- !u!114 &22239549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 22239547}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b684d287aef7f74e8861d91233a3653, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Rotorcraft.Presentation::Rotorcraft.Presentation.HelicopterController
+  aircraftId: kestrel
+  weatherId: calm
+  assist: 0
+  startXZ: {x: 0, y: 0}
+  startHeadingDeg: 0
+  startFuelKg: -1
+  startHint: 1
+  model: {fileID: 1038836895}
+  rotorRpmAt100: 530
+  tailRotorRatio: 6
+--- !u!4 &22239550
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 385901495}
+  m_GameObject: {fileID: 22239547}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 49.7, z: -0}
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 37.7, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1038836895}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &640187262
+--- !u!1 &89493788
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -192,12 +198,120 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 640187268}
-  - component: {fileID: 640187267}
-  - component: {fileID: 640187266}
-  - component: {fileID: 640187265}
-  - component: {fileID: 640187264}
-  - component: {fileID: 640187263}
+  - component: {fileID: 89493790}
+  - component: {fileID: 89493789}
+  m_Layer: 0
+  m_Name: Kinloch
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &89493789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 89493788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9dadf56a0d4433244a95e4b34009b45d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Rotorcraft.Presentation::Rotorcraft.Presentation.KinlochWorld
+  landmarks: {fileID: -5640482250164763790, guid: 23dd7b95d35c34d4d8ee25f48f1ba5d2, type: 3}
+  terrainMaterial: {fileID: 2100000, guid: 7e181d6438bb3cf4e8341bebd876474e, type: 2}
+  surfaceLayers:
+  - {fileID: 8574412962073106934, guid: 5663079132b3c174dbd49ccb2c6656cf, type: 2}
+  - {fileID: 8574412962073106934, guid: fa7a7a1b9cfbc1742a05c91babf203d7, type: 2}
+  - {fileID: 8574412962073106934, guid: 85988e2f77bf7e041b6eb73238c44de4, type: 2}
+  - {fileID: 8574412962073106934, guid: 1024dfebb6ea34e4282d108a1ae437c6, type: 2}
+  - {fileID: 8574412962073106934, guid: fb84d288f070ac54ca62aaff40aa7cf3, type: 2}
+  - {fileID: 8574412962073106934, guid: 683cff5cf1765564d8a5148fb4ee0321, type: 2}
+  - {fileID: 8574412962073106934, guid: ed39d0dbd4e28bb4db8cec3b0ea98c9c, type: 2}
+  - {fileID: 8574412962073106934, guid: cda2efc04aa536e49aadc4385ed75569, type: 2}
+  trees: {fileID: 2663927393962119458, guid: ce89061454a382441ae9d80aad442514, type: 3}
+  grass: 1
+  treeBudget: 100000
+  reflectionProbe: {fileID: 1669122749}
+--- !u!4 &89493790
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 89493788}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &126527738
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 126527740}
+  - component: {fileID: 126527739}
+  m_Layer: 0
+  m_Name: Post-processing
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &126527739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 126527738}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: efd73308d00823842b4aafbe08d59fe6, type: 2}
+--- !u!4 &126527740
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 126527738}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &711093975
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 711093981}
+  - component: {fileID: 711093980}
+  - component: {fileID: 711093979}
+  - component: {fileID: 711093978}
+  - component: {fileID: 711093977}
+  - component: {fileID: 711093976}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -205,13 +319,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &640187263
+--- !u!114 &711093976
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 640187262}
+  m_GameObject: {fileID: 711093975}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
@@ -249,34 +363,34 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!114 &640187264
+--- !u!114 &711093977
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 640187262}
+  m_GameObject: {fileID: 711093975}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c44b674c595d25346bfd773338083d49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Rotorcraft.Presentation::Rotorcraft.Presentation.FlightHud
-  heli: {fileID: 1460036409}
-  mission: {fileID: 1460036408}
+  heli: {fileID: 22239549}
+  mission: {fileID: 22239548}
   showHelp: 1
---- !u!114 &640187265
+--- !u!114 &711093978
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 640187262}
+  m_GameObject: {fileID: 711093975}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1057fcb717a22c84baac6bc29c6a1111, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Rotorcraft.Presentation::Rotorcraft.Presentation.ChaseCamera
-  target: {fileID: 1460036409}
+  target: {fileID: 22239549}
   distance: 13
   height: 3.5
   lookHeight: 1.6
@@ -284,21 +398,21 @@ MonoBehaviour:
   chaseFov: 55
   cockpitFov: 72
   lookRange: {x: 100, y: 40}
---- !u!81 &640187266
+--- !u!81 &711093979
 AudioListener:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 640187262}
+  m_GameObject: {fileID: 711093975}
   m_Enabled: 1
---- !u!20 &640187267
+--- !u!20 &711093980
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 640187262}
+  m_GameObject: {fileID: 711093975}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
@@ -343,13 +457,13 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!4 &640187268
+--- !u!4 &711093981
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 640187262}
+  m_GameObject: {fileID: 711093975}
   serializedVersion: 2
   m_LocalRotation: {x: 0.051264927, y: -0.70524603, z: 0.05126493, w: 0.705246}
   m_LocalPosition: {x: 13, y: 41.2, z: 0.0000015497205}
@@ -358,7 +472,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &742048751
+--- !u!1 &836985681
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -366,121 +480,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 742048753}
-  - component: {fileID: 742048752}
-  m_Layer: 0
-  m_Name: Kinloch
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &742048752
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 742048751}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9dadf56a0d4433244a95e4b34009b45d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Rotorcraft.Presentation::Rotorcraft.Presentation.KinlochWorld
-  landmarks: {fileID: -5640482250164763790, guid: 23dd7b95d35c34d4d8ee25f48f1ba5d2, type: 3}
-  terrainMaterial: {fileID: 2100000, guid: 7e181d6438bb3cf4e8341bebd876474e, type: 2}
-  reflectionProbe: {fileID: 385901496}
---- !u!4 &742048753
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 742048751}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &744680555
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 1460036410}
-    m_Modifications:
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: -0.00000004371139
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8277468602934354267, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_Name
-      value: Model
-      objectReference: {fileID: 0}
-    - target: {fileID: 9217551615954611603, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: -4161369568681901532, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
---- !u!4 &744680556 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
-  m_PrefabInstance: {fileID: 744680555}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1112778712
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1112778714}
-  - component: {fileID: 1112778713}
+  - component: {fileID: 836985683}
+  - component: {fileID: 836985682}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -488,13 +489,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!108 &1112778713
+--- !u!108 &836985682
 Light:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1112778712}
+  m_GameObject: {fileID: 836985681}
   m_Enabled: 1
   serializedVersion: 12
   m_Type: 1
@@ -553,13 +554,13 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
---- !u!4 &1112778714
+--- !u!4 &836985683
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1112778712}
+  m_GameObject: {fileID: 836985681}
   serializedVersion: 2
   m_LocalRotation: {x: 0.3144747, y: 0.24471824, z: -0.08426324, w: 0.9133009}
   m_LocalPosition: {x: 0, y: 3, z: 0}
@@ -568,78 +569,73 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &1460036407
-GameObject:
+--- !u!1001 &1038836894
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1460036410}
-  - component: {fileID: 1460036409}
-  - component: {fileID: 1460036408}
-  m_Layer: 0
-  m_Name: Kestrel K2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1460036408
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1460036407}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fbdc4b4f45777b944b7d4b3337f402f1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Rotorcraft.Presentation::Rotorcraft.Presentation.MissionDirector
-  heli: {fileID: 1460036409}
-  missionId: ex01_controls
-  checklistDone: 1
---- !u!114 &1460036409
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1460036407}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6b684d287aef7f74e8861d91233a3653, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Rotorcraft.Presentation::Rotorcraft.Presentation.HelicopterController
-  aircraftId: kestrel
-  weatherId: calm
-  assist: 0
-  startXZ: {x: 0, y: 0}
-  startHeadingDeg: 0
-  startFuelKg: -1
-  startHint: 1
-  model: {fileID: 744680556}
-  rotorRpmAt100: 530
-  tailRotorRatio: 6
---- !u!4 &1460036410
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1460036407}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 37.7, z: -0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 744680556}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1950623839
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 22239550}
+    m_Modifications:
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.00000004371139
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8277468602934354267, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_Name
+      value: Model
+      objectReference: {fileID: 0}
+    - target: {fileID: 9217551615954611603, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: -4161369568681901532, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+--- !u!4 &1038836895 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4861787366338899865, guid: f15f354e1817c0d43a60418ed0cc937f, type: 3}
+  m_PrefabInstance: {fileID: 1038836894}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1669122748
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -647,42 +643,58 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1950623841}
-  - component: {fileID: 1950623840}
+  - component: {fileID: 1669122750}
+  - component: {fileID: 1669122749}
   m_Layer: 0
-  m_Name: Post-processing
+  m_Name: Reflection probe
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1950623840
-MonoBehaviour:
+--- !u!215 &1669122749
+ReflectionProbe:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1950623839}
+  m_GameObject: {fileID: 1669122748}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
-  m_IsGlobal: 1
-  priority: 0
-  blendDistance: 0
-  weight: 1
-  sharedProfile: {fileID: 11400000, guid: efd73308d00823842b4aafbe08d59fe6, type: 2}
---- !u!4 &1950623841
+  serializedVersion: 2
+  m_Type: 0
+  m_Mode: 1
+  m_RefreshMode: 2
+  m_TimeSlicingMode: 0
+  m_Resolution: 256
+  m_UpdateFrequency: 0
+  m_BoxSize: {x: 3000, y: 800, z: 3000}
+  m_BoxOffset: {x: 0, y: 0, z: 0}
+  m_NearClip: 0.3
+  m_FarClip: 1000
+  m_ShadowDistance: 100
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IntensityMultiplier: 1
+  m_BlendDistance: 1
+  m_HDR: 1
+  m_BoxProjection: 0
+  m_RenderDynamicObjects: 0
+  m_UseOcclusionCulling: 1
+  m_Importance: 1
+  m_CustomBakedTexture: {fileID: 0}
+--- !u!4 &1669122750
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1950623839}
+  m_GameObject: {fileID: 1669122748}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 49.7, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -692,9 +704,9 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 640187268}
-  - {fileID: 1112778714}
-  - {fileID: 385901497}
-  - {fileID: 742048753}
-  - {fileID: 1460036410}
-  - {fileID: 1950623841}
+  - {fileID: 711093981}
+  - {fileID: 836985683}
+  - {fileID: 1669122750}
+  - {fileID: 89493790}
+  - {fileID: 22239550}
+  - {fileID: 126527740}

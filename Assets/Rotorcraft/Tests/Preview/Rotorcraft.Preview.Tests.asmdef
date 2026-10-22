@@ -1,0 +1,25 @@
+{
+    "name": "Rotorcraft.Preview.Tests",
+    "rootNamespace": "Rotorcraft.Preview.Tests",
+    "references": [
+        "Rotorcraft.Presentation",
+        "Rotorcraft.Sim",
+        "Rotorcraft.World",
+        "Unity.RenderPipelines.Core.Runtime",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

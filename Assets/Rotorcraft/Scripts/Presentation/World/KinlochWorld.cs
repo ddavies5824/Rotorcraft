@@ -12,6 +12,13 @@ namespace Rotorcraft.Presentation
         public GameObject landmarks;
         [Tooltip("Material for the terrain (URP Terrain Lit).")]
         public Material terrainMaterial;
+        [Tooltip("One terrain layer per SurfaceLayer: grass, moor, rock, sand, pasture, stubble, ploughed, hedge.")]
+        public TerrainLayer[] surfaceLayers;
+        [Tooltip("The imported trees.glb: one child per tree variant.")]
+        public GameObject trees;
+        [Tooltip("Grow grass blades near the camera.")]
+        public bool grass = true;
+        public int treeBudget = 100000;
         [Tooltip("Re-rendered once the world is built, so paint and glass reflect the real surroundings.")]
         public ReflectionProbe reflectionProbe;
 
@@ -28,7 +35,9 @@ namespace Rotorcraft.Presentation
             Clear();
             Ground.Current = new WorldGround();
             var t0 = Time.realtimeSinceStartup;
-            KinlochTerrain.Build(transform, terrainMaterial);
+            var tiles = KinlochTerrain.Build(transform, terrainMaterial, surfaceLayers, grass ? GrassBlades.Prototypes(GrassBlades.Texture()) : null);
+            var protoHolder = new GameObject("Tree prototypes").transform; protoHolder.SetParent(transform, false);
+            KinlochTrees.Plant(tiles, trees, protoHolder, treeBudget);
             KinlochDressing.Build(transform, WorldMaterials.Make(), landmarks);
             DynamicGI.UpdateEnvironment();
             if (reflectionProbe != null) reflectionProbe.RenderProbe();

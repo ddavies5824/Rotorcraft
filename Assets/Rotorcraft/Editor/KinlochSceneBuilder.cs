@@ -44,6 +44,8 @@ namespace Rotorcraft.EditorTools
             world.landmarks = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/landmarks.glb");
             world.terrainMaterial = terrainMat;
             world.reflectionProbe = probe;
+            world.surfaceLayers = SurfaceLayers();
+            world.trees = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/trees.glb");
 
             // the Kestrel with Exercise 1
             var heli = new GameObject("Kestrel K2");
@@ -105,10 +107,83 @@ namespace Rotorcraft.EditorTools
             // inland, up the glen towards Beinn Ardoch
             var ben = SimToUnity.Position(new Vec3(-6400, WorldMap.TerrainHeight(-6400, 550), 550));
             Shot(cam, SimToUnity.Position(new Vec3(-1800, 450, -600)), ben, 55, "Logs/kinloch-glen.png");
+            // standing on the grass beside the heliport, looking west
+            double gx = -70, gz = 60, gh = WorldMap.TerrainHeight(gx, gz);
+            Shot(cam, SimToUnity.Position(new Vec3(gx, gh + 1.7, gz)), SimToUnity.Position(new Vec3(gx - 300, gh + 2, gz - 60)), 60, "Logs/kinloch-ground.png");
+            // over the farmland towards Moss Farm
+            var moss = SimToUnity.Position(new Vec3(-2900, WorldMap.TerrainHeight(-2900, -2300), -2300));
+            Shot(cam, SimToUnity.Position(new Vec3(-2100, WorldMap.TerrainHeight(-2100, -1700) + 160, -1700)), moss, 55, "Logs/kinloch-fields.png");
             world.Clear();
         }
 
         public static void BuildAndPreview() { Build(); Preview(); }
+
+        const string TexDir = "Assets/Rotorcraft/Textures/Terrain";
+
+        static Texture2D Tex(string id, bool normal)
+        {
+            var path = $"{TexDir}/{id}_2K-JPG_{(normal ? "NormalGL" : "Color")}.jpg";
+            var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+            if (imp == null) { Debug.LogWarning("Missing terrain texture " + path); return null; }
+            var want = normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+            if (imp.textureType != want || imp.maxTextureSize != 2048 || imp.anisoLevel != 8)
+            {
+                imp.textureType = want; imp.maxTextureSize = 2048; imp.anisoLevel = 8; imp.mipmapEnabled = true; imp.wrapMode = TextureWrapMode.Repeat;
+                imp.sRGBTexture = !normal;
+                imp.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        /// <summary>A flat mask map (metallic 0, occlusion 1, height 0.5, smoothness low) so the ground stays matte.</summary>
+        static Texture2D MatteMask()
+        {
+            var path = $"{TexDir}/Matte mask.png";
+            if (!File.Exists(path))
+            {
+                var t = new Texture2D(4, 4, TextureFormat.RGBA32, false, true);
+                var px = new Color[16]; for (int i = 0; i < 16; i++) px[i] = new Color(0, 1, 0.5f, 0.12f);
+                t.SetPixels(px); t.Apply();
+                File.WriteAllBytes(path, t.EncodeToPNG());
+                Object.DestroyImmediate(t);
+                AssetDatabase.ImportAsset(path);
+                var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+                imp.sRGBTexture = false; imp.mipmapEnabled = false; imp.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        /// <summary>The terrain's eight surface layers from the ambientCG photo materials (CC0), some tinted.</summary>
+        static TerrainLayer[] SurfaceLayers()
+        {
+            var dir = $"{SettingsDir}/Terrain layers";
+            Directory.CreateDirectory(dir);
+            var mask = MatteMask();
+            TerrainLayer L(string name, string tex, float tile, Color tint)
+            {
+                var path = $"{dir}/{name}.terrainlayer";
+                var l = AssetDatabase.LoadAssetAtPath<TerrainLayer>(path);
+                if (l == null) { l = new TerrainLayer(); AssetDatabase.CreateAsset(l, path); }
+                l.diffuseTexture = Tex(tex, false); l.normalMapTexture = Tex(tex, true); l.maskMapTexture = mask;
+                l.normalScale = 1; l.tileSize = new Vector2(tile, tile); l.metallic = 0; l.smoothness = 0.1f;
+                l.diffuseRemapMin = Vector4.zero; l.diffuseRemapMax = new Vector4(tint.r, tint.g, tint.b, 1);
+                EditorUtility.SetDirty(l);
+                return l;
+            }
+            var layers = new[]
+            {
+                L("Grass", "Grass004", 3.2f, new Color(0.88f, 0.92f, 0.80f)),
+                L("Moor", "Ground037", 3.5f, new Color(0.58f, 0.54f, 0.50f)),   // dark heather brown, not straw
+                L("Rock", "Rock058", 14f, new Color(0.85f, 0.85f, 0.82f)),       // large tiles: no visible grid from the air
+                L("Sand", "Ground054", 3f, Color.white),
+                L("Pasture", "Grass005", 3f, new Color(0.80f, 0.84f, 0.70f)),
+                L("Stubble", "Grass005", 3f, new Color(0.95f, 0.80f, 0.52f)),
+                L("Ploughed", "Ground037", 3f, new Color(0.62f, 0.50f, 0.40f)),
+                L("Hedge", "Grass004", 2.5f, new Color(0.42f, 0.50f, 0.34f)),
+            };
+            AssetDatabase.SaveAssets();
+            return layers;
+        }
 
         static void Shot(Camera cam, Vector3 from, Vector3 at, float fov, string path)
         {
