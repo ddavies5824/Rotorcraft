@@ -1,0 +1,149 @@
+// Port of the InputManager parts of tests/controller.test.ts, driven by a scripted input source instead of
+// the browser Gamepad API, plus the T.Flight Stick X preset with the directions read off the real stick.
+using System.Collections.Generic;
+using NUnit.Framework;
+using UnityEngine.InputSystem;
+
+namespace Rotorcraft.Inputs.Tests
+{
+    /// <summary>Pretend devices: a value per named control (axes -1..1, buttons 0 or 1) and a set of held keys.</summary>
+    sealed class FakeSource : IInputSource
+    {
+        public readonly Dictionary<string, Dictionary<string, double>> devices = new Dictionary<string, Dictionary<string, double>>();
+        public readonly HashSet<Key> keys = new HashSet<Key>();
+
+        public void Set(string device, string control, double v)
+        {
+            if (!devices.TryGetValue(device, out var d)) devices[device] = d = new Dictionary<string, double>();
+            d[control] = v;
+        }
+
+        public bool IsKeyDown(Key key) => keys.Contains(key);
+        public bool AnyControllerConnected => devices.Count > 0;
+
+        bool Find(string device, string control, out double v)
+        {
+            foreach (var kv in devices)
+                if ((device == Controllers.ANY || kv.Key == device) && kv.Value.TryGetValue(control, out v)) return true;
+            v = 0;
+            return false;
+        }
+
+        public double? ReadAxis(AxisBinding b)
+        {
+            if (b == null || !Find(b.device, b.control, out var v) || double.IsNaN(v)) return null;
+            return System.Math.Max(-1, System.Math.Min(1, b.invert ? -v : v));
+        }
+
+        public bool ReadButton(ButtonBinding b) => b != null && Find(b.device, b.control, out var v) && v > 0.5;
+    }
+
+    public class InputManagerTests
+    {
+        const string Stick = Controllers.TFlightStickX;
+
+        static FakeSource TFlightAtRest(double slider)
+        {
+            var f = new FakeSource();
+            foreach (var c in new[] { "stick/x", "stick/y", "rz", "hat/x", "hat/y" }) f.Set(Stick, c, 0);
+            f.Set(Stick, "slider", slider);
+            for (int i = 2; i <= 12; i++) f.Set(Stick, "button" + i, 0);
+            f.Set(Stick, "trigger", 0);
+            return f;
+        }
+
+        [Test]
+        public void LeversMapTo0To1AndDeadZonesRescale()
+        {
+            Assert.AreEqual(0, Controllers.LeverPosition(-1));
+            Assert.AreEqual(1, Controllers.LeverPosition(1));
+            Assert.AreEqual(0.5, Controllers.LeverPosition(0));
+            Assert.AreEqual(0, Controllers.ApplyDeadzone(0.05, 0.1));
+            Assert.AreEqual(1, Controllers.ApplyDeadzone(1, 0.1));
+            Assert.That(System.Math.Abs(Controllers.ApplyDeadzone(-0.55, 0.1) + 0.5) < 1e-9);
+        }
+
+        [Test]
+        public void TFlightStickXDrivesCyclicPedalsAbsoluteCollectiveAndButtons()
+        {
+            // throttle lever fully forward reads slider -1 on the real stick: that is collective fully up
+            var src = TFlightAtRest(-1);
+            var settings = new ControlSettings { deadzone = 0.05, controller = Controllers.PresetTFlightStickX() };
+            var im = new InputManager(settings, src);
+            var actions = new List<GameAction>();
+            im.ActionFired += actions.Add;
+            var c = im.Sample(0.016);
+            Assert.That(System.Math.Abs(c.collective - 1) < 1e-9, "lever forward = collective fully up");
+            // stick right and forward (y +1 forward on this stick), twist right, lever pulled back, base button 5 held
+            src.Set(Stick, "stick/x", 1); src.Set(Stick, "stick/y", 1); src.Set(Stick, "rz", 0.8); src.Set(Stick, "slider", 1); src.Set(Stick, "button5", 1);
+            for (int i = 0; i < 30; i++) c = im.Sample(0.016);
+            Assert.That(c.cyclicRoll > 0.9, $"roll {c.cyclicRoll}");
+            Assert.That(c.cyclicPitch > 0.9, $"pitch {c.cyclicPitch} (stick forward = nose down)");
+            Assert.That(c.pedals > 0.4, $"pedals {c.pedals} (twist right = right pedal)");
+            Assert.AreEqual(0, c.collective, "lever pulled fully back");
+            Assert.AreEqual(new[] { GameAction.Engine }, actions.ToArray(), "button 5 starts the engine once, not every frame");
+            // the hat looks around the cockpit
+            src.Set(Stick, "hat/x", 1);
+            Assert.AreEqual(1, im.Look.x);
+            // disabling controllers ignores the hardware
+            settings.controller.enabled = false;
+            src.Set(Stick, "slider", -1);
+            c = im.Sample(0.016);
+            Assert.AreEqual(0, c.collective, "lever change ignored when controllers are disabled");
+        }
+
+        [Test]
+        public void ReleaseTrimEasesTheCyclicCentreBackToNeutral()
+        {
+            var src = new FakeSource();
+            var im = new InputManager(new ControlSettings { controller = Controllers.PresetGamepad() }, src);
+            var actions = new List<GameAction>();
+            im.ActionFired += actions.Add;
+            // hold the stick forward and right, then trim there
+            src.Set("Pad", "rightStick/x", 0.6); src.Set("Pad", "rightStick/y", 0.5); src.Set("Pad", "rightTrigger", 0);
+            for (int i = 0; i < 40; i++) im.Sample(0.016);
+            im.SetTrimFromCurrent();
+            Assert.That(im.Trimmed && im.trimX > 0.2 && im.trimY > 0.2, $"trimmed at {im.trimX}, {im.trimY}");
+            src.Set("Pad", "rightStick/x", 0); src.Set("Pad", "rightStick/y", 0);
+            for (int i = 0; i < 40; i++) im.Sample(0.016);
+            var held = im.Sample(0.016);
+            Assert.That(held.cyclicRoll > 0.2, "stick let go: the cyclic stays at the trim point");
+            // RT asks for a release
+            src.Set("Pad", "rightTrigger", 1); im.Sample(0.016); src.Set("Pad", "rightTrigger", 0);
+            Assert.AreEqual(new[] { GameAction.TrimRelease }, actions.ToArray());
+            im.ClearTrim();
+            var x0 = im.trimX;
+            im.Sample(0.1);
+            Assert.That(im.trimX < x0 && im.trimX > 0, "eases back rather than snapping");
+            for (int i = 0; i < 60; i++) im.Sample(0.016);
+            Assert.That(!im.Trimmed && !im.trimReleasing, "back at centre within a second");
+            var c = im.Sample(0.5);
+            Assert.That(System.Math.Abs(c.cyclicRoll) < 0.02 && System.Math.Abs(c.cyclicPitch) < 0.02, "hands off: the cyclic returns to neutral");
+            // trimming again during a release cancels it
+            src.Set("Pad", "rightStick/x", 0.5); for (int i = 0; i < 40; i++) im.Sample(0.016); im.SetTrimFromCurrent();
+            im.ClearTrim(); im.SetTrimFromCurrent();
+            Assert.That(im.Trimmed && !im.trimReleasing);
+            Assert.AreEqual(Key.U, new ControlSettings().KeyFor("trimRelease"));
+        }
+
+        [Test]
+        public void KeyboardMovesTheLeverAndFiresActionsOncePerPress()
+        {
+            var src = new FakeSource();
+            var im = new InputManager(new ControlSettings(), src);
+            var actions = new List<GameAction>();
+            im.ActionFired += actions.Add;
+            src.keys.Add(Key.W);
+            for (int i = 0; i < 60; i++) im.Sample(1.0 / 60);
+            Assert.That(System.Math.Abs(im.CollectiveLever - 0.38) < 1e-6, $"W raises the lever at 0.38 per second: {im.CollectiveLever}");
+            src.keys.Clear();
+            src.keys.Add(Key.E);
+            im.Sample(0.016); im.Sample(0.016);
+            src.keys.Add(Key.LeftShift); src.keys.Add(Key.L);   // Shift+L is a look key, not the landing light
+            im.Sample(0.016);
+            src.keys.Clear(); src.keys.Add(Key.Digit3);
+            im.Sample(0.016);
+            Assert.AreEqual(new[] { GameAction.Engine, GameAction.ApHover }, actions.ToArray());
+        }
+    }
+}

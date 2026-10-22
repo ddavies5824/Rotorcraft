@@ -1,0 +1,19 @@
+# Text files get normalised line endings; Unity's YAML assets merge as text
+* text=auto
+*.cs text diff=csharp
+*.unity text eol=lf
+*.prefab text eol=lf
+*.asset text eol=lf
+*.mat text eol=lf
+*.meta text eol=lf
+*.asmdef text
+*.json text
+
+# Binary assets
+*.glb binary
+*.png binary
+*.jpg binary
+*.fbx binary
+*.blend binary
+*.wav binary
+*.ogg binary

@@ -1,0 +1,17 @@
+{
+    "name": "Rotorcraft.Inputs",
+    "rootNamespace": "Rotorcraft.Inputs",
+    "references": [
+        "Rotorcraft.Sim",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,18 @@
+{
+    "name": "Rotorcraft.Presentation",
+    "rootNamespace": "Rotorcraft.Presentation",
+    "references": [
+        "Rotorcraft.Sim",
+        "Rotorcraft.Inputs",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
