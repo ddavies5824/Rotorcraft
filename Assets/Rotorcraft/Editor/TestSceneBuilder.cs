@@ -137,6 +137,21 @@ namespace Rotorcraft.EditorTools
             cam.transform.position = heli.position + new Vector3(4.2f, 1.7f, 1.4f);
             cam.transform.LookAt(heli.position + new Vector3(0, 1.35f, 0.5f));
             Render(cam, "Logs/test-scene-canopy.png");
+            // close-ups of the detail: registration on the tail boom, the engine bay, the instrument panel
+            // (sim z runs aft, so in Unity the boom is at -z and the panel at +z)
+            Shot(cam, heli, new Vector3(1.5f, 1.85f, -2.7f), new Vector3(0, 1.66f, -2.95f), 50, "Logs/test-scene-boom.png");
+            Shot(cam, heli, new Vector3(1.25f, 1.35f, -1.55f), new Vector3(0, 1.2f, -0.95f), 55, "Logs/test-scene-engine.png");
+            Shot(cam, heli, new Vector3(0.12f, 1.5f, 0.5f), new Vector3(0, 1.25f, 1.15f), 55, "Logs/test-scene-panel.png");
+        }
+
+        static void Shot(Camera cam, Transform heli, Vector3 from, Vector3 at, float fov, string path)
+        {
+            var fov0 = cam.fieldOfView; var near0 = cam.nearClipPlane;
+            cam.fieldOfView = fov; cam.nearClipPlane = 0.02f;
+            cam.transform.position = heli.TransformPoint(from);
+            cam.transform.LookAt(heli.TransformPoint(at));
+            Render(cam, path);
+            cam.fieldOfView = fov0; cam.nearClipPlane = near0;
         }
 
         public static void BuildAndPreview() { Build(); Preview(); }
