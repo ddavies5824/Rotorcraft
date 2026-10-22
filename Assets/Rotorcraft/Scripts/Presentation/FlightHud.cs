@@ -33,6 +33,7 @@ namespace Rotorcraft.Presentation
             box = new GUIStyle(GUI.skin.box);
         }
 
+        float fps = 60;
         static string OnOff(bool on) => on ? "<color=#90ee90>on</color>" : "off";
         static string Col(MessageKind k) => k == MessageKind.Warning ? "#ff7070" : k == MessageKind.Caution ? "#ffd070" : k == MessageKind.Good ? "#90ee90" : "#c8dcff";
 
@@ -53,7 +54,8 @@ namespace Rotorcraft.Presentation
 
             // ---- flight data
             sb.Clear();
-            sb.AppendLine($"<b>{heli.Aircraft.name}</b>   {heli.assist} handling");
+            fps = Mathf.Lerp(fps, 1f / Mathf.Max(Time.unscaledDeltaTime, 0.001f), 0.05f);
+            sb.AppendLine($"<b>{heli.Aircraft.name}</b>   {heli.assist} handling   <color=#909090>{fps:F0} fps</color>");
             sb.AppendLine($"RPM {o.rpm:F0}%   TQ {o.torque:F0}%   {FlightModel.TempLimitsOf(heli.Aircraft).label} {o.engineTemp:F0}°C   Fuel {s.fuel:F0} kg");
             sb.AppendLine($"IAS {o.iasKt:F0} kt   GS {o.gsKt:F0} kt   VS {o.vsFpm:F0} fpm");
             sb.AppendLine($"ALT {o.altFt:F0} ft   AGL {o.aglM * SimMath.FT:F0} ft   HDG {o.hdg:000}°");

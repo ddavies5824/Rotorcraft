@@ -58,6 +58,8 @@ namespace Rotorcraft.Preview.Tests
             var batches = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Batches Count", 1);
             var setPass = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count", 1);
             var tris = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Triangles Count", 1);
+            var gcAlloc = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame", 1);
+            var gcCount = System.GC.CollectionCount(0);
             var sb = new StringBuilder();
             sb.AppendLine($"Kinloch benchmark, {rt.width}x{rt.height}, {SystemInfo.graphicsDeviceName}, {SystemInfo.processorType}");
             var all = new List<float>();
@@ -74,12 +76,15 @@ namespace Rotorcraft.Preview.Tests
                 }
                 const int N = 150;
                 var gpu = new List<double>(); var timings = new FrameTiming[1];
+                var gc = new List<long>(); var gc0 = System.GC.CollectionCount(0);
                 var dt = new List<float>(); var mt = new List<double>(); var bc = new List<long>(); var sp = new List<long>(); var tc = new List<long>();
+                // at 120 kt (62 m/s) along the leg, as a helicopter would fly it
+                var dir = (leg.b - leg.a).normalized; float flown = 0;
                 for (int i = 0; i < N + 20; i++)
                 {
-                    var k = i / (float)(N + 20);
-                    var p = Vector2.Lerp(leg.a, leg.b, k);
-                    var ahead = Vector2.Lerp(leg.a, leg.b, k + 0.05f);
+                    flown += 62f * Mathf.Min(Time.unscaledDeltaTime, 0.1f);
+                    var p = leg.a + dir * flown;
+                    var ahead = p + dir * 300;
                     cam.transform.position = At(p.x, p.y, leg.agl);
                     cam.transform.LookAt(At(ahead.x, ahead.y, leg.agl * 0.7));
                     yield return null;
@@ -87,14 +92,15 @@ namespace Rotorcraft.Preview.Tests
                     if (i < 20) continue;                          // let the terrain settle into the new view
                     if (FrameTimingManager.GetLatestTimings(1, timings) > 0 && timings[0].gpuFrameTime > 0) gpu.Add(timings[0].gpuFrameTime);
                     dt.Add(Time.unscaledDeltaTime * 1000);
+                    gc.Add(gcAlloc.LastValue);
                     mt.Add(main.LastValue / 1e6); bc.Add(batches.LastValue); sp.Add(setPass.LastValue); tc.Add(tris.LastValue);
                 }
                 dt.Sort(); all.AddRange(dt);
                 Debug.Log($"benchmark leg done: {leg.name}");
-                sb.AppendLine($"{leg.name,-14} frame {dt.Average():F1} ms ({1000 / dt.Average():F0} fps, worst 5% {dt[(int)(dt.Count * 0.95)]:F1} ms)  main {mt.Average():F1} ms  gpu {(gpu.Count > 0 ? gpu.Average().ToString("F1") : "?")} ms  batches {bc.Average():F0}  setpass {sp.Average():F0}  tris {tc.Average() / 1e6:F1} M");
+                sb.AppendLine($"{leg.name,-14} frame {dt.Average():F1} ms ({1000 / dt.Average():F0} fps, worst 5% {dt[(int)(dt.Count * 0.95)]:F1} ms)  main {mt.Average():F1} ms  gpu {(gpu.Count > 0 ? gpu.Average().ToString("F1") : "?")} ms  batches {bc.Average():F0}  setpass {sp.Average():F0}  tris {tc.Average() / 1e6:F1} M  gc {gc.Average() / 1024:F0} KB/frame, {System.GC.CollectionCount(0) - gc0} collections, {dt.Count(x => x > 25)} frames over 25 ms");
             }
             sb.AppendLine($"overall        frame {all.Average():F1} ms ({1000 / all.Average():F0} fps)");
-            main.Dispose(); batches.Dispose(); setPass.Dispose(); tris.Dispose();
+            main.Dispose(); batches.Dispose(); setPass.Dispose(); tris.Dispose(); gcAlloc.Dispose();
             cam.targetTexture = null; rt.Release();
             Directory.CreateDirectory("Logs");
             File.AppendAllText("Logs/perf.txt", sb + "\n");
