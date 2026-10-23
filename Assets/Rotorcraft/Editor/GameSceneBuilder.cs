@@ -239,7 +239,8 @@ namespace Rotorcraft.EditorTools
         {
             Common();
             PlayerSettings.WebGL.template = "PROJECT:Rotorcraft";   // Assets/WebGLTemplates/Rotorcraft: full window, the game's own loading page
-            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
+            EditorUserBuildSettings.overrideMaxTextureSize = 512;   // a much smaller download (under 30 MB); terrain detail tiles anyway
             PlayerSettings.WebGL.decompressionFallback = true;   // works on any static host, Netlify included
             PlayerSettings.WebGL.memorySize = 1024;
             PlayerSettings.WebGL.initialMemorySize = 512;
@@ -249,6 +250,7 @@ namespace Rotorcraft.EditorTools
             PlayerSettings.runInBackground = true;
             var out_ = Path.GetFullPath("../Builds/Web");
             var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = out_, target = BuildTarget.WebGL, options = BuildOptions.None });
+            EditorUserBuildSettings.overrideMaxTextureSize = 0;
             Report(r, "Web");
         }
     }
