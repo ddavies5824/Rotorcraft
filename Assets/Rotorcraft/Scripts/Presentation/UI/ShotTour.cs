@@ -48,7 +48,7 @@ namespace Rotorcraft.Presentation.UI
             var terrains = Terrain.activeTerrains;
             Debug.Log($"Tour: {terrains.Length} terrains; first: {(terrains.Length > 0 ? $"{terrains[0].materialTemplate?.shader?.name} supported={terrains[0].materialTemplate?.shader?.isSupported} instanced={terrains[0].drawInstanced} enabled={terrains[0].enabled} pos={terrains[0].transform.position}" : "-")}");
             yield return Shot("flight-chase");
-            f.heli.SetCamera(CameraMode.Cockpit); yield return Wait(1); yield return Shot("flight-cockpit");
+            f.ShowForTour(); f.heli.SetCamera(CameraMode.Cockpit); yield return Wait(1); yield return Shot("flight-cockpit");
             f.ShowForTour(panel: true); yield return Wait(1); yield return Shot("flight-panel");
             f.ShowForTour(map: true); yield return Wait(1.5f); yield return Shot("flight-map");
             f.ShowForTour(tablet: true); yield return Wait(1); yield return Shot("flight-tablet");
@@ -62,6 +62,20 @@ namespace Rotorcraft.Presentation.UI
             while (!f.Active || f.Runtime == null) yield return null;
             yield return Wait(4);
             yield return Shot("preflight-walkround");
+            f.SkipForTour(); f.heli.SetCamera(CameraMode.Cockpit); yield return Wait(1); yield return Shot("cockpit-kestrel");
+            f.Finish(FlightEnd.Aborted); yield return Wait(1);
+
+            // every type: the cockpit with its live instruments, and from outside
+            foreach (var id in new[] { "guardian", "nightjar" })
+            {
+                var ac = Aircraft.Get(id);
+                app.FlyFreeplay(new FreeplayConfig { aircraftId = id, kit = Loadout.DefaultKit(ac), fuelKg = ac.fuelCapacity * 0.6, pace = FreeplayPace.Off });
+                while (!f.Active || f.Runtime == null) yield return null;
+                yield return Wait(3);
+                f.ShowForTour(); f.heli.SetCamera(CameraMode.Cockpit); yield return Wait(1); yield return Shot("cockpit-" + id);
+                f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitYaw = 35; f.cam.orbitPitch = 8; yield return Wait(1); yield return Shot("outside-" + id);
+                f.Finish(FlightEnd.Complete); yield return Wait(1);
+            }
             Debug.Log($"Shot tour done: {n} pictures in {folder}");
             Application.Quit();
         }

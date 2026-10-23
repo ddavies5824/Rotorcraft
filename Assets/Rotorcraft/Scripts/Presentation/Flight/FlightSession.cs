@@ -52,6 +52,7 @@ namespace Rotorcraft.Presentation
 
         GameApp App => GameApp.Instance;
         ModelAnimator animator;
+        CockpitDisplays displays;
         double fpT;
         int fpVer = -1; double fpSyncT;
         float? crashAt;
@@ -64,6 +65,7 @@ namespace Rotorcraft.Presentation
         {
             animator = heli.GetComponent<ModelAnimator>() ?? heli.gameObject.AddComponent<ModelAnimator>();
             animator.heli = heli;
+            displays = heli.GetComponent<CockpitDisplays>() ?? heli.gameObject.AddComponent<CockpitDisplays>();
             heli.ActionFired += OnAction;
             heli.Stepped += OnStepped;
             heli.managed = true;
@@ -116,6 +118,7 @@ namespace Rotorcraft.Presentation
             // the aircraft and its model
             heli.SetAircraft(s.ac, library != null ? library.ModelFor(s.ac.id) : null);
             animator.Bind(heli.model, s.ac.id);
+            displays.Bind(heli.model, s.ac, app.document.panelSettings != null ? app.document.panelSettings.themeStyleSheet : null, heli.Eye);
             var m = s.mission;
             Runtime = new MissionRuntime(m, s.ac, s.fuelKg, s.preflight ? false : s.checklistComplete, s.tod, new MissionOptions { weatherId = s.weatherId, instrumentRated = s.instrumentRated });
             var site = WorldMap.SiteById(m.startSiteId);
@@ -248,10 +251,12 @@ namespace Rotorcraft.Presentation
             hudDirty = true;
         }
 
+        public void SkipForTour() { SkipChecks(); hint = null; showPanel = false; showSwitches = false; hudDirty = true; }
+
         /// <summary>Open one of the panels (for the screenshot tour).</summary>
         public void ShowForTour(bool panel = false, bool map = false, bool tablet = false)
         {
-            showPanel = panel; showMap = map; showTablet = tablet && Director != null; hudDirty = true;
+            showPanel = panel; showMap = map; showTablet = tablet && Director != null; hint = null; hudDirty = true;
         }
 
         public void TogglePause(bool? force = null)

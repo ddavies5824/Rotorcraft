@@ -46,6 +46,11 @@ namespace Rotorcraft.Presentation
             Clear();
             Ground.Current = new WorldGround();
             var t0 = Time.realtimeSinceStartup;
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // the browser has one thread and less memory: fewer trees, no grass blades
+            treeBudget = Mathf.Min(treeBudget, 35000);
+            grass = false;
+#endif
             progress?.Invoke(0.05f, "Shaping the hills and the firth");
             yield return null;
             KinlochTerrain.Build(transform, terrainMaterial, surfaceLayers, grass ? GrassBlades.Prototypes(GrassBlades.Texture()) : null);

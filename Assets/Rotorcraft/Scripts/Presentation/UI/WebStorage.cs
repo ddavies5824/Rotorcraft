@@ -7,9 +7,9 @@ namespace Rotorcraft.Presentation.UI
     public static class WebStorage
     {
 #if UNITY_WEBGL && !UNITY_EDITOR
-        [DllImport("__Internal")] static extern void RcSyncFs();
         [DllImport("__Internal")] static extern void RcGoogleToken(string clientId, string scopes, string gameObject);
-        public static void Flush() => RcSyncFs();
+        // the page starts the player with autoSyncPersistentDataPath, so saves reach IndexedDB by themselves
+        public static void Flush() { }
         /// <summary>Ask Google for an access token; the answer arrives as OnWebToken(json) on the named object.</summary>
         public static void GoogleToken(string clientId, string scopes, string gameObject) => RcGoogleToken(clientId, scopes, gameObject);
 #else

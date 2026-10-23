@@ -134,4 +134,6 @@ Values pasted this way are saved on that computer or browser only.
 4. Netlify gives you an address like `https://random-name-123.netlify.app`. To change it, go to **Site configuration › Change site name**. Put that address in the Google web client and in Firebase (Parts 1.6 and 2.3).
 5. To update later, open the site › **Deploys** and drag the new zip onto the page.
 
-The zip includes a `_headers` file so Netlify serves the compressed game files correctly. The game needs a desktop browser with WebGL 2: Chrome, Edge or Firefox. Phones and tablets are not supported, and a mouse or a joystick is recommended.
+No server settings are needed: the game files decompress themselves in the browser, so any static host works.
+
+The game needs a desktop browser with WebGL 2: Chrome, Edge or Firefox. Phones and tablets are not supported, and a mouse or a joystick is recommended. The first start downloads about 70 MB; later visits load from the browser cache. The first flight builds the world in the browser, which takes longer than on Windows, so the loading screen can sit for a minute or two. Progress is saved in the browser (and in Google Drive when signed in).

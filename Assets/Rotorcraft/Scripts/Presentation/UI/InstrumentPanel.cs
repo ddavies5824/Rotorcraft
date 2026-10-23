@@ -78,21 +78,49 @@ namespace Rotorcraft.Presentation.UI
             return ang;
         }
 
+        /// <summary>Which gauges to draw and where (cells as fractions of the element); null = the standard 5 × 2 panel.</summary>
+        public (Gauges gauge, Rect cell)[] layout;
+        /// <summary>A glass display: dark screen, a page title, gauges drawn smaller with their own frames.</summary>
+        public string screenTitle;
+
+        public enum Gauges { Airspeed, Attitude, Altimeter, VerticalSpeed, Compass, Tachometer, Torque, Fuel, EngineTemp, Oil }
+        static readonly (Gauges g, int i, int j)[] STANDARD = { (Gauges.Airspeed, 0, 0), (Gauges.Attitude, 1, 0), (Gauges.Altimeter, 2, 0), (Gauges.VerticalSpeed, 3, 0), (Gauges.Compass, 0, 1), (Gauges.Tachometer, 1, 1), (Gauges.Torque, 2, 1), (Gauges.Fuel, 3, 1), (Gauges.EngineTemp, 4, 0), (Gauges.Oil, 4, 1) };
+
         void Draw(MeshGenerationContext m)
         {
             if (s == null || ac == null) return;
             var rect = contentRect;
             float w = rect.width, h = rect.height;
             if (w < 50 || h < 30) return;
+            if (screenTitle != null)
+            {
+                var p = m.painter2D;
+                p.fillColor = Hex(0x05080a); p.BeginPath(); p.MoveTo(Vector2.zero); p.LineTo(new Vector2(w, 0)); p.LineTo(new Vector2(w, h)); p.LineTo(new Vector2(0, h)); p.ClosePath(); p.Fill();
+                Text(m, screenTitle, new Vector2(w / 2, h * 0.045f + 4), Mathf.Max(10, h * 0.05f), DIM);
+            }
+            if (layout == null)
+            {
+                const int cols = 5, rows = 2;
+                float cw = w / cols, rh = h / rows, r = Mathf.Min(cw, rh) * 0.42f;
+                foreach (var (g, i, j) in STANDARD) DrawGauge(m, g, new Vector2(cw * (i + 0.5f), rh * (j + 0.5f)), r);
+            }
+            else
+                foreach (var (g, cell) in layout)
+                {
+                    var cr = new Rect(cell.x * w, cell.y * h, cell.width * w, cell.height * h);
+                    DrawGauge(m, g, cr.center, Mathf.Min(cr.width, cr.height) * (screenTitle != null ? 0.40f : 0.455f));
+                }
+        }
+
+        void DrawGauge(MeshGenerationContext m, Gauges g, Vector2 c, float r)
+        {
             var o = s.@out;
             var p = m.painter2D;
-            const int cols = 5, rows = 2;
-            float cw = w / cols, rh = h / rows, r = Mathf.Min(cw, rh) * 0.42f;
-            Vector2 C(int i, int j) => new Vector2(cw * (i + 0.5f), rh * (j + 0.5f));
-
-            // 1. Airspeed
+            switch (g)
             {
-                var c = C(0, 0);
+            // 1. Airspeed
+            case Gauges.Airspeed:
+            {
                 Gauge(m, c, r, "KNOTS");
                 var max = Math.Ceiling(ac.vneKt / 20) * 20 + 20;
                 var ang = Dial(m, c, r, 0, max, -2.6f, 2.6f, 10, 20, v => v.ToString("0"));
@@ -100,10 +128,10 @@ namespace Rotorcraft.Presentation.UI
                 DialArc(p, c, r * 0.93f, ang(ac.vneKt * 0.9), ang(ac.vneKt), AMBER, 4);
                 Line(p, P(c, ang(ac.vneKt), r * 0.8f), P(c, ang(ac.vneKt), r * 0.98f), RED, 3);
                 Needle(p, c, r * 0.85f, ang(Math.Min(max, o.iasKt)), TICK);
-            }
+            } break;
             // 2. Attitude
+            case Gauges.Attitude:
             {
-                var c = C(1, 0);
                 Disc(p, c, r + 4, BEZEL);
                 var roll = (float)s.phi; var pitchPx = (float)(s.theta * SimMath.RAD) * (r / 30);
                 // the horizon: a half-disc of sky above the tilted line, earth below (clipped to the face)
@@ -133,20 +161,20 @@ namespace Rotorcraft.Presentation.UI
                 p.BeginPath(); p.MoveTo(c + new Vector2(-r * 0.55f, 0)); p.LineTo(c + new Vector2(-r * 0.18f, 0)); p.LineTo(c + new Vector2(-r * 0.1f, r * 0.1f)); p.Stroke();
                 p.BeginPath(); p.MoveTo(c + new Vector2(r * 0.55f, 0)); p.LineTo(c + new Vector2(r * 0.18f, 0)); p.LineTo(c + new Vector2(r * 0.1f, r * 0.1f)); p.Stroke();
                 Disc(p, c, 3, AMBER);
-            }
+            } break;
             // 3. Altimeter (1,000 ft a turn of the long needle, 10,000 the short)
+            case Gauges.Altimeter:
             {
-                var c = C(2, 0);
                 Gauge(m, c, r, "ALT FT");
                 Dial(m, c, r, 0, 1000, 0, Mathf.PI * 2 * 0.999f, 100, 100, v => (v / 100 % 10).ToString("0"));
                 var alt = Math.Max(0, o.altFt);
                 Text(m, alt.ToString("0").PadLeft(4), c + new Vector2(0, -r * 0.28f), r * 0.2f, TICK);
                 Needle(p, c, r * 0.55f, (float)(alt % 10000 / 10000 * Math.PI * 2), TICK, 5);
                 Needle(p, c, r * 0.85f, (float)(alt % 1000 / 1000 * Math.PI * 2), TICK, 2.5f);
-            }
+            } break;
             // 4. Vertical speed (±2,000 ft/min)
+            case Gauges.VerticalSpeed:
             {
-                var c = C(3, 0);
                 Gauge(m, c, r, "VS ×100");
                 float Ang(double v) => -Mathf.PI / 2 + (float)(Math.Max(-2000, Math.Min(2000, v)) / 2000) * Mathf.PI * 0.85f;
                 for (var v = -2000; v <= 2000; v += 500)
@@ -156,10 +184,10 @@ namespace Rotorcraft.Presentation.UI
                     if (v % 1000 == 0) Text(m, Math.Abs(v / 100).ToString(), P(c, a, r * 0.62f), r * 0.17f, TICK);
                 }
                 Needle(p, c, r * 0.85f, Ang(o.vsFpm), o.vsFpm < -600 && o.aglM < 30 ? AMBER : TICK);
-            }
+            } break;
             // 5. Compass card with the target bug (an HSI in the twins)
+            case Gauges.Compass:
             {
-                var c = C(0, 1);
                 Gauge(m, c, r, "");
                 var hd = (float)(o.hdg * Mathf.Deg2Rad);
                 for (int a = 0; a < 360; a += 10)
@@ -196,39 +224,39 @@ namespace Rotorcraft.Presentation.UI
                 p.fillColor = AMBER; p.BeginPath(); p.MoveTo(c + new Vector2(0, -r * 0.98f)); p.LineTo(c + new Vector2(-6, -r * 1.12f)); p.LineTo(c + new Vector2(6, -r * 1.12f)); p.ClosePath(); p.Fill();
                 Line(p, c + new Vector2(0, -r * 0.3f), c + new Vector2(0, r * 0.3f), AMBER, 2);
                 Line(p, c + new Vector2(-r * 0.2f, -r * 0.05f), c + new Vector2(r * 0.2f, -r * 0.05f), AMBER, 2);
-            }
+            } break;
             // 6. Dual tachometer: rotor (needle) and engine (dimmer)
+            case Gauges.Tachometer:
             {
-                var c = C(1, 1);
                 Gauge(m, c, r, "RPM %");
                 var ang = Dial(m, c, r, 0, 120, -2.4f, 2.4f, 10, 20, v => v.ToString("0"));
                 DialArc(p, c, r * 0.93f, ang(ac.rpmMin), ang(ac.rpmMax), GREEN, 5);
                 DialArc(p, c, r * 0.93f, ang(60), ang(ac.rpmMin), AMBER, 5);
                 Needle(p, c, r * 0.7f, ang(Math.Min(120, o.engineRpm)), DIM, 3);
                 Needle(p, c, r * 0.88f, ang(Math.Min(120, o.rpm)), o.rpm < ac.rpmMin && s.engine != EngineState.Off ? RED : TICK, 3);
-            }
+            } break;
             // 7. Torque
+            case Gauges.Torque:
             {
-                var c = C(2, 1);
                 Gauge(m, c, r, "TQ %");
                 var ang = Dial(m, c, r, 0, 120, -2.4f, 2.4f, 10, 20, v => v.ToString("0"));
                 DialArc(p, c, r * 0.93f, ang(0), ang(ac.torqueMcp), GREEN, 5);
                 DialArc(p, c, r * 0.93f, ang(ac.torqueMcp), ang(ac.torqueMax), AMBER, 5);
                 Needle(p, c, r * 0.88f, ang(Math.Min(120, o.torque)), o.torque > ac.torqueMcp ? AMBER : TICK);
                 Text(m, $"hover OGE {o.hoverPowerOGE:0}%", c + new Vector2(0, r * 0.66f), r * 0.15f, DIM);
-            }
+            } break;
             // 8. Fuel
+            case Gauges.Fuel:
             {
-                var c = C(3, 1);
                 Gauge(m, c, r, "FUEL KG");
                 var ang = Dial(m, c, r, 0, 1, -2.0f, 2.0f, 0.25, 0.5, v => v == 0 ? "E" : v == 1 ? "F" : "½");
                 var frac = s.fuel / ac.fuelCapacity;
                 Needle(p, c, r * 0.86f, ang(frac), frac < 0.15 ? AMBER : TICK);
                 Text(m, s.fuel.ToString(ac.fuelCapacity < 200 ? "F1" : "F0"), c + new Vector2(0, r * 0.22f), r * 0.2f, TICK);
-            }
+            } break;
             // 9. Engine temperature (CHT for a piston, TOT for a turbine)
+            case Gauges.EngineTemp:
             {
-                var c = C(4, 0);
                 var lim = FlightModel.TempLimitsOf(ac);
                 Gauge(m, c, r, $"{lim.label} °C");
                 double lo = ac.engines == 1 ? 0 : 200, hi = ac.engines == 1 ? 300 : 900;
@@ -237,16 +265,17 @@ namespace Rotorcraft.Presentation.UI
                 DialArc(p, c, r * 0.93f, ang(lim.caution), ang(lim.max), AMBER, 5);
                 Line(p, P(c, ang(lim.max), r * 0.8f), P(c, ang(lim.max), r * 0.98f), RED, 3);
                 Needle(p, c, r * 0.86f, ang(Math.Max(lo, Math.Min(hi, s.engineTemp))), s.engineTemp > lim.max ? RED : s.engineTemp > lim.caution ? AMBER : TICK);
-            }
+            } break;
             // 10. Oil pressure and throttle position
+            case Gauges.Oil:
             {
-                var c = C(4, 1);
                 Gauge(m, c, r, "OIL %");
                 var ang = Dial(m, c, r, 0, 120, -2.3f, 2.3f, 10, 40, v => v.ToString("0"));
                 DialArc(p, c, r * 0.93f, ang(25), ang(40), AMBER, 5);
                 DialArc(p, c, r * 0.93f, ang(40), ang(110), GREEN, 5);
                 Needle(p, c, r * 0.86f, ang(Math.Min(120, o.oilPress)), o.oilPress < 25 && s.engine == EngineState.Running ? RED : TICK);
                 Text(m, $"THR {s.sys.throttle * 100:0}%{(s.sys.governor ? "" : " GOV OFF")}", c + new Vector2(0, r * 0.66f), r * 0.15f, DIM);
+            } break;
             }
         }
     }

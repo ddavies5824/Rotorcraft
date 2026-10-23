@@ -188,6 +188,7 @@ namespace Rotorcraft.EditorTools
             Keep("Universal Render Pipeline/Lit", "Lit emissive", "_EMISSION");
             Keep("Universal Render Pipeline/Lit", "Lit transparent", "_SURFACE_TYPE_TRANSPARENT");
             Keep("Universal Render Pipeline/Unlit", "Unlit");
+            Keep("Universal Render Pipeline/Unlit", "Unlit cutout", "_ALPHATEST_ON");
             Keep("Rotorcraft/Light Points", "Light points");
             // the terrain and the instanced trees are made at run time, so the build cannot see their instancing
             // variants in use: keep them all
@@ -237,6 +238,7 @@ namespace Rotorcraft.EditorTools
         public static void BuildWeb()
         {
             Common();
+            PlayerSettings.WebGL.template = "PROJECT:Rotorcraft";   // Assets/WebGLTemplates/Rotorcraft: full window, the game's own loading page
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
             PlayerSettings.WebGL.decompressionFallback = true;   // works on any static host, Netlify included
             PlayerSettings.WebGL.memorySize = 1024;

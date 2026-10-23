@@ -273,6 +273,10 @@ namespace Rotorcraft.Presentation
                 }
                 PlaceHotspots();
             }
+            {
+                var nt = m.NavTargetNow();
+                displays.Set(s, ac, nt != null ? WorldMap.BearingDistance(s.pos.x, s.pos.z, nt.x, nt.z).brg : (double?)null, HsiFor(), heli.Camera == CameraMode.Cockpit);
+            }
             if (showMap && now - mapT > 0.25f)
             {
                 mapT = now;

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rotorcraft · Helicopter Flight Simulator</title>
+  <link rel="icon" href="logo-192.jpg">
+  <style>
+    html, body { margin: 0; height: 100%; background: #11181d; overflow: hidden; color: #e6ecef; font-family: system-ui, "Segoe UI", sans-serif; }
+    #game { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; outline: none; }
+    #loader { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+              background: radial-gradient(circle at 50% 42%, #1f2b33 0, #11181d 60%); transition: opacity .6s; }
+    #loader img { width: 200px; height: 200px; border-radius: 50%; box-shadow: 0 0 60px rgba(127,182,217,.25); }
+    #loader h1 { margin: 0; font-size: 34px; letter-spacing: 6px; font-weight: 700; }
+    #loader p { margin: 0; color: #93a4ae; font-size: 14px; }
+    #bar { width: 340px; height: 4px; background: #2c3a44; border-radius: 2px; overflow: hidden; }
+    #fill { width: 0; height: 100%; background: #e6ecef; transition: width .2s; }
+    #warn { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: #f2b53c; font-size: 13px; display: none; text-align: center; }
+  </style>
+</head>
+<body>
+  <canvas id="game" tabindex="-1"></canvas>
+  <div id="loader">
+    <img src="logo-192.jpg" alt="">
+    <h1>ROTORCRAFT</h1>
+    <p id="what">Loading the simulator…</p>
+    <div id="bar"><div id="fill"></div></div>
+    <p>Best with a mouse or a joystick, in Chrome, Edge or Firefox on a desktop computer.</p>
+  </div>
+  <div id="warn"></div>
+  <script>
+    var canvas = document.getElementById('game');
+    var warn = function (m) { var w = document.getElementById('warn'); w.textContent = m; w.style.display = 'block'; };
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) warn('Rotorcraft is made for desktop computers: on a phone or tablet it may not run well.');
+    var config = {
+      dataUrl: "Build/{{{ DATA_FILENAME }}}",
+      frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+      codeUrl: "Build/{{{ CODE_FILENAME }}}",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+      productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+      productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+      autoSyncPersistentDataPath: true,
+      matchWebGLToCanvasSize: true,
+      showBanner: function (msg, type) { if (type === 'error') warn(msg); },
+    };
+    var script = document.createElement('script');
+    script.src = "Build/{{{ LOADER_FILENAME }}}";
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (p) {
+        document.getElementById('fill').style.width = (p * 100) + '%';
+        document.getElementById('what').textContent = p < 0.9 ? 'Loading the simulator… ' + Math.round(p * 100) + '%' : 'Starting…';
+      }).then(function () {
+        var l = document.getElementById('loader'); l.style.opacity = 0; setTimeout(function () { l.remove(); }, 700);
+        canvas.focus();
+      }).catch(function (e) { warn('Rotorcraft could not start: ' + e); });
+    };
+    document.body.appendChild(script);
+    canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });   // right-drag looks round in the cockpit
+  </script>
+</body>
+</html>

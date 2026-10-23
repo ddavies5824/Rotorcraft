@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-build",
+      "runtimeExecutable": "F:\\Blender\\5.2\\python\\bin\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8000", "--directory", "F:\\Rotorcraft\\Builds\\Web"],
+      "port": 8000
+    }
+  ]
+}
