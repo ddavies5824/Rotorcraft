@@ -37,7 +37,7 @@ Blender gets them turned so the nose points along +Y and up is +Z.
 import math, os, sys, json, struct, time
 
 VERSION = "rotorcraft_models.py 3.4"
-BUILD = ["northstar", "guardian", "nightjar"]   # everything
+BUILD = os.environ.get("RC_BUILD", "kestrel,northstar,guardian,nightjar").split(",")   # set RC_BUILD to build fewer
 
 # ============================================================================ materials
 # key: (r, g, b, gloss, livery slot, emissive)   slot 0 fixed colour; 1 body; 2 stripe; 3 tail.
@@ -1020,7 +1020,7 @@ def build_cockpit(m, H):
     o = m.new("Cabin lining", C)
     def keep(p):
         x, y, z = p
-        if y < waist(z) - 0.02 and not (z < -1.0 and y > 1.0 and abs(x) > 0.12): return "floor" if y < 0.95 else "trim"
+        if y < waist(z) - 0.02 and not (z < -1.0 and y > 1.0 and abs(x) > 0.12): return "floor" if y < 0.95 and z > -0.9 else "trim"   # one colour where the chin glass shows it
         if y > 1.98 and z > -0.3: return "trim"
         return None
     surface(o, 72, 56, lambda u, v: H.P(lerp(-1.42, 0.34, u), v * 2 * math.pi, 0.985), lambda c, n, u, v: keep(c), inward=True)
@@ -2916,8 +2916,8 @@ def nj_exterior(m, H):
     ellipsoid(m, P, "Tail light", (0, 2.02, 7.3), (0.025, 0.03, 0.03), "lens", 12, 6)
     cyl(m, P, "Landing light", (0, 0.72, -3.15), (0, 0.66, -3.25), 0.09, 0.085, "frame", 20)
     cyl(m, P, "Landing light lens", (0, 0.66, -3.25), (0, 0.655, -3.26), 0.08, 0.075, "lens", 20)
-    tube(m, P, "Pitot", [(0.3, 1.9, -3.6), (0.32, 1.95, -3.8), (0.32, 1.95, -3.98)], 0.01, "chrome", 8)
-    tube(m, P, "Pitot", [(-0.3, 1.9, -3.6), (-0.32, 1.95, -3.8), (-0.32, 1.95, -3.98)], 0.01, "chrome", 8)
+    for sx in (1, -1):   # pitot probes out of the nose below the windscreen (they start inside the skin)
+        tube(m, P, "Pitot", [(sx * 0.22, 1.12, -3.12), (sx * 0.25, 1.14, -3.38), (sx * 0.26, 1.15, -3.56)], 0.011, "chrome", 8)
     box(m, P, "Roof aerial", (0.2, 2.2, -2.2), (0.012, 0.14, 0.12), "frame", bevel=0.004)
     box(m, P, "Belly aerial", (0.25, 0.6, 0.8), (0.012, 0.12, 0.12), "frame", bevel=0.004)
     tube(m, P, "Wire cutter (upper)", [(0, 2.13, -2.6), (0, 2.32, -2.7), (0, 2.42, -2.65)], 0.015, "darkmetal", 6)
@@ -2972,7 +2972,7 @@ def nj_interior(m):
     for i in range(6):
         for j in range(4): Fo.toggle(-0.17 + i * 0.068, -0.2 + j * 0.13)
     for sx in (-1, 1):
-        nj_seat(m, I, sx * 0.42, -1.95, -1)
+        nj_seat(m, I, sx * 0.42, -1.95, -1, back=0.66)   # the cabin roof is low over the pilots
         cyl(m, I, "Collective housing", (sx * 0.42 - 0.3, NJ_FLOOR, -1.85), (sx * 0.42 - 0.3, NJ_FLOOR + 0.12, -1.85), 0.06, 0.05, "panel", 12)
     # ---- cabin: rear-facing seats behind the pilots, roof rails and lights, rear bulkhead fittings
     for sx in (-1, 1): nj_seat(m, I, sx * 0.45, -1.15, 1, mat="seat_ns", back=0.75)
@@ -3366,6 +3366,71 @@ def run_blender():
         except Exception: pass
         log("modifiers applied: %d export meshes" % sum(len(v) for v in finals.values()))
 
+        # ---- nothing inside pokes through the skin: every vertex of the cockpit, cabin and controls that lies
+        # outside the outer skin (hull, glazing, closed doors) or within a few millimetres of it is pulled back just
+        # inside it. Parts meant to be seen outside from the seat ("(view)") are left alone.
+        def fix_clipping():
+            if meta.get("library"): return
+            inner_parts = [p for p in finals if p in ("cockpit", "interior", "cockpit_only") or p.startswith("ctl_")]
+            ref = []
+            for p in ["body"] + [q for q in finals if q.startswith("door")]:
+                for ob in finals.get(p, []):
+                    me = ob.data
+                    if len(me.polygons) < 40: continue
+                    a = sum(f.area for f in me.polygons)
+                    if a < (1.2 if p == "body" else 0.3): continue
+                    if any(s in ob.name.lower() for s in ("skid", "tube", "strut", "step", "rail", "post", "frame", "line", "seam", "rivet", "fairing", "boom", "fin", "stabil", "cowl", "tank", "engine", "sponson", "pylon", "lining", "console", "panel", "tyre", "wheel", "exhaust", "seat")): continue
+                    ref.append(ob)
+            log("clipping reference skin: " + ", ".join(o.name for o in ref))
+            if not ref or not inner_parts: return
+            bm = bmesh.new(); spans = []
+            for ob in ref:
+                n0 = len(bm.faces)
+                tmp = ob.data.copy(); tmp.transform(Matrix.Translation(ob.location)); bm.from_mesh(tmp); bpy.data.meshes.remove(tmp)
+                bm.faces.ensure_lookup_table()
+                # which way do this mesh's faces point: away from its middle (outward) or towards it?
+                fs = bm.faces[n0:]
+                c = sum((f.calc_center_median() for f in fs), Vector()) / max(1, len(fs))
+                out = sum(1 for f in fs if f.normal.dot(f.calc_center_median() - c) > 0) / max(1, len(fs))
+                spans.append((n0, len(bm.faces), 1.0 if out >= 0.5 else -1.0))
+            bm.faces.ensure_lookup_table(); bm.normal_update()
+            tree = BVHTree.FromBMesh(bm)
+            sign = np.ones(len(bm.faces))
+            for a, b, s in spans: sign[a:b] = s
+            bm.free()
+            moved = {}
+            for p in inner_parts:
+                for ob in finals[p]:
+                    if "(view)" in ob.name: continue
+                    me = ob.data; off = Vector(ob.location); out = []
+                    for v in me.vertices:
+                        w = v.co + off
+                        hit = tree.find_nearest(w, 0.35)
+                        if hit[0] is None: continue
+                        loc, nrm, idx, dist = hit
+                        nrm = nrm * sign[idx]
+                        depth = (w - loc).dot(nrm)
+                        if depth > -0.006: out.append((v, loc, nrm, depth))
+                    if not out: continue
+                    lo = Vector((min(v.co.x for v in me.vertices), min(v.co.y for v in me.vertices), min(v.co.z for v in me.vertices)))
+                    hi = Vector((max(v.co.x for v in me.vertices), max(v.co.y for v in me.vertices), max(v.co.z for v in me.vertices)))
+                    if (hi - lo).length < 0.8 and len(out) > 0.25 * len(me.vertices):
+                        # a small fitting (headrest, locker, handle) that pokes through: move it in whole, unchanged
+                        nav = sum((o[2] for o in out), Vector()).normalized()
+                        push = max(o[3] for o in out) + 0.008
+                        for v in me.vertices: v.co -= nav * push
+                        moved[ob.name + " (moved %.0f mm)" % (push * 1000)] = len(out)
+                    else:
+                        for v, loc, nrm, depth in out: v.co = loc - nrm * 0.008 - off
+                        moved[ob.name] = len(out)
+                    me.update()
+            if moved:
+                top = sorted(moved.items(), key=lambda kv: -kv[1])[:8]
+                log("clipping fixed: %d vertices in %d objects (%s)" % (sum(moved.values()), len(moved), ", ".join("%s %d" % kv for kv in top)))
+        try: fix_clipping()
+        except Exception as e:
+            import traceback; log("clipping check failed:", repr(e)); log(traceback.format_exc())
+
         # ---- bake ambient occlusion per vertex with ray casts
         def smooth_over_edges(me, ao, iters):
             """Average each vertex with its neighbours a few times, so the bake reads as soft shading, not speckle."""
@@ -3392,10 +3457,14 @@ def run_blender():
             dirs.append((r * math.cos(a), r * math.sin(a), math.sqrt(max(0.0, 1 - u))))
         dirs = [tuple(float(x) for x in d) for d in dirs]
         groups = {"body": ["body"], "blades": ["blades"], "cockpit": [p for p in finals if p == "cockpit" or p.startswith("ctl_")]}
+        doors_parts = [p for p in finals if p.startswith("door")]
+        groups["body"] = ["body"] + doors_parts                      # doors and the skin round them shade alike
         for p in finals:
             if p.startswith("eq_"): groups[p] = [p, "body"]
+            if p.startswith("door"): groups[p] = [p, "body"]
         ao_vals = {}
         for part, objs in finals.items():
+            exterior = part == "body" or part.startswith("door") or part.startswith("eq_")   # painted outside: a gentler bake
             occ_parts = groups.get(part, ["cockpit"] + [p for p in finals if p.startswith("ctl_")] if part.startswith("ctl_") else [part])
             occ = bvh_for([o for p in occ_parts for o in finals.get(p, [])], ground=bool(meta.get("library")) and not part.startswith("platform"))
             maxd = meta.get("aoDistance") or (0.5 if part == "body" else 0.35 if part == "blades" else 0.45)
@@ -3418,7 +3487,7 @@ def run_blender():
                             w = t1 * d[0] + t2 * d[1] + nn * d[2]
                             hit = occ.ray_cast(p, w, maxd)
                             if hit[0] is not None: acc += 1.0 - hit[3] / maxd
-                        ao[i] = max(0.4, 1.0 - 0.9 * acc / NR)
+                        ao[i] = max(0.4, 1.0 - 0.9 * acc / NR) if not exterior else max(0.62, 1.0 - 0.6 * acc / NR)
                     ao = smooth_over_edges(me, ao, 3)
                 ao_vals[ob.name] = ao; done_v += n
             log("shading baked for %-18s %6d vertices in %.1fs" % (part, nv_total, time.time() - t0))
@@ -3578,6 +3647,177 @@ def run_blender():
                 except Exception: pass
         log("glTF materials: %d physically based (%d transparent)" % (len(used), len([k for k in used if k in GLTF_GLASS])))
 
+        # ---- texture bake (Cycles on the GPU): the outside of the aircraft gets real textures instead of flat
+        # material colours. Each exterior part (body, doors, rotors, fitted kit) is joined into one mesh, unwrapped,
+        # and baked: base colour, roughness and metalness, ambient occlusion and the world position of every texel.
+        # The bakes are combined here into a weathered finish (dirt in the recesses, mottling in the paint, rain
+        # streaks, exhaust soot, dust low down) and one material per part. Glass, lamps and the cockpit stay as
+        # they are (the live instruments need their named meshes). Set RC_BAKE=0 to skip.
+        def bake_exterior():
+            if os.environ.get("RC_BAKE", "1") == "0" or meta.get("library"): return
+            t_bake = time.time()
+            scene.render.engine = "CYCLES"
+            try:
+                prefs = bpy.context.preferences.addons["cycles"].preferences
+                for kind in ("OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"):
+                    try:
+                        prefs.compute_device_type = kind; prefs.get_devices()
+                        if any(d.type == kind for d in prefs.devices): break
+                    except Exception: continue
+                for d in prefs.devices: d.use = True
+                scene.cycles.device = "GPU"
+            except Exception as e: log("bake: GPU not available, using the CPU:", e)
+            scene.cycles.use_denoising = False
+            world = scene.world or bpy.data.worlds.new("World"); scene.world = world
+            world.light_settings.distance = 0.55                        # ambient occlusion reach (m)
+            ex_pts = []
+            for objs in finals.values():
+                for ob in objs:
+                    if "xhaust" in ob.name and len(ob.data.vertices):
+                        co = np.zeros(len(ob.data.vertices) * 3); ob.data.vertices.foreach_get("co", co); co = co.reshape(-1, 3) + np.array(ob.location)
+                        ex_pts.append(co.mean(axis=0))
+
+            def plain(ob):
+                keys = [ms["rc_key"] if ms and "rc_key" in ms else "paint" for ms in ob.data.materials]
+                return all(k not in GLTF_GLASS and not MATS[k][5] for k in keys)
+
+            def with_output(mt, make):
+                """Temporarily drive the material output from an emission shader (make sets its colour); returns an undo."""
+                nt = mt.node_tree; out = next(n for n in nt.nodes if n.type == "OUTPUT_MATERIAL")
+                old = [l.from_socket for l in nt.links if l.to_node == out and l.to_socket.name == "Surface"]
+                em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Strength"].default_value = 1.0
+                extra = make(nt, em) or []
+                nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+                def undo():
+                    for n in extra: nt.nodes.remove(n)
+                    nt.nodes.remove(em)
+                    if old: nt.links.new(old[0], out.inputs["Surface"])
+                return undo
+
+            def value_noise(p, scale, seed):
+                """Smooth lattice noise in 0..1 at world positions p (n x 3)."""
+                q = p * scale; i = np.floor(q).astype(np.int64); f = q - i; f = f * f * (3 - 2 * f)
+                def h(ix, iy, iz):
+                    v = (ix * 73856093) ^ (iy * 19349663) ^ (iz * 83492791) ^ (seed * 2654435761)
+                    v = (v ^ (v >> 13)) * 1274126177
+                    return ((v ^ (v >> 16)) & 0xFFFF) / 65535.0
+                r = 0.0
+                for dx in (0, 1):
+                    for dy in (0, 1):
+                        for dz in (0, 1):
+                            w = (f[:, 0] if dx else 1 - f[:, 0]) * (f[:, 1] if dy else 1 - f[:, 1]) * (f[:, 2] if dz else 1 - f[:, 2])
+                            r = r + w * h(i[:, 0] + dx, i[:, 1] + dy, i[:, 2] + dz)
+                return r
+
+            def to_srgb(c): return np.where(c <= 0.0031308, 12.92 * c, 1.055 * np.power(np.clip(c, 0, None), 1 / 2.4) - 0.055)
+
+            tex_dir = os.path.join(OUT, spec["file"] + "_textures"); os.makedirs(tex_dir, exist_ok=True)
+            for part in list(finals):
+                if not (part == "body" or part.startswith("door") or part in ("blades", "tail_rotor") or part.startswith("eq_")): continue
+                # small fittings (bolts, rivets, hinges) keep their plain colours: the texture is for real surfaces
+                objs = [ob for ob in finals[part] if plain(ob) and len(ob.data.polygons) and sum(p.area for p in ob.data.polygons) > 0.03]
+                if len(objs) == 0: continue
+                # join (keeps every material slot), then unwrap
+                rest = [o for o in finals[part] if o not in objs]
+                bpy.ops.object.select_all(action="DESELECT")
+                for ob in objs: ob.hide_set(False); ob.hide_render = False; ob.select_set(True)
+                bpy.context.view_layer.objects.active = objs[0]
+                if len(objs) > 1: bpy.ops.object.join()
+                J = bpy.context.view_layer.objects.active; J.name = part + " skin (game)"; J.data.name = J.name
+                finals[part] = rest + [J]
+                area = sum(p.area for p in J.data.polygons)
+                size = 4096 if part == "body" else 2048 if area > 12 else 1024 if area > 3 else 512
+                for uv in list(J.data.uv_layers): J.data.uv_layers.remove(uv)
+                J.data.uv_layers.new(name="UVMap")
+                bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
+                bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.002, area_weight=0.0, scale_to_bounds=False)
+                try: bpy.ops.uv.pack_islands(rotate=True, margin=0.0015)
+                except Exception as e: log("uv pack:", e)
+                bpy.ops.object.mode_set(mode="OBJECT")
+                bpy.ops.object.select_all(action="DESELECT"); J.select_set(True); bpy.context.view_layer.objects.active = J
+                slots = [ms for ms in J.data.materials if ms is not None]
+
+                def bake(kind, make, samples=1):
+                    img = bpy.data.images.new("%s %s" % (part, kind), size, size, alpha=False, float_buffer=True)
+                    img.colorspace_settings.name = "Non-Color"
+                    nodes, undos = [], []
+                    for mt in slots:
+                        tn = mt.node_tree.nodes.new("ShaderNodeTexImage"); tn.image = img; mt.node_tree.nodes.active = tn; nodes.append((mt, tn))
+                        if make: undos.append(with_output(mt, lambda nt, em, mt=mt: make(mt, nt, em)))
+                    scene.cycles.samples = samples
+                    bpy.ops.object.bake(type="EMIT" if make else kind, margin=6, use_clear=True)
+                    for u in undos: u()
+                    for mt, tn in nodes: mt.node_tree.nodes.remove(tn)
+                    px = np.empty(size * size * 4, dtype=np.float32); img.pixels.foreach_get(px)
+                    bpy.data.images.remove(img)
+                    return px.reshape(-1, 4)
+
+                def base_of(mt, nt, em):
+                    c = mat_preview_rgb(mt.get("rc_key", "paint")); em.inputs["Color"].default_value = (c[0], c[1], c[2], 1)
+                def mr_of(mt, nt, em):
+                    k = mt.get("rc_key", "paint"); r, g, b, gloss, slot, emis = MATS[k]
+                    met, rough, coat = GLTF_PBR.get(k, (0.0, max(0.15, min(0.95, 0.88 - 0.8 * gloss)), 0.0))
+                    em.inputs["Color"].default_value = (coat, rough, met, 1)
+                def pos_of(mt, nt, em):
+                    g = nt.nodes.new("ShaderNodeNewGeometry"); nt.links.new(g.outputs["Position"], em.inputs["Color"]); return [g]
+
+                base = bake("base", base_of)[:, :3]
+                mr = bake("mr", mr_of)[:, :3]
+                pos = bake("pos", pos_of)[:, :3]
+                ao = bake("AO", None, samples=48)[:, 0]
+                covered = np.abs(pos).sum(axis=1) > 1e-6
+
+                # weathering
+                n1 = value_noise(pos, 1.6, 1); n2 = value_noise(pos, 0.35, 2)
+                streak = value_noise(pos * np.array([1.0, 1.0, 0.08]), 9.0, 3)
+                met = mr[:, 2]; rough = mr[:, 1]; coat = mr[:, 0]
+                painted = ((met < 0.5) & (coat > 0.2)).astype(np.float32)
+                grime = np.clip(1 - ao, 0, 1)
+                col = base * (0.6 + 0.4 * np.power(np.clip(ao, 0, 1), 1.3))[:, None]
+                col = col * (1 - 0.35 * grime[:, None] * np.array([0.0, 0.05, 0.14]))           # warm brown dirt in the corners
+                col = col * (1 + 0.05 * (n1 - 0.5) + 0.05 * (n2 - 0.5))[:, None]
+                col = col * (1 - 0.07 * np.clip((streak - 0.62) / 0.25, 0, 1) * painted)[:, None]
+                col = col * (1 - 0.09 * np.clip((1.1 - pos[:, 2]) / 0.9, 0, 1))[:, None]           # road dust low down
+                soot = np.zeros(len(pos))
+                for e in ex_pts:
+                    t = np.clip(e[1] - pos[:, 1], 0, None)                                        # downstream: Blender -y is aft
+                    r = np.hypot(pos[:, 0] - e[0], pos[:, 2] - (e[2] - 0.12 * t))
+                    soot = np.maximum(soot, np.exp(-t / 2.2) * np.exp(-(r / (0.18 + 0.22 * t)) ** 2) * (t > 0.05))
+                col = col * (1 - 0.6 * soot)[:, None]
+                rough = np.clip(rough + 0.18 * grime + 0.08 * (n1 - 0.5) + 0.25 * soot, 0.04, 1)
+                col = np.clip(col, 0, 1)
+
+                img_c = bpy.data.images.new(part + " base colour", size, size, alpha=False)
+                img_c.colorspace_settings.name = "sRGB"
+                img_c.pixels.foreach_set(np.concatenate([to_srgb(col), np.ones((len(col), 1))], axis=1).astype(np.float32).ravel())
+                img_c.filepath_raw = os.path.join(tex_dir, "%s_%s_basecolor.png" % (spec["file"], part)); img_c.file_format = "PNG"; img_c.save()
+                img_m = bpy.data.images.new(part + " metal rough", size, size, alpha=False)
+                img_m.colorspace_settings.name = "Non-Color"
+                img_m.pixels.foreach_set(np.stack([np.ones(len(col)), rough, met, np.ones(len(col))], axis=1).astype(np.float32).ravel())
+                img_m.filepath_raw = os.path.join(tex_dir, "%s_%s_metalrough.png" % (spec["file"], part)); img_m.file_format = "PNG"; img_m.save()
+
+                # one material for the part, the baked textures in it
+                mt = bpy.data.materials.new(part + " skin"); mt.use_nodes = True; mt.use_backface_culling = True
+                nt = mt.node_tree; bsdf = nt.nodes.get("Principled BSDF")
+                tc = nt.nodes.new("ShaderNodeTexImage"); tc.image = img_c
+                tm = nt.nodes.new("ShaderNodeTexImage"); tm.image = img_m
+                sep = nt.nodes.new("ShaderNodeSeparateColor")
+                nt.links.new(tc.outputs["Color"], bsdf.inputs["Base Color"])
+                nt.links.new(tm.outputs["Color"], sep.inputs["Color"])
+                nt.links.new(sep.outputs["Green"], bsdf.inputs["Roughness"]); nt.links.new(sep.outputs["Blue"], bsdf.inputs["Metallic"])
+                J.data.materials.clear(); J.data.materials.append(mt)
+                for p in J.data.polygons: p.material_index = 0
+                # the shading is in the texture now: drop the per-vertex shading from this mesh
+                for name in ("AO", "Preview"):
+                    a = J.data.color_attributes.get(name)
+                    if a is not None: J.data.color_attributes.remove(a)
+                log("baked %-18s %d objects -> 1, %d px, %.0f%% of the texture used" % (part, len(objs), size, 100 * covered.mean()))
+            scene.render.engine = "BLENDER_WORKBENCH"
+            log("texture bake: %.0fs" % (time.time() - t_bake))
+        try: bake_exterior()
+        except Exception as e:
+            import traceback; log("texture bake failed:", repr(e)); log(traceback.format_exc())
+
         # ---- rig for the glTF: each part under an empty at the point it turns about (rotor hub, door hinge,
         # control pivot), so Unity and other programs can spin the rotor and swing the doors and controls. The
         # rest of the game's metadata goes along as glTF extras (rc_*), in game axes, which are the glTF axes too.
@@ -3641,13 +3881,39 @@ def run_blender():
             log("rig: %d parts under pivots" % len(finals))
             bpy.ops.object.select_all(action="DESELECT")
             for ob in [rig] + list(rig.children_recursive): ob.select_set(True)
-            glb = os.path.join(OUT, spec["file"] + ".glb")
+            # aircraft: .gltf with its textures as separate PNGs (Unity imports and compresses them as textures);
+            # the libraries (buildings, vehicles, trees) stay single .glb files
+            separate = not meta.get("library")
+            glb = os.path.join(OUT, spec["file"] + (".gltf" if separate else ".glb"))
+            fmt = dict(export_format="GLTF_SEPARATE", export_texture_dir=spec["file"] + "_textures") if separate else dict(export_format="GLB")
             try:   # Blender 4.2+: export the active colour layer (the baked shading) as COLOR_0
-                bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=True, export_extras=True, export_vertex_color="ACTIVE")
+                bpy.ops.export_scene.gltf(filepath=glb, use_selection=True, export_extras=True, export_vertex_color="ACTIVE", **fmt)
             except TypeError:
-                bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=True, export_extras=True)
-            log("wrote", spec["file"] + ".glb")
+                bpy.ops.export_scene.gltf(filepath=glb, use_selection=True, export_extras=True, **fmt)
+            log("wrote", os.path.basename(glb))
         except Exception as e: log("glTF export skipped:", repr(e))
+        # ---- lit previews of the finished, textured aircraft (EEVEE, a sun and a sky), for checking the look
+        if not meta.get("library") and os.environ.get("RC_BEAUTY", "1") != "0":
+            try:
+                for eng in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):
+                    try: scene.render.engine = eng; break
+                    except TypeError: continue
+                sun_d = bpy.data.lights.new("Sun", "SUN"); sun_d.energy = 4.0; sun_d.angle = math.radians(2)
+                sun = bpy.data.objects.new("Sun", sun_d); root.objects.link(sun); sun.rotation_euler = (math.radians(50), math.radians(10), math.radians(35))
+                w = scene.world; w.use_nodes = True
+                bg = w.node_tree.nodes.get("Background"); bg.inputs["Color"].default_value = (0.42, 0.55, 0.72, 1); bg.inputs["Strength"].default_value = 0.9
+                try: scene.view_settings.view_transform = "AgX"
+                except Exception: pass
+                for p_, c in fin_part_colls.items(): c.hide_render = p_ == "cockpit_only"
+                for name, loc, target, lens in shots:
+                    if name == "cockpit": continue
+                    cam.location = Vector(loc); cam_data.lens = lens
+                    cam.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
+                    scene.render.filepath = os.path.join(OUT, "%s_%s_lit.png" % (spec["file"], name))
+                    bpy.ops.render.render(write_still=True)
+                for p_, c in fin_part_colls.items(): c.hide_render = False
+                log("lit previews rendered")
+            except Exception as e: log("lit previews skipped:", repr(e))
         try:
             bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, spec["file"] + ".blend"), copy=True)
             log("wrote", spec["file"] + ".blend")

@@ -17,7 +17,7 @@ namespace Rotorcraft.EditorTools
         const string ScenePath = "Assets/Rotorcraft/Scenes/TestFlight.unity";
         const string MaterialDir = "Assets/Rotorcraft/Materials";
         const string SettingsDir = "Assets/Rotorcraft/Settings";
-        const string ModelPath = "Assets/Rotorcraft/Models/kestrel_k2.glb";
+        const string ModelPath = "Assets/Rotorcraft/Models/Aircraft/kestrel_k2.gltf";
         const string PreviewPath = "Logs/test-scene-preview.png";
 
         [MenuItem("Rotorcraft/Build test scene")]

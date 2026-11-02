@@ -49,7 +49,7 @@ namespace Rotorcraft.EditorTools
 
             // the Kestrel with Exercise 1
             var heli = new GameObject("Kestrel K2");
-            var model = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/kestrel_k2.glb"), heli.transform);
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/Aircraft/kestrel_k2.gltf"), heli.transform);
             model.name = "Model";
             model.transform.localRotation = Quaternion.Euler(0, 180, 0);
             var ctl = heli.AddComponent<HelicopterController>();
