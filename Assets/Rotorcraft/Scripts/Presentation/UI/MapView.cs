@@ -31,9 +31,14 @@ namespace Rotorcraft.Presentation.UI
     public sealed class MapView : VisualElement
     {
         public const double X0 = -9000, X1 = 6000, Z0 = -9400, Z1 = 5000;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        const int W = 600;   // the browser computes it on its one thread, a few rows a frame
+#else
         const int W = 1200;
+#endif
         static Texture2D terrain;
         static Task<Color32[]> building;
+        static IEnumerator<Color32[]> stepping;
         static int texH;
 
         public MapOptions Options = new MapOptions();
@@ -58,65 +63,80 @@ namespace Rotorcraft.Presentation.UI
             labelLayer.style.position = Position.Absolute; labelLayer.style.left = 0; labelLayer.style.top = 0; labelLayer.style.right = 0; labelLayer.style.bottom = 0;
             Add(labelLayer);
             RegisterCallback<GeometryChangedEvent>(_ => Redraw());
-            schedule.Execute(() => { if (terrain == null) TerrainTexture(); if (terrain != null && img.image != terrain) Redraw(); }).Every(300);
+            schedule.Execute(() => { if (terrain == null) TerrainTexture(); if (terrain != null && img.image != terrain) Redraw(); }).Every(30);
             Prepare();
         }
 
         /// <summary>Start computing the terrain picture (call early, e.g. at start-up).</summary>
         public static void Prepare()
         {
-            if (terrain != null || building != null) return;
+            if (terrain != null || building != null || stepping != null) return;
             texH = (int)Math.Round(W * (Z1 - Z0) / (X1 - X0));
             var h = texH;
-#if UNITY_WEBGL
-            building = Task.FromResult(Compute(h));   // no worker threads in the browser
+#if UNITY_WEBGL && !UNITY_EDITOR
+            stepping = Compute(h).GetEnumerator();   // no worker threads in the browser: stepped from TerrainTexture
 #else
-            building = Task.Run(() => Compute(h));
+            building = Task.Run(() => Compute(h).Last());
 #endif
         }
 
-        static Color32[] Compute(int h)
+        /// <summary>The picture, a block of rows at a time (null until the last step).</summary>
+        static IEnumerable<Color32[]> Compute(int h)
         {
+            var px = new Color32[W * h];
+            var hts = new double[W * h];
+            for (int j = 0; j < h; j++)
             {
-                var px = new Color32[W * h];
-                var hts = new double[W * h];
-                for (int j = 0; j < h; j++)
-                    for (int i = 0; i < W; i++)
-                        hts[j * W + i] = WTerrain.NaturalHeight(X0 + (i + 0.5) / W * (X1 - X0), Z0 + (j + 0.5) / h * (Z1 - Z0));
-                double cell = (X1 - X0) / W;
-                for (int j = 0; j < h; j++)
-                    for (int i = 0; i < W; i++)
-                    {
-                        double x = X0 + (i + 0.5) / W * (X1 - X0);
-                        var ht = hts[j * W + i];
-                        double r, g, b;
-                        if (ht <= 0.6 && x > 500) { r = 26; g = 52; b = 66; }
-                        else
-                        {
-                            var t = Math.Min(1, ht / 520);
-                            r = 70 + t * 80; g = 98 + t * 40; b = 62 + t * 50;
-                            var band = Math.Floor(ht / 61) % 2 == 0 ? 0 : 8; r += band; g += band; b += band;
-                            // hill shading: light from the north-west
-                            var hl = hts[j * W + Math.Max(0, i - 1)]; var hr = hts[j * W + Math.Min(W - 1, i + 1)];
-                            var hu = hts[Math.Max(0, j - 1) * W + i]; var hd = hts[Math.Min(h - 1, j + 1) * W + i];
-                            double dx = (hr - hl) / (2 * cell), dz = (hd - hu) / (2 * cell);
-                            var shade = Math.Max(-0.35, Math.Min(0.35, (dx + dz) * -0.9));
-                            r *= 1 + shade; g *= 1 + shade; b *= 1 + shade;
-                        }
-                        // texture rows run bottom-up; the map's z grows down the screen
-                        px[(h - 1 - j) * W + i] = new Color32((byte)Math.Max(0, Math.Min(255, r)), (byte)Math.Max(0, Math.Min(255, g)), (byte)Math.Max(0, Math.Min(255, b)), 255);
-                    }
-                return px;
+                for (int i = 0; i < W; i++)
+                    hts[j * W + i] = WTerrain.NaturalHeight(X0 + (i + 0.5) / W * (X1 - X0), Z0 + (j + 0.5) / h * (Z1 - Z0));
+                if (j % 8 == 7) yield return null;
             }
+            double cell = (X1 - X0) / W;
+            for (int j = 0; j < h; j++)
+                for (int i = 0; i < W; i++)
+                {
+                    double x = X0 + (i + 0.5) / W * (X1 - X0);
+                    var ht = hts[j * W + i];
+                    double r, g, b;
+                    if (ht <= 0.6 && x > 500) { r = 26; g = 52; b = 66; }
+                    else
+                    {
+                        var t = Math.Min(1, ht / 520);
+                        r = 70 + t * 80; g = 98 + t * 40; b = 62 + t * 50;
+                        var band = Math.Floor(ht / 61) % 2 == 0 ? 0 : 8; r += band; g += band; b += band;
+                        // hill shading: light from the north-west
+                        var hl = hts[j * W + Math.Max(0, i - 1)]; var hr = hts[j * W + Math.Min(W - 1, i + 1)];
+                        var hu = hts[Math.Max(0, j - 1) * W + i]; var hd = hts[Math.Min(h - 1, j + 1) * W + i];
+                        double dx = (hr - hl) / (2 * cell), dz = (hd - hu) / (2 * cell);
+                        var shade = Math.Max(-0.35, Math.Min(0.35, (dx + dz) * -0.9));
+                        r *= 1 + shade; g *= 1 + shade; b *= 1 + shade;
+                    }
+                    // texture rows run bottom-up; the map's z grows down the screen
+                    px[(h - 1 - j) * W + i] = new Color32((byte)Math.Max(0, Math.Min(255, r)), (byte)Math.Max(0, Math.Min(255, g)), (byte)Math.Max(0, Math.Min(255, b)), 255);
+                }
+            yield return px;
         }
 
         static Texture2D TerrainTexture()
         {
             if (terrain != null) return terrain;
-            if (building == null) Prepare();
-            if (!building.IsCompleted) return null;
+            if (building == null && stepping == null) Prepare();
+            Color32[] result = null;
+            if (stepping != null)
+            {
+                // a few milliseconds a frame, so the page keeps drawing
+                var until = Time.realtimeSinceStartup + 0.006f;
+                while (Time.realtimeSinceStartup < until && stepping.MoveNext()) if (stepping.Current != null) { result = stepping.Current; break; }
+                if (result == null) return null;
+                stepping = null;
+            }
+            else
+            {
+                if (!building.IsCompleted) return null;
+                result = building.Result;
+            }
             terrain = new Texture2D(W, texH, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear, name = "Map terrain" };
-            terrain.SetPixels32(building.Result);
+            terrain.SetPixels32(result);
             terrain.Apply(true);
             return terrain;
         }

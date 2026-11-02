@@ -53,15 +53,20 @@ namespace Rotorcraft.Presentation
 #endif
             progress?.Invoke(0.05f, "Shaping the hills and the firth");
             yield return null;
-            KinlochTerrain.Build(transform, terrainMaterial, surfaceLayers, grass ? GrassBlades.Prototypes(GrassBlades.Texture()) : null);
+            var steps = KinlochTerrain.BuildSteps(transform, terrainMaterial, surfaceLayers, grass ? GrassBlades.Prototypes(GrassBlades.Texture()) : null, new System.Collections.Generic.List<UnityEngine.Terrain>(),
+                f => progress?.Invoke(0.05f + 0.4f * f, "Shaping the hills and the firth"));
+            while (steps.MoveNext()) yield return steps.Current;
             progress?.Invoke(0.45f, "Planting the forests");
             yield return null;
+            Debug.Log($"World build: terrain done at {Time.realtimeSinceStartup - t0:F1} s");
             KinlochTrees.Plant(transform, trees, treeBudget);
             progress?.Invoke(0.65f, "Building Kinloch, the roads and the heliport");
             yield return null;
+            Debug.Log($"World build: trees done at {Time.realtimeSinceStartup - t0:F1} s");
             KinlochDressing.Build(transform, WorldMaterials.Make(), landmarks);
             progress?.Invoke(0.85f, "Switching on the lights");
             yield return null;
+            Debug.Log($"World build: buildings done at {Time.realtimeSinceStartup - t0:F1} s");
             WorldLightsRenderer.Build(transform);
             DynamicGI.UpdateEnvironment();
             if (reflectionProbe != null) reflectionProbe.RenderProbe();

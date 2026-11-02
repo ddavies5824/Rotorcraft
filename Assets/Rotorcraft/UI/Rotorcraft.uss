@@ -230,6 +230,8 @@ Label, .unity-label { white-space: normal; padding: 0; margin: 0; color: var(--f
 /* aircraft and kit pickers */
 .acpick { flex-direction: column; align-items: flex-start; padding: 13px 14px; border-radius: 8px; border-width: 1px; border-color: var(--line); background-color: var(--panel); margin: 0; -unity-text-align: upper-left; white-space: normal; }
 .acpick.on { border-color: var(--fg); background-color: var(--panel-2); }
+.acpick:hover { background-color: var(--panel-2); border-color: var(--muted); }
+.acpick:focus, .acpick:active, .acpick.on:hover { background-color: var(--panel-2); border-color: var(--fg); }
 .acpick-nm { -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/BarlowCondensed-Bold.ttf"); font-size: 18px; letter-spacing: 0.5px; }
 .kitrow { flex-direction: row; align-items: flex-start; padding: 8px 10px; border-width: 1px; border-color: var(--line); border-radius: 6px; background-color: var(--panel-2); margin: 0 0 6px 0; }
 .kitrow.na { opacity: 0.45; }

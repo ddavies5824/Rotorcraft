@@ -91,6 +91,7 @@ namespace Rotorcraft.Presentation
             cam.menuBackdrop = false;
             ShowWorld(false);   // the loading screen covers it; the world appears once built
             float t0 = Time.realtimeSinceStartup;
+            Debug.Log($"Flight loading: {s.ac.id}, world built: {world.Built}");
             yield return null; yield return null;   // the loading screen is on screen before the heavy work starts
             if (!world.Built)
             {
@@ -153,6 +154,7 @@ namespace Rotorcraft.Presentation
             for (int i = 0; i < 4; i++) yield return null;
             while (Time.realtimeSinceStartup - t0 < 2.2f) yield return null;
             load.Leave();
+            Debug.Log($"Flight ready: {s.ac.id} after {Time.realtimeSinceStartup - t0:F1} s");
             loading = false;
             app.FlightEnded();   // hides the menus (the flight is active)
         }

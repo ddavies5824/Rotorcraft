@@ -54,6 +54,9 @@ namespace Rotorcraft.Presentation.UI
             var shots = ShotTour.ArgFolder();
             Saves = new SaveManager(shots != null ? Path.Combine(shots, "saves") : null);
             if (shots != null) gameObject.AddComponent<ShotTour>().folder = shots;
+            // web test hook: ?autofly starts a freeplay flight straight away (checks the world builds in a browser)
+            if (Application.platform == RuntimePlatform.WebGLPlayer && Application.absoluteURL.Contains("autofly"))
+                Later(() => FlyFreeplay(new FreeplayConfig { aircraftId = "kestrel", kit = Loadout.DefaultKit(Aircraft.Get("kestrel")), fuelKg = 60, pace = FreeplayPace.Normal }));
             Settings = Saves.LoadSettings();
             Freeplay = Saves.LoadFreeplay();
             Company = Saves.LoadCompany();

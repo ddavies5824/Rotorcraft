@@ -67,6 +67,13 @@ namespace Rotorcraft.Presentation
             RoadNet.BridgeDeck();
         }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // the browser computes every tile on one thread: 8 m cells close in, 32 m further out
+        const int CORE_RES = 257, CORE_ALPHA = 128, OUTER_RES = 129, OUTER_ALPHA = 64;
+#else
+        const int CORE_RES = 1025, CORE_ALPHA = 512, OUTER_RES = 257, OUTER_ALPHA = 128;
+#endif
+
         static List<Tile> Plan()
         {
             var tiles = new List<Tile>();
@@ -79,13 +86,13 @@ namespace Rotorcraft.Presentation
             var c = CoreArea;
             for (int x = c.x0; x < c.x1; x += CORE)
                 for (int z = c.z0; z < c.z1; z += CORE)
-                    if (!AllSea(x, z, CORE)) tiles.Add(new Tile { x0 = x, z0 = z, size = CORE, res = 1025, alphaRes = 512 });
+                    if (!AllSea(x, z, CORE)) tiles.Add(new Tile { x0 = x, z0 = z, size = CORE, res = CORE_RES, alphaRes = CORE_ALPHA });
             var d = Domain;
             for (int x = d.x0; x < d.x1; x += OUTER)
                 for (int z = d.z0; z < d.z1; z += OUTER)
                 {
                     var inCore = x >= c.x0 && x + OUTER <= c.x1 && z >= c.z0 && z + OUTER <= c.z1;
-                    if (!inCore && !AllSea(x, z, OUTER)) tiles.Add(new Tile { x0 = x, z0 = z, size = OUTER, res = 257, alphaRes = 128 });
+                    if (!inCore && !AllSea(x, z, OUTER)) tiles.Add(new Tile { x0 = x, z0 = z, size = OUTER, res = OUTER_RES, alphaRes = OUTER_ALPHA });
                 }
             return tiles;
         }
@@ -312,6 +319,16 @@ namespace Rotorcraft.Presentation
         /// </summary>
         public static List<Terrain> Build(Transform parent, Material material, TerrainLayer[] layers, DetailPrototype[] grass)
         {
+            var made = new List<Terrain>();
+            var steps = BuildSteps(parent, material, layers, grass, made, null);
+            while (steps.MoveNext()) { }
+            return made;
+        }
+
+        /// <summary>The same build in steps a frame apart (the browser has a single thread: the page must keep
+        /// drawing the loading screen). progress: 0..1.</summary>
+        public static System.Collections.IEnumerator BuildSteps(Transform parent, Material material, TerrainLayer[] layers, DetailPrototype[] grass, List<Terrain> made, Action<float> progress)
+        {
             WarmUp();
             var tiles = Plan();
             var t0 = Time.realtimeSinceStartup;
@@ -327,15 +344,24 @@ namespace Rotorcraft.Presentation
                 System.Threading.Interlocked.Increment(ref computed);
             }
 #if UNITY_WEBGL
-            foreach (var t in tiles) One(t);   // no worker threads in the browser
+            Debug.Log($"Terrain: {tiles.Count} tiles planned at {Time.realtimeSinceStartup - t0:F1} s");
+            for (int i = 0; i < tiles.Count; i++)   // no worker threads in the browser: one tile a frame
+            {
+                var tt = Time.realtimeSinceStartup;
+                One(tiles[i]);
+                if (i < 3 || i % 10 == 0) Debug.Log($"Terrain tile {i + 1}/{tiles.Count} ({tiles[i].res}) took {Time.realtimeSinceStartup - tt:F2} s");
+                progress?.Invoke(0.8f * (i + 1) / tiles.Count);
+                yield return null;
+            }
 #else
             Parallel.ForEach(tiles, One);
 #endif
             if (layers == null || layers.Length != LAYERS) layers = GeneratedLayers();
-            var made = new List<Terrain>();
             var byCore = new Dictionary<(int, int), Terrain>();
+            int n = 0;
             foreach (var t in tiles)
             {
+                if (++n % 8 == 0) { progress?.Invoke(0.8f + 0.2f * n / tiles.Count); yield return null; }
                 var td = new TerrainData { heightmapResolution = t.res, alphamapResolution = t.alphaRes, baseMapResolution = Math.Min(1024, t.alphaRes * 2) };
                 td.size = new Vector3(t.size, (float)HRANGE, t.size);
                 td.SetHeights(0, 0, t.heights);
@@ -374,7 +400,6 @@ namespace Rotorcraft.Presentation
                 kv.Value.SetNeighbors(left, top, right, bottom);
             }
             Debug.Log($"Kinloch terrain: {tiles.Count} tiles ({computed} computed, {tiles.Count - computed} from the cache) in {Time.realtimeSinceStartup - t0:F1} s");
-            return made;
         }
 
         /// <summary>The terrain tile holding sim (x, z), or null.</summary>
