@@ -88,6 +88,7 @@ namespace Rotorcraft.Presentation
             // every flyable aircraft has its sound and lights; scenes need not add them
             if (GetComponent<RotorAudio>() == null) gameObject.AddComponent<RotorAudio>();
             if (GetComponent<AircraftLights>() == null) gameObject.AddComponent<AircraftLights>();
+            if (GetComponent<AircraftEffects>() == null) gameObject.AddComponent<AircraftEffects>();
         }
 
         void FindParts()
@@ -150,6 +151,7 @@ namespace Rotorcraft.Presentation
             tailRotorRatio = ac.engines > 1 ? 4.6f : 6f;
             GetComponent<RotorAudio>()?.Configure();
             GetComponent<AircraftLights>()?.Configure();
+            GetComponent<AircraftEffects>()?.Configure();
         }
 
         /// <summary>Where and how the next flight starts (call ResetToStart to begin it).</summary>

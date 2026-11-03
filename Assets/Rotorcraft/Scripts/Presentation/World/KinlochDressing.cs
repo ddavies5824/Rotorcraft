@@ -41,7 +41,7 @@ namespace Rotorcraft.Presentation
             timber = Lit("Timber", new Color(0.30f, 0.22f, 0.15f), 0.1f),
             white = Lit("White", new Color(0.9f, 0.9f, 0.88f), 0.4f),
             glassDark = Lit("Window", new Color(0.05f, 0.07f, 0.09f), 0.85f),
-            water = Lit("Sea", new Color(0.04f, 0.12f, 0.16f), 0.92f),
+            water = SeaSurface.Material,
             steel = Lit("Steel", new Color(0.55f, 0.57f, 0.58f), 0.5f, 0.8f),
         };
     }
@@ -73,6 +73,7 @@ namespace Rotorcraft.Presentation
             b.Quad(M.water, new Vector3(d.x0 - far, 0, far), new Vector3(d.x1 + far, 0, far), new Vector3(d.x1 + far, 0, -d.z1 - far), new Vector3(d.x0 - far, 0, -d.z1 - far), new Vector2(0.01f, 0.01f));
             var sea = b.Attach("Sea", parent, false);
             sea.isStatic = true;
+            sea.AddComponent<SeaSurface>();
         }
 
         // ---------------------------------------------------------------------------------------- roads

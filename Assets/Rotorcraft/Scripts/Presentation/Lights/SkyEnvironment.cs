@@ -19,6 +19,8 @@ namespace Rotorcraft.Presentation
         /// <summary>Atmospheric extinction from the visibility, per metre.</summary>
         public float FogDensity { get; private set; }
         public event System.Action Changed;
+        /// <summary>The weather last applied.</summary>
+        public WeatherPreset Weather => weather;
 
         WeatherPreset weather;
         // the day as built
@@ -34,6 +36,7 @@ namespace Rotorcraft.Presentation
         {
             Current = this;
             Capture();
+            if (GetComponent<WeatherEffects>() == null) gameObject.AddComponent<WeatherEffects>();
         }
 
         void OnDestroy() { if (Current == this) Current = null; }
