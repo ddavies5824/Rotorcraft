@@ -28,14 +28,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "cpl3_emergencies",
-                title = "CPL Â· Tail Rotor Failure",
+                title = "CPL · Tail Rotor Failure",
                 shortTitle = "Tail Rotor Failure",
                 category = MissionCategory.Training,
                 employer = "Kinloch Rotor School",
                 aircraftId = "kestrel",
                 pathway = Pathway.Cpl,
                 summary = "A simulated tail rotor drive failure in the cruise: keep speed up, declare a Mayday and fly a running landing at Kinloch.",
-                briefing = new[] { "Without the tail rotor nothing opposes the main rotor torque. In the hover the aircraft spins; in forward flight the fin keeps the nose roughly straight. The technique: keep 50â€“70 kt, use as little power as possible, and land with forward speed (a running landing) on a long surface.", "After the failure, declare a Mayday on the radio. Then set up a long, shallow approach to the grass beside H1 and touch down at 10â€“20 kt with the skids level. Reducing power swings the nose one way, adding it swings it the other: plan your power changes.", "Your instructor will simulate the failure near the crosswind marker." },
+                briefing = new[] { "Without the tail rotor nothing opposes the main rotor torque. In the hover the aircraft spins; in forward flight the fin keeps the nose roughly straight. The technique: keep 50–70 kt, use as little power as possible, and land with forward speed (a running landing) on a long surface.", "After the failure, declare a Mayday on the radio. Then set up a long, shallow approach to the grass beside H1 and touch down at 10–20 kt with the skids level. Reducing power swings the nose one way, adding it swings it the other: plan your power changes.", "Your instructor will simulate the failure near the crosswind marker." },
                 risks = new[] { "Slowing down below about 30 kt: the nose will start to rotate", "Large power changes close to the ground" },
                 weatherId = "light_sw",
                 startSiteId = "kin_h1",
@@ -48,8 +48,8 @@ namespace Rotorcraft.Game
                     C.StartUp(),
                     C.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Climb, label = "Climb to 700 ft above the field", phase = "Climb", siteId = "kin_h1", aboveFt = 650 },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Crosswind marker (600â€“1,100 ft)", phase = "Cruise", name = "Crosswind", x = -1100, z = 300, radiusM = 260, altMinFt = 600, altMaxFt = 1100 },
-                    new ObjectiveDef { kind = ObjectiveKind.Failure, label = "Tail rotor failure: keep the speed up", phase = "Emergency", system = SystemFailure.TailRotor, say = "Simulated tail rotor failureâ€¦ now. Keep your speed up!" },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Crosswind marker (600–1,100 ft)", phase = "Cruise", name = "Crosswind", x = -1100, z = 300, radiusM = 260, altMinFt = 600, altMaxFt = 1100 },
+                    new ObjectiveDef { kind = ObjectiveKind.Failure, label = "Tail rotor failure: keep the speed up", phase = "Emergency", system = SystemFailure.TailRotor, say = "Simulated tail rotor failure… now. Keep your speed up!" },
                     new ObjectiveDef { kind = ObjectiveKind.Radio, label = "Declare a Mayday", phase = "Emergency", call = "Mayday Mayday Mayday, Kinloch Tower, Kestrel Kilo Two, tail rotor failure, two on board, running landing at Kinloch.", reply = "Kestrel Kilo Two, Kinloch Tower, Mayday acknowledged. Wind two-three-zero eight knots, you are cleared to land anywhere on the field. Emergency services standing by.", @from = "Kinloch Tower" },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Running landing beside H1", phase = "Running landing", siteId = "kin_h1", maxDistM = 90 },
                     C.Shutdown()),
@@ -64,14 +64,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "util01_powerline",
-                title = "Utility Â· Power-Line Patrol",
+                title = "Utility · Power-Line Patrol",
                 shortTitle = "Power-Line Patrol",
                 category = MissionCategory.Utility,
                 employer = "Highland Utility Services",
                 aircraftId = "kestrel",
                 employerId = "highland",
                 summary = "Patrol the glen power line from Kinloch to Glen Ardoch at low level, report the fault you find, and meet the line crew at Moss Farm.",
-                briefing = new[] { "The 33 kV line follows the glen road west. Fly the road 300â€“750 ft above the ground at a steady speed so the observer can check each pole. Wires are hard to see: stay above them and never descend towards a span.", "When the observer spots the damage, report it to Highland Control. Then land at Moss Farm, where the line crew is waiting, drop the observer and his camera, and return to H1.", "You are paid on completion; a tidy, safe patrol pays more and builds your standing with Highland." },
+                briefing = new[] { "The 33 kV line follows the glen road west. Fly the road 300–750 ft above the ground at a steady speed so the observer can check each pole. Wires are hard to see: stay above them and never descend towards a span.", "When the observer spots the damage, report it to Highland Control. Then land at Moss Farm, where the line crew is waiting, drop the observer and his camera, and return to H1.", "You are paid on completion; a tidy, safe patrol pays more and builds your standing with Highland." },
                 risks = new[] { "Wires and pylons at low level", "Rising ground up the glen", "Distraction while searching" },
                 weatherId = "fair_nw",
                 startSiteId = "kin_h1",
@@ -105,14 +105,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "util02_survey",
-                title = "Utility Â· Coastal Erosion Survey",
+                title = "Utility · Coastal Erosion Survey",
                 shortTitle = "Coastal Survey Lines",
                 category = MissionCategory.Utility,
                 employer = "Highland Utility Services",
                 aircraftId = "kestrel",
                 employerId = "highland",
                 summary = "Fly accurate survey lines over Tarbat Ness for a photographic survey: steady height and heading are everything.",
-                briefing = new[] { "The camera needs straight, level lines at exactly 1,000 ft. Fly two runs over the headland: northbound on 000Â° and back southbound on 180Â°, each held for 30 seconds within 80 ft and 6Â°.", "Set up each run early: turn onto the line well before the headland, then make only tiny corrections." },
+                briefing = new[] { "The camera needs straight, level lines at exactly 1,000 ft. Fly two runs over the headland: northbound on 000° and back southbound on 180°, each held for 30 seconds within 80 ft and 6°.", "Set up each run early: turn onto the line well before the headland, then make only tiny corrections." },
                 risks = new[] { "Gusts over the cliffs", "Chasing the altimeter with large inputs" },
                 weatherId = "breezy_w",
                 startSiteId = "kin_h1",
@@ -125,9 +125,9 @@ namespace Rotorcraft.Game
                 objectives = Objs(
                     C.StartUp(),
                     C.Lift(),
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Start of line 1 (900â€“1,100 ft)", phase = "Positioning", name = "Line 1 start", x = 900, z = -2300, radiusM = 350, altMinFt = 900, altMaxFt = 1100 },
-                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Survey line 1: 1,000 ft, heading 000Â°, 30 s", phase = "Survey", altFt = 1000, altTolFt = 80, headingDeg = 0, hdgTolDeg = 6, seconds = 30 },
-                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Survey line 2: 1,000 ft, heading 180Â°, 30 s", phase = "Survey", altFt = 1000, altTolFt = 80, headingDeg = 180, hdgTolDeg = 6, seconds = 30, say = "Line one good. Turn back onto one-eight-zero for line two." },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Start of line 1 (900–1,100 ft)", phase = "Positioning", name = "Line 1 start", x = 900, z = -2300, radiusM = 350, altMinFt = 900, altMaxFt = 1100 },
+                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Survey line 1: 1,000 ft, heading 000°, 30 s", phase = "Survey", altFt = 1000, altTolFt = 80, headingDeg = 0, hdgTolDeg = 6, seconds = 30 },
+                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Survey line 2: 1,000 ft, heading 180°, 30 s", phase = "Survey", altFt = 1000, altTolFt = 80, headingDeg = 180, hdgTolDeg = 6, seconds = 30, say = "Line one good. Turn back onto one-eight-zero for line two." },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Return to H1", phase = "Return", siteId = "kin_h1", maxDistM = 12 },
                     C.Shutdown()),
                 assessment = new AssessmentCriteria { passMark = 60, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Instrument] = 45 } },
@@ -141,7 +141,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "med01_transfer",
-                title = "Air Ambulance Â· Inter-Hospital Transfer",
+                title = "Air Ambulance · Inter-Hospital Transfer",
                 shortTitle = "Hospital Transfer",
                 category = MissionCategory.Medical,
                 employer = "Northern Air Ambulance",
@@ -185,7 +185,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "med02_night_scene",
-                title = "Air Ambulance Â· Night Farm Accident",
+                title = "Air Ambulance · Night Farm Accident",
                 shortTitle = "Night Scene Response",
                 category = MissionCategory.Medical,
                 employer = "Northern Air Ambulance",
@@ -209,7 +209,7 @@ namespace Rotorcraft.Game
                 objectives = Objs(
                     C.StartUp(),
                     C.Lift(),
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "High recce over Moss Farm (800â€“1,300 ft)", phase = "Recce", siteId = "moss_farm", radiusM = 300, altMinFt = 800, altMaxFt = 1300 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "High recce over Moss Farm (800–1,300 ft)", phase = "Recce", siteId = "moss_farm", radiusM = 300, altMinFt = 800, altMaxFt = 1300 },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land in Moss Farm field", phase = "Scene", siteId = "moss_farm", maxDistM = 30, maxSlopeDeg = 8, deadlineMin = 12 },
                     new ObjectiveDef { kind = ObjectiveKind.Load, label = "Patient and paramedic aboard", phase = "Scene", what = "patient and paramedic", payloadKg = 170, seconds = 50, siteId = "moss_farm", pickup = true },
                     new ObjectiveDef { kind = ObjectiveKind.LiftOff, label = "Lift from the field", phase = "Transfer", minAglM = 2 },
@@ -230,14 +230,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "off06_emergency_support",
-                title = "Offshore Â· Emergency Spares Run",
+                title = "Offshore · Emergency Spares Run",
                 shortTitle = "Emergency Support",
                 category = MissionCategory.Offshore,
                 employer = "Pentland Offshore Aviation",
                 aircraftId = "northstar",
                 callsign = "Pentland 31",
                 summary = "A routine freight run to Cormorant Alpha turns into an urgent request from Kittiwake, with weather closing in from the west.",
-                briefing = new[] { "Take 400 kg of freight to Cormorant Alpha. Expect Pentland Ops to re-task you: Kittiwake Alpha has a failed fire pump and needs the spare seal kit sitting on Cormorant Alpha's deck.", "Fuel: plan Kinloch â€“ Cormorant A â€“ Kittiwake â€“ Kinloch plus the 300 kg reserve before you go. If you have not got it, say so when asked.", "Showers are forecast to reach the coast later in the flight." },
+                briefing = new[] { "Take 400 kg of freight to Cormorant Alpha. Expect Pentland Ops to re-task you: Kittiwake Alpha has a failed fire pump and needs the spare seal kit sitting on Cormorant Alpha's deck.", "Fuel: plan Kinloch – Cormorant A – Kittiwake – Kinloch plus the 300 kg reserve before you go. If you have not got it, say so when asked.", "Showers are forecast to reach the coast later in the flight." },
                 risks = new[] { "Fuel over an extended multi-leg route", "Weather deteriorating towards Kinloch", "Pressure to help" },
                 weatherId = "north_sea",
                 weatherTimeline = new[]
@@ -254,8 +254,8 @@ namespace Rotorcraft.Game
                 passengers = 0,
                 manifest = new[]
                 {
-                    new ManifestLeg { leg = "Kinloch â†’ Cormorant A", pax = 0, kg = 400 },
-                    new ManifestLeg { leg = "Cormorant A â†’ Kittiwake (if re-tasked)", pax = 0, kg = 80 },
+                    new ManifestLeg { leg = "Kinloch → Cormorant A", pax = 0, kg = 400 },
+                    new ManifestLeg { leg = "Cormorant A → Kittiwake (if re-tasked)", pax = 0, kg = 80 },
                 },
                 objectives = Objs(
                     C.StartUp(),
@@ -285,14 +285,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "tc1_instructor_check",
-                title = "Training Captain Â· Instructor Check",
+                title = "Training Captain · Instructor Check",
                 shortTitle = "Instructor Check",
                 category = MissionCategory.Test,
-                employer = "Kinloch Rotor School Â· Chief Instructor",
+                employer = "Kinloch Rotor School · Chief Instructor",
                 aircraftId = "kestrel",
                 pathway = Pathway.Tc,
                 summary = "Demonstrate the PPL exercises to an instructor's standard: a precise hover, an accurate circuit and a spot landing.",
-                briefing = new[] { "As an instructor your demonstrations set the standard students copy. The Chief Instructor expects 85% overall: a hover inside 2.5 m for 15 seconds with the heading held within 8Â°, a circuit flown inside tight height bands, and a landing within 3 m of the centre of H1.", "This check, the instructor theory exam and Senior Pilot status together earn the Training Captain authorisation." },
+                briefing = new[] { "As an instructor your demonstrations set the standard students copy. The Chief Instructor expects 85% overall: a hover inside 2.5 m for 15 seconds with the heading held within 8°, a circuit flown inside tight height bands, and a landing within 3 m of the centre of H1.", "This check, the instructor theory exam and Senior Pilot status together earn the Training Captain authorisation." },
                 risks = new[] { "Complacency: experienced pilots get sloppy on the basics" },
                 weatherId = "breezy_w",
                 startSiteId = "kin_h1",
@@ -306,9 +306,9 @@ namespace Rotorcraft.Game
                     C.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Hover, label = "Demonstration hover over H1: 2.5 m, 15 s", phase = "Hover", siteId = "kin_h1", radiusM = 2.5, minAglM = 0.9, maxAglM = 3, seconds = 15, headingTolDeg = 8 },
                     new ObjectiveDef { kind = ObjectiveKind.Climb, label = "Climb to 500 ft above the field", phase = "Circuit", siteId = "kin_h1", aboveFt = 450 },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Crosswind (580â€“700 ft)", phase = "Circuit", name = "Crosswind", x = -1100, z = 300, radiusM = 180, altMinFt = 580, altMaxFt = 700 },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Downwind (580â€“680 ft)", phase = "Circuit", name = "Downwind", x = 0, z = 1150, radiusM = 180, altMinFt = 580, altMaxFt = 680 },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Base (480â€“680 ft)", phase = "Circuit", name = "Base", x = 850, z = 600, radiusM = 180, altMinFt = 480, altMaxFt = 680 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Crosswind (580–700 ft)", phase = "Circuit", name = "Crosswind", x = -1100, z = 300, radiusM = 180, altMinFt = 580, altMaxFt = 700 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Downwind (580–680 ft)", phase = "Circuit", name = "Downwind", x = 0, z = 1150, radiusM = 180, altMinFt = 580, altMaxFt = 680 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Base (480–680 ft)", phase = "Circuit", name = "Base", x = 850, z = 600, radiusM = 180, altMinFt = 480, altMaxFt = 680 },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Spot landing on H1 (within 3 m)", phase = "Landing", siteId = "kin_h1", maxDistM = 3 },
                     C.Shutdown()),
                 assessment = new AssessmentCriteria { passMark = 85, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Hover] = 70, [ScoreCategory.Landing] = 70, [ScoreCategory.Navigation] = 70 }, noExceedances = true, maxHardLandings = 0 },
@@ -321,7 +321,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "tc2_line_training",
-                title = "Training Captain Â· Line Training Flight",
+                title = "Training Captain · Line Training Flight",
                 shortTitle = "Line Training",
                 category = MissionCategory.Offshore,
                 employer = "Pentland Offshore Aviation",
@@ -341,8 +341,8 @@ namespace Rotorcraft.Game
                 passengers = 16,
                 manifest = new[]
                 {
-                    new ManifestLeg { leg = "Kinloch â†’ Cormorant Bravo", pax = 8, kg = 800 },
-                    new ManifestLeg { leg = "Cormorant Bravo â†’ Kinloch", pax = 8, kg = 800 },
+                    new ManifestLeg { leg = "Kinloch → Cormorant Bravo", pax = 8, kg = 800 },
+                    new ManifestLeg { leg = "Cormorant Bravo → Kinloch", pax = 8, kg = 800 },
                 },
                 objectives = Objs(
                     C.StartUp(),

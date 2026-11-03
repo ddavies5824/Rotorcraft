@@ -40,6 +40,11 @@ namespace Rotorcraft.Presentation
             var kt = w != null ? (float)w.windKt : 5;
             material.SetFloat("_Waves", Mathf.Clamp01(kt / 25));
             material.SetFloat("_Foam", Mathf.Clamp01((kt - 12) / 14));
+            // at night the reflection probe (captured by day) is turned right down, so the water reflects the
+            // night sky's horizon colour (the fog colour, brightened to match the sky) and meets the sky rather
+            // than ending in black. A vector, so it goes in as the linear value it already is.
+            var night = SkyEnvironment.Current != null ? SkyEnvironment.Current.Night : 0;
+            material.SetVector("_SkyGlow", (Vector4)(RenderSettings.fogColor.linear * (Mathf.SmoothStep(0, 1, (night - 0.75f) * 4) * 15f)));
             // the waves run downwind (x east, z south); the chop at an angle to the swell
             var (dx, dz) = w != null ? Rotorcraft.Sim.Weather.WindDirUnit(w) : (0.7, 0.7);
             var dir = new Vector2((float)dx, (float)dz);

@@ -5,6 +5,7 @@ using Rotorcraft.Sim;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace Rotorcraft.Presentation
 {
@@ -28,6 +29,7 @@ namespace Rotorcraft.Presentation
         AmbientMode dayAmbientMode; Color daySky, dayEquator, dayGround; float dayAmbientIntensity, dayReflection = 1;
         Color dayFog; float dayFogStart, dayFogEnd;
         Material sky; float daySkyExposure = 1.3f, daySunSize = 0.04f; Color daySkyTint = new Color(0.5f, 0.5f, 0.5f), dayGroundColor = new Color(0.37f, 0.35f, 0.34f);
+        Vignette vignette;
         bool captured;
 
         static readonly int RcNight = Shader.PropertyToID("_RcNight"), RcFog = Shader.PropertyToID("_RcFogDensity"), RcExposure = Shader.PropertyToID("_RcLightExposure");
@@ -57,6 +59,17 @@ namespace Rotorcraft.Presentation
                 if (sky.HasProperty("_SunSize")) daySunSize = sky.GetFloat("_SunSize");
                 if (sky.HasProperty("_SkyTint")) daySkyTint = sky.GetColor("_SkyTint");
                 if (sky.HasProperty("_GroundColor")) dayGroundColor = sky.GetColor("_GroundColor");
+            }
+            // a soft vignette in the post-processing (the runtime copy of the profile, never the asset)
+            var volume = FindFirstObjectByType<Volume>();
+            if (volume != null && volume.sharedProfile != null)
+            {
+                var profile = volume.profile;
+                if (!profile.TryGet(out vignette)) vignette = profile.Add<Vignette>(true);
+                vignette.active = true;
+                vignette.smoothness.Override(0.45f);
+                vignette.rounded.Override(false);
+                vignette.color.Override(Color.black);
             }
             captured = true;
         }
@@ -140,6 +153,8 @@ namespace Rotorcraft.Presentation
             // reflections outside the probe come from the sky cubemap captured at load (the day sky): dim them
             // with the light, or the sea shines white on the horizon at night
             RenderSettings.reflectionIntensity = tod == TimeOfDay.Day ? dayReflection : tod == TimeOfDay.Dusk ? dayReflection * 0.3f : dayReflection * 0.04f;
+            // the browser game's grade darkened the corners a little more as the light went
+            if (vignette != null) vignette.intensity.Override(tod == TimeOfDay.Day ? 0.2f : tod == TimeOfDay.Dusk ? 0.25f : 0.3f);
             Shader.SetGlobalFloat(RcNight, Night);
             Shader.SetGlobalFloat(RcFog, FogDensity);
             Shader.SetGlobalFloat(RcExposure, exposure * 0.96f);

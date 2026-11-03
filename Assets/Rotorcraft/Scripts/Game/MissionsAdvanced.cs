@@ -39,14 +39,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "cpl1_advanced_nav",
-                title = "CPL Â· Advanced Navigation and Weather",
+                title = "CPL · Advanced Navigation and Weather",
                 shortTitle = "Advanced Navigation",
                 category = MissionCategory.Training,
                 employer = SCHOOL,
                 aircraftId = "kestrel",
                 pathway = Pathway.Cpl,
                 summary = "A cross-country into the hills with a forecast deterioration. Navigate to Glen Ardoch Bridge and decide whether Beinn Ardoch is still safe.",
-                briefing = new[] { "Route: Kinloch H1 to Glen Ardoch Bridge (258Â°, 2.4 nm) between 1,200 and 2,000 ft, then on to overfly Beinn Ardoch (1,817 ft) between 2,000 and 2,600 ft, and home.", "The forecast warns of cloud lowering from the west during the afternoon. Your instructor will ask for a decision at the bridge. There is no single scripted answer, but continuing into cloud over high ground without an instrument rating is the classic fatal accident.", "Diversions: Moss Farm (364 ft) is an approved field; Kinloch itself is on the coast and usually stays clear longest." },
+                briefing = new[] { "Route: Kinloch H1 to Glen Ardoch Bridge (258°, 2.4 nm) between 1,200 and 2,000 ft, then on to overfly Beinn Ardoch (1,817 ft) between 2,000 and 2,600 ft, and home.", "The forecast warns of cloud lowering from the west during the afternoon. Your instructor will ask for a decision at the bridge. There is no single scripted answer, but continuing into cloud over high ground without an instrument rating is the classic fatal accident.", "Diversions: Moss Farm (364 ft) is an approved field; Kinloch itself is on the coast and usually stays clear longest." },
                 risks = new[] { "Cloud lowering onto high ground", "Drizzle reducing visibility in the glen", "Pressure to complete the planned route" },
                 weatherId = "light_sw",
                 weatherTimeline = new[]
@@ -62,14 +62,14 @@ namespace Rotorcraft.Game
                 objectives = Objs(
                     A.StartUp(),
                     A.Lift(),
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Glen Ardoch Bridge (1,200â€“2,000 ft)", phase = "Leg 1", siteId = "glen_bridge", radiusM = 300, altMinFt = 1200, altMaxFt = 2000, say = "Route to Glen Ardoch Bridge, two-five-eight. Watch the weather to the west." },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Glen Ardoch Bridge (1,200–2,000 ft)", phase = "Leg 1", siteId = "glen_bridge", radiusM = 300, altMinFt = 1200, altMaxFt = 2000, say = "Route to Glen Ardoch Bridge, two-five-eight. Watch the weather to the west." },
                     new ObjectiveDef { kind = ObjectiveKind.Decision, label = "Weather decision at the bridge", phase = "Decision", prompt = "Beinn Ardoch is now capped in cloud and drizzle is spreading down the glen. What do you do?", options = new[]
                         {
                             new DecisionOption { id = "continue", label = "Continue to Beinn Ardoch as planned", good = false, effect = DecisionEffect.Continue, reply = "Your decision. Watch the cloud base very carefully." },
                             new DecisionOption { id = "moss", label = "Divert to Moss Farm and land", good = true, effect = DecisionEffect.Divert, siteId = "moss_farm", reply = "Good call. Moss Farm is clear: it is an approved field." },
                             new DecisionOption { id = "return", label = "Abandon the route and return to Kinloch", good = true, effect = DecisionEffect.Return, reply = "Sensible. Turn back while the coast is still clear." },
                         } },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Overfly Beinn Ardoch (2,000â€“2,600 ft)", phase = "Leg 2", siteId = "beinn_ardoch", radiusM = 500, altMinFt = 2000, altMaxFt = 2600 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Overfly Beinn Ardoch (2,000–2,600 ft)", phase = "Leg 2", siteId = "beinn_ardoch", radiusM = 500, altMinFt = 2000, altMaxFt = 2600 },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Return and land on H1", phase = "Return", siteId = "kin_h1", maxDistM = 10 },
                     A.Shutdown()),
                 assessment = new AssessmentCriteria { passMark = 65, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Decisions] = 60, [ScoreCategory.Navigation] = 50 } },
@@ -83,14 +83,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "cpl2_confined_area",
-                title = "CPL Â· Confined Area and Slope Landing",
+                title = "CPL · Confined Area and Slope Landing",
                 shortTitle = "Confined Area",
                 category = MissionCategory.Training,
                 employer = SCHOOL,
                 aircraftId = "kestrel",
                 pathway = Pathway.Cpl,
                 summary = "Recce and land in the small forestry clearing above Glen Ardoch, then climb out vertically over the trees.",
-                briefing = new[] { $"Glen Clearing sits at {A.ElevFt("glen_clearing")} ft, a 20 m gap in the forestry with tall trees on every side. The landing spot has a gentle slope; beyond 6Â° you must find a flatter spot.", $"Recce it first: pass overhead between {A.ElevFt("glen_clearing") + 300} and {A.ElevFt("glen_clearing") + 700} ft to check wind, obstacles and the way out. Then approach into wind, come to a high hover over the trees and descend vertically.", "Hover check: hold a steady low hover over the spot for ten seconds and note the torque. You need that power plus a margin to climb vertically out again." },
+                briefing = new[] { $"Glen Clearing sits at {A.ElevFt("glen_clearing")} ft, a 20 m gap in the forestry with tall trees on every side. The landing spot has a gentle slope; beyond 6° you must find a flatter spot.", $"Recce it first: pass overhead between {A.ElevFt("glen_clearing") + 300} and {A.ElevFt("glen_clearing") + 700} ft to check wind, obstacles and the way out. Then approach into wind, come to a high hover over the trees and descend vertically.", "Hover check: hold a steady low hover over the spot for ten seconds and note the torque. You need that power plus a margin to climb vertically out again." },
                 risks = new[] { "Tail rotor strike on the trees", "Not enough power to climb out vertically", "Settling with power on a steep approach" },
                 weatherId = "fair_nw",
                 startSiteId = "kin_h1",
@@ -104,7 +104,7 @@ namespace Rotorcraft.Game
                     A.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "High recce over Glen Clearing", phase = "Recce", siteId = "glen_clearing", radiusM = 250, altMinFt = A.ElevFt("glen_clearing") + 300, altMaxFt = A.ElevFt("glen_clearing") + 700, say = "Route to Glen Clearing for a high recce. Wind, size, surface, slope, obstacles, way out." },
                     new ObjectiveDef { kind = ObjectiveKind.Hover, label = "Hover check over the spot (10 s)", phase = "Confined area", siteId = "glen_clearing", radiusM = 5, minAglM = 0.9, maxAglM = 4, seconds = 10, say = "Approach into wind, high hover above the trees, then down vertically into the clearing." },
-                    new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land in the clearing (slope â‰¤ 6Â°)", phase = "Confined area", siteId = "glen_clearing", maxDistM = 7, maxSlopeDeg = 6 },
+                    new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land in the clearing (slope ≤ 6°)", phase = "Confined area", siteId = "glen_clearing", maxDistM = 7, maxSlopeDeg = 6 },
                     new ObjectiveDef { kind = ObjectiveKind.LiftOff, label = "Lift off", phase = "Departure", minAglM = 1.5 },
                     new ObjectiveDef { kind = ObjectiveKind.Climb, label = "Vertical climb clear of the trees (+150 ft)", phase = "Departure", siteId = "glen_clearing", aboveFt = 150, say = "Vertical climb, watch the torque, then transition once clear of the treetops." },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Return and land on H1", phase = "Return", siteId = "kin_h1", maxDistM = 10 },
@@ -127,7 +127,7 @@ namespace Rotorcraft.Game
                 aircraftId = "kestrel",
                 pathway = Pathway.Cpl,
                 summary = "Navigation to Tarbat Light, an in-flight weather decision, a confined-area landing at Glen Clearing and return to H1.",
-                briefing = new[] { "The commercial standard is tighter than the private one: overall 75%, no exceedances, no hard landings, and sound decisions throughout.", "Route: Tarbat Light (1,000â€“1,600 ft), then Glen Clearing for a confined-area landing (slope â‰¤ 6Â°), then home to H1.", "Showers are forecast. The examiner will ask for a decision when they appear." },
+                briefing = new[] { "The commercial standard is tighter than the private one: overall 75%, no exceedances, no hard landings, and sound decisions throughout.", "Route: Tarbat Light (1,000–1,600 ft), then Glen Clearing for a confined-area landing (slope ≤ 6°), then home to H1.", "Showers are forecast. The examiner will ask for a decision when they appear." },
                 risks = new[] { "Showers reducing visibility", "Confined area power margins" },
                 weatherId = "breezy_w",
                 weatherTimeline = new[]
@@ -143,7 +143,7 @@ namespace Rotorcraft.Game
                 objectives = Objs(
                     A.StartUp(),
                     A.Lift(),
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Tarbat Light (1,000â€“1,600 ft)", phase = "Navigation", siteId = "tarbat_light", radiusM = 300, altMinFt = 1000, altMaxFt = 1600, say = "Examiner: route to Tarbat Light, please." },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Tarbat Light (1,000–1,600 ft)", phase = "Navigation", siteId = "tarbat_light", radiusM = 300, altMinFt = 1000, altMaxFt = 1600, say = "Examiner: route to Tarbat Light, please." },
                     new ObjectiveDef { kind = ObjectiveKind.Decision, label = "Showers on the route inland", phase = "Decision", prompt = "Showers are building inland with a 1,400 ft cloud base. Glen Clearing (878 ft) is still visible between them. Your plan?", options = new[]
                         {
                             new DecisionOption { id = "below", label = "Continue below the showers at reduced speed, routing around the heaviest", good = true, effect = DecisionEffect.Continue, reply = "Examiner: agreed. Keep it slow and keep a way out behind you." },
@@ -165,14 +165,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "st_night",
-                title = "Night Rating Â· Proficiency Flight",
+                title = "Night Rating · Proficiency Flight",
                 shortTitle = "Night Proficiency",
                 category = MissionCategory.Test,
                 employer = "Examiner: Mr Alasdair Grant",
                 aircraftId = "kestrel",
                 pathway = Pathway.Night,
                 summary = "A night navigation flight along the coast: Tarbat Light, over Balnagown, and a night approach to H1.",
-                briefing = new[] { "Lights: beacon and position lights before start, strobes once airborne, landing light for the approach.", "Route: Tarbat Light (800â€“1,500 ft), overfly Balnagown Hospital (800â€“1,500 ft), return to H1. The sea is black on your right; the coast road and village lights are your references." },
+                briefing = new[] { "Lights: beacon and position lights before start, strobes once airborne, landing light for the approach.", "Route: Tarbat Light (800–1,500 ft), overfly Balnagown Hospital (800–1,500 ft), return to H1. The sea is black on your right; the coast road and village lights are your references." },
                 risks = new[] { "Black-hole approach over unlit ground", "Disorientation turning over the sea" },
                 weatherId = "calm",
                 timeOfDay = TimeOfDay.Night,
@@ -186,8 +186,8 @@ namespace Rotorcraft.Game
                 objectives = Objs(
                     A.StartUp("Examiner: beacon and position lights before the start, please."),
                     A.Lift(),
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Tarbat Light (800â€“1,500 ft)", phase = "Coast", siteId = "tarbat_light", radiusM = 350, altMinFt = 800, altMaxFt = 1500 },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Overfly Balnagown (800â€“1,500 ft)", phase = "Town", siteId = "balnagown", radiusM = 400, altMinFt = 800, altMaxFt = 1500 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Tarbat Light (800–1,500 ft)", phase = "Coast", siteId = "tarbat_light", radiusM = 350, altMinFt = 800, altMaxFt = 1500 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Overfly Balnagown (800–1,500 ft)", phase = "Town", siteId = "balnagown", radiusM = 400, altMinFt = 800, altMaxFt = 1500 },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Night approach and landing on H1", phase = "Final", siteId = "kin_h1", maxDistM = 8 },
                     A.Shutdown()),
                 assessment = new AssessmentCriteria { passMark = 70, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Landing] = 55, [ScoreCategory.Procedures] = 60 }, maxHardLandings = 0 },
@@ -201,7 +201,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "tr_ns175",
-                title = "Type Rating Â· Northstar 175 Conversion",
+                title = "Type Rating · Northstar 175 Conversion",
                 shortTitle = "Northstar Conversion",
                 category = MissionCategory.Training,
                 employer = SCHOOL,
@@ -224,8 +224,8 @@ namespace Rotorcraft.Game
                     new ObjectiveDef { kind = ObjectiveKind.Climb, label = "Climb to 1,000 ft above the field", phase = "Climb", siteId = "kin_h2", aboveFt = 900 },
                     new ObjectiveDef { kind = ObjectiveKind.Ap, label = "Engage ALT hold", phase = "Autopilot", mode = APMode.Alt, say = "Level off and engage ALT on the autopilot." },
                     new ObjectiveDef { kind = ObjectiveKind.Ap, label = "Engage HDG hold", phase = "Autopilot", mode = APMode.Hdg, say = "Now HDG. Let her fly while you scan." },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Tarbat Light (800â€“1,800 ft)", phase = "Transit", siteId = "tarbat_light", radiusM = 400, altMinFt = 800, altMaxFt = 1800 },
-                    new ObjectiveDef { kind = ObjectiveKind.FailEngine, label = "Engine failure: keep rotor RPM, fly at 70 kt", phase = "Emergency", say = "Simulated failure of number two engineâ€¦ now." },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Tarbat Light (800–1,800 ft)", phase = "Transit", siteId = "tarbat_light", radiusM = 400, altMinFt = 800, altMaxFt = 1800 },
+                    new ObjectiveDef { kind = ObjectiveKind.FailEngine, label = "Engine failure: keep rotor RPM, fly at 70 kt", phase = "Emergency", say = "Simulated failure of number two engine… now." },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "One-engine-inoperative landing on H2", phase = "OEI landing", siteId = "kin_h2", maxDistM = 12, say = "Plan a shallow running approach to H2. Watch the torque." },
                     A.Shutdown()),
                 assessment = new AssessmentCriteria { passMark = 60, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Handling] = 50 } },
@@ -239,7 +239,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "st_ns175",
-                title = "Type Rating Â· Northstar 175 Skill Test",
+                title = "Type Rating · Northstar 175 Skill Test",
                 shortTitle = "Northstar Skill Test",
                 category = MissionCategory.Test,
                 employer = "Examiner: Capt. Euan Baird",
@@ -260,8 +260,8 @@ namespace Rotorcraft.Game
                     A.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Hover, label = "Hover over H2: 7 m, 12 s", phase = "Hover", siteId = "kin_h2", radiusM = 7, minAglM = 1.2, maxAglM = 6, seconds = 12, headingTolDeg = 20, say = "Examiner: steady hover over H2, twelve seconds." },
                     new ObjectiveDef { kind = ObjectiveKind.Climb, label = "Climb to 1,500 ft above the field", phase = "Climb", siteId = "kin_h2", aboveFt = 1400 },
-                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hold 1,600 ft, heading 020Â°, for 30 s", phase = "Upper air", altFt = 1600, altTolFt = 120, headingDeg = 20, hdgTolDeg = 8, seconds = 30, say = "Examiner: 1,600 ft, heading zero-two-zero, autopilot as you wish." },
-                    new ObjectiveDef { kind = ObjectiveKind.FailEngine, label = "Engine failure in the cruise", phase = "Emergency", say = "Examiner: engine failureâ€¦ now." },
+                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hold 1,600 ft, heading 020°, for 30 s", phase = "Upper air", altFt = 1600, altTolFt = 120, headingDeg = 20, hdgTolDeg = 8, seconds = 30, say = "Examiner: 1,600 ft, heading zero-two-zero, autopilot as you wish." },
+                    new ObjectiveDef { kind = ObjectiveKind.FailEngine, label = "Engine failure in the cruise", phase = "Emergency", say = "Examiner: engine failure… now." },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "One-engine-inoperative landing on H2", phase = "OEI landing", siteId = "kin_h2", maxDistM = 10 },
                     A.Shutdown("Examiner: shut down when ready.")),
                 assessment = new AssessmentCriteria { passMark = 70, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Handling] = 60, [ScoreCategory.Landing] = 55 }, noExceedances = true, maxHardLandings = 0 },
@@ -275,7 +275,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "tr_s9",
-                title = "Type Rating Â· Guardian S9 Conversion",
+                title = "Type Rating · Guardian S9 Conversion",
                 shortTitle = "Guardian Conversion",
                 category = MissionCategory.Training,
                 employer = SALTIRE,
@@ -295,9 +295,9 @@ namespace Rotorcraft.Game
                     A.StartUp(),
                     A.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Hover, label = "Hover over H2 for 10 s", phase = "Hover", siteId = "kin_h2", radiusM = 8, minAglM = 1.5, maxAglM = 6, seconds = 10 },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Kinloch Moor (500â€“1,100 ft)", phase = "Transit", name = "Kinloch Moor", x = -1500, z = 2400, radiusM = 300, altMinFt = 500, altMaxFt = 1100, say = "Route to the moor south-west of the field." },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Kinloch Moor (500–1,100 ft)", phase = "Transit", name = "Kinloch Moor", x = -1500, z = 2400, radiusM = 300, altMinFt = 500, altMaxFt = 1100, say = "Route to the moor south-west of the field." },
                     new ObjectiveDef { kind = ObjectiveKind.Ap, label = "Come to a hover and engage HVR hold", phase = "Hover hold", mode = APMode.Hover, say = "Slow down into a hover, about 100 ft, and engage HVR." },
-                    new ObjectiveDef { kind = ObjectiveKind.FailEngine, label = "Engine failure on the transit home", phase = "Emergency", say = "Turn for home. Simulated engine failureâ€¦ now." },
+                    new ObjectiveDef { kind = ObjectiveKind.FailEngine, label = "Engine failure on the transit home", phase = "Emergency", say = "Turn for home. Simulated engine failure… now." },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "One-engine-inoperative landing on H2", phase = "OEI landing", siteId = "kin_h2", maxDistM = 12 },
                     A.Shutdown()),
                 assessment = new AssessmentCriteria { passMark = 60, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Handling] = 50 } },
@@ -311,7 +311,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "st_s9",
-                title = "Type Rating Â· Guardian S9 Skill Test",
+                title = "Type Rating · Guardian S9 Skill Test",
                 shortTitle = "Guardian Skill Test",
                 category = MissionCategory.Test,
                 employer = "Examiner: Capt. Fiona Mackay",
@@ -331,9 +331,9 @@ namespace Rotorcraft.Game
                     A.StartUp(),
                     A.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Hover, label = "Hover over H2: 7 m, 12 s", phase = "Hover", siteId = "kin_h2", radiusM = 7, minAglM = 1.2, maxAglM = 6, seconds = 12, headingTolDeg = 20 },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Kinloch Moor (500â€“1,100 ft)", phase = "Transit", name = "Kinloch Moor", x = -1500, z = 2400, radiusM = 300, altMinFt = 500, altMaxFt = 1100 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Kinloch Moor (500–1,100 ft)", phase = "Transit", name = "Kinloch Moor", x = -1500, z = 2400, radiusM = 300, altMinFt = 500, altMaxFt = 1100 },
                     new ObjectiveDef { kind = ObjectiveKind.Ap, label = "Hover hold (HVR) over the moor", phase = "Hover hold", mode = APMode.Hover },
-                    new ObjectiveDef { kind = ObjectiveKind.FailEngine, label = "Engine failure", phase = "Emergency", say = "Examiner: transit home. Engine failureâ€¦ now." },
+                    new ObjectiveDef { kind = ObjectiveKind.FailEngine, label = "Engine failure", phase = "Emergency", say = "Examiner: transit home. Engine failure… now." },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "One-engine-inoperative landing on H2", phase = "OEI landing", siteId = "kin_h2", maxDistM = 10 },
                     A.Shutdown("Examiner: shut down when ready.")),
                 assessment = new AssessmentCriteria { passMark = 70, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Handling] = 60, [ScoreCategory.Landing] = 55 }, noExceedances = true, maxHardLandings = 0 },
@@ -347,7 +347,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "ir1_basic_instruments",
-                title = "IR Â· Basic Instrument Flying",
+                title = "IR · Basic Instrument Flying",
                 shortTitle = "Basic Instruments",
                 category = MissionCategory.Training,
                 employer = SCHOOL,
@@ -367,9 +367,9 @@ namespace Rotorcraft.Game
                     A.StartUp(),
                     A.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Climb, label = "Climb to 1,500 ft above the field", phase = "Climb", siteId = "kin_h2", aboveFt = 1400, say = "Climb out heading east over the sea." },
-                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hood: hold 2,000 ft, heading 090Â° (40 s)", phase = "Instruments", altFt = 2000, altTolFt = 150, headingDeg = 90, hdgTolDeg = 10, seconds = 40, hood = true, say = "Hood up. Two thousand feet, heading zero-nine-zero." },
-                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hood: rate-one turn, hold 2,000 ft, heading 180Â° (40 s)", phase = "Instruments", altFt = 2000, altTolFt = 150, headingDeg = 180, hdgTolDeg = 10, seconds = 40, hood = true, say = "Turn right onto one-eight-zero, hold two thousand." },
-                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hood: climb to 3,000 ft, heading 270Â° (40 s)", phase = "Instruments", altFt = 3000, altTolFt = 150, headingDeg = 270, hdgTolDeg = 10, seconds = 40, hood = true, say = "Climb to three thousand, heading two-seven-zero." },
+                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hood: hold 2,000 ft, heading 090° (40 s)", phase = "Instruments", altFt = 2000, altTolFt = 150, headingDeg = 90, hdgTolDeg = 10, seconds = 40, hood = true, say = "Hood up. Two thousand feet, heading zero-nine-zero." },
+                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hood: rate-one turn, hold 2,000 ft, heading 180° (40 s)", phase = "Instruments", altFt = 2000, altTolFt = 150, headingDeg = 180, hdgTolDeg = 10, seconds = 40, hood = true, say = "Turn right onto one-eight-zero, hold two thousand." },
+                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hood: climb to 3,000 ft, heading 270° (40 s)", phase = "Instruments", altFt = 3000, altTolFt = 150, headingDeg = 270, hdgTolDeg = 10, seconds = 40, hood = true, say = "Climb to three thousand, heading two-seven-zero." },
                     new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood off: route to Kinloch", phase = "Return", siteId = "kin_h2", radiusM = 1500, say = "Hood down. You have the view. Back to H2." },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land on H2", phase = "Return", siteId = "kin_h2", maxDistM = 12 },
                     A.Shutdown()),
@@ -384,14 +384,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "ir2_gps_approach",
-                title = "IR Â· GPS Approach to Kinloch",
+                title = "IR · GPS Approach to Kinloch",
                 shortTitle = "GPS Approach",
                 category = MissionCategory.Training,
                 employer = SCHOOL,
                 aircraftId = "northstar",
                 pathway = Pathway.Ir,
                 summary = "A hooded GPS approach from the east: cross each fix at its altitude and reach the missed-approach point at minima.",
-                briefing = new[] { "Approach plate (simulated): KINIA (initial fix, 5 nm east) at 2,000 ft; KINIB (3 nm) at 1,500 ft; KINIF (final fix, 1.6 nm) at 1,000 ft; KINIM (missed-approach point, 0.4 nm) at 400â€“650 ft. All on track 270Â° to H2.", "The hood stays up until the missed-approach point. Then you look up and land on H2. Descend steadily between fixes: about 500 ft/min at 90 kt." },
+                briefing = new[] { "Approach plate (simulated): KINIA (initial fix, 5 nm east) at 2,000 ft; KINIB (3 nm) at 1,500 ft; KINIF (final fix, 1.6 nm) at 1,000 ft; KINIM (missed-approach point, 0.4 nm) at 400–650 ft. All on track 270° to H2.", "The hood stays up until the missed-approach point. Then you look up and land on H2. Descend steadily between fixes: about 500 ft/min at 90 kt." },
                 risks = new[] { "Descending below a fix altitude", "Arriving at the MAPt too fast to land" },
                 weatherId = "breezy_w",
                 startSiteId = "kin_h2",
@@ -403,10 +403,10 @@ namespace Rotorcraft.Game
                 objectives = Objs(
                     A.StartUp(),
                     A.Lift(),
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "KINIA, 2,000 ft (1,800â€“2,300)", phase = "Initial", name = "KINIA", x = 9400, z = -115, radiusM = 700, altMinFt = 1800, altMaxFt = 2300, say = "Fly out east to KINIA at two thousand feet." },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIB, 1,500 ft (1,350â€“1,700)", phase = "Intermediate", name = "KINIB", x = 5700, z = -115, radiusM = 450, altMinFt = 1350, altMaxFt = 1700, hood = true, say = "Hood up. Turn inbound, two-seven-zero. KINIB at fifteen hundred." },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIF, 1,000 ft (880â€“1,150)", phase = "Final", name = "KINIF", x = 3100, z = -115, radiusM = 350, altMinFt = 880, altMaxFt = 1150, hood = true },
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIM at minima (400â€“650 ft)", phase = "Final", name = "KINIM", x = 900, z = -115, radiusM = 250, altMinFt = 400, altMaxFt = 650, hood = true },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "KINIA, 2,000 ft (1,800–2,300)", phase = "Initial", name = "KINIA", x = 9400, z = -115, radiusM = 700, altMinFt = 1800, altMaxFt = 2300, say = "Fly out east to KINIA at two thousand feet." },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIB, 1,500 ft (1,350–1,700)", phase = "Intermediate", name = "KINIB", x = 5700, z = -115, radiusM = 450, altMinFt = 1350, altMaxFt = 1700, hood = true, say = "Hood up. Turn inbound, two-seven-zero. KINIB at fifteen hundred." },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIF, 1,000 ft (880–1,150)", phase = "Final", name = "KINIF", x = 3100, z = -115, radiusM = 350, altMinFt = 880, altMaxFt = 1150, hood = true },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIM at minima (400–650 ft)", phase = "Final", name = "KINIM", x = 900, z = -115, radiusM = 250, altMinFt = 400, altMaxFt = 650, hood = true },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Visual: land on H2", phase = "Landing", siteId = "kin_h2", maxDistM = 12, say = "Hood down. Visual. Land on H2." },
                     A.Shutdown()),
                 assessment = new AssessmentCriteria { passMark = 65, minimums = new Dictionary<ScoreCategory, double> { [ScoreCategory.Navigation] = 55 } },
@@ -440,7 +440,7 @@ namespace Rotorcraft.Game
                     A.StartUp(),
                     A.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Climb, label = "Climb to 1,800 ft above the field", phase = "Climb", siteId = "kin_h2", aboveFt = 1700 },
-                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hood: 2,000 ft, heading 090Â° (40 s)", phase = "Instruments", altFt = 2000, altTolFt = 120, headingDeg = 90, hdgTolDeg = 8, seconds = 40, hood = true, say = "Examiner: hood up. Two thousand, zero-nine-zero." },
+                    new ObjectiveDef { kind = ObjectiveKind.Hold, label = "Hood: 2,000 ft, heading 090° (40 s)", phase = "Instruments", altFt = 2000, altTolFt = 120, headingDeg = 90, hdgTolDeg = 8, seconds = 40, hood = true, say = "Examiner: hood up. Two thousand, zero-nine-zero." },
                     new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIA, 2,000 ft", phase = "Approach", name = "KINIA", x = 9400, z = -115, radiusM = 700, altMinFt = 1800, altMaxFt = 2300, hood = true },
                     new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIB, 1,500 ft", phase = "Approach", name = "KINIB", x = 5700, z = -115, radiusM = 450, altMinFt = 1350, altMaxFt = 1700, hood = true },
                     new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Hood: KINIF, 1,000 ft", phase = "Approach", name = "KINIF", x = 3100, z = -115, radiusM = 350, altMinFt = 880, altMaxFt = 1150, hood = true },
@@ -458,7 +458,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "off01_familiarisation",
-                title = "Offshore Â· Familiarisation",
+                title = "Offshore · Familiarisation",
                 shortTitle = "Offshore Familiarisation",
                 category = MissionCategory.Offshore,
                 employer = PENTLAND,
@@ -466,7 +466,7 @@ namespace Rotorcraft.Game
                 pathway = Pathway.Offshore,
                 callsign = "Pentland 21",
                 summary = "With a training captain: Kinloch to Cormorant Alpha, a helideck landing, freight off and two passengers on, then home.",
-                briefing = new[] { "Cormorant Alpha is 11.7 nm east (bearing 106Â°). The helideck is 42 m above the sea on the west side of the platform. The structure, flare and turbine exhausts are on the east side.", "Approach into wind from the clear side, slow down early, and come to a hover beside the deck before moving across onto the circle. Turbulence and sinking air lie downwind of the platform.", "Radio: call Kinloch Tower before lifting and Cormorant Alpha at about 5 nm. Use the TRANSMIT button when the call is due." },
+                briefing = new[] { "Cormorant Alpha is 11.7 nm east (bearing 106°). The helideck is 42 m above the sea on the west side of the platform. The structure, flare and turbine exhausts are on the east side.", "Approach into wind from the clear side, slow down early, and come to a hover beside the deck before moving across onto the circle. Turbulence and sinking air lie downwind of the platform.", "Radio: call Kinloch Tower before lifting and Cormorant Alpha at about 5 nm. Use the TRANSMIT button when the call is due." },
                 risks = new[] { "Platform wake turbulence", "Visual illusions over the sea", "Deck motion and limited space" },
                 weatherId = "north_sea",
                 startSiteId = "kin_h2",
@@ -477,14 +477,14 @@ namespace Rotorcraft.Game
                 dual = true,
                 manifest = new[]
                 {
-                    new ManifestLeg { leg = "Kinloch â†’ Cormorant Alpha", pax = 0, kg = 200 },
-                    new ManifestLeg { leg = "Cormorant Alpha â†’ Kinloch", pax = 2, kg = 200 },
+                    new ManifestLeg { leg = "Kinloch → Cormorant Alpha", pax = 0, kg = 200 },
+                    new ManifestLeg { leg = "Cormorant Alpha → Kinloch", pax = 2, kg = 200 },
                 },
                 objectives = Objs(
                     A.StartUp(),
                     new ObjectiveDef { kind = ObjectiveKind.Radio, label = "Departure call to Kinloch Tower", phase = "Departure", call = "Kinloch Tower, Pentland 21, H2, two crew and freight for Cormorant Alpha.", reply = "Pentland 21, cleared to Cormorant Alpha, wind 225 at 20, QNH 1009.", @from = "Kinloch Tower" },
                     A.Lift(),
-                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Coast out (500â€“1,500 ft)", phase = "Transit", name = "Coast out", x = 3000, z = -900, radiusM = 500, altMinFt = 500, altMaxFt = 1500 },
+                    new ObjectiveDef { kind = ObjectiveKind.Waypoint, label = "Coast out (500–1,500 ft)", phase = "Transit", name = "Coast out", x = 3000, z = -900, radiusM = 500, altMinFt = 500, altMaxFt = 1500 },
                     new ObjectiveDef { kind = ObjectiveKind.Radio, label = "Call Cormorant Alpha", phase = "Transit", call = "Cormorant Alpha, Pentland 21, inbound, request deck status.", reply = "Pentland 21, deck is green, wind 225 at 20, one to fly in. Freight on deck for you.", @from = "Cormorant A" },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land on the Cormorant Alpha helideck", phase = "Helideck", siteId = "cormorant_a", maxDistM = 6, say = "Into wind, from the west, nice and steady." },
                     new ObjectiveDef { kind = ObjectiveKind.Load, label = "Unload freight (200 kg)", phase = "On deck", what = "freight", payloadKg = 200, seconds = 25, siteId = "cormorant_a" },
@@ -504,7 +504,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "lc_offshore",
-                title = "Offshore Â· Line Check",
+                title = "Offshore · Line Check",
                 shortTitle = "Offshore Line Check",
                 category = MissionCategory.Test,
                 employer = "Training Captain: Capt. Ruth Sinclair",
@@ -512,7 +512,7 @@ namespace Rotorcraft.Game
                 pathway = Pathway.Offshore,
                 callsign = "Pentland 21",
                 summary = "A full rotation to Kittiwake Alpha with passengers, assessed by the company training captain.",
-                briefing = new[] { "Kittiwake Alpha: 16 nm, bearing 125Â°. Deck 46 m. Six passengers out, four back. The line check assesses landing quality, fuel management (land with at least the 300 kg reserve) and timekeeping: on deck by 16 minutes." },
+                briefing = new[] { "Kittiwake Alpha: 16 nm, bearing 125°. Deck 46 m. Six passengers out, four back. The line check assesses landing quality, fuel management (land with at least the 300 kg reserve) and timekeeping: on deck by 16 minutes." },
                 risks = new[] { "Platform wake", "Fuel over the sea" },
                 weatherId = "north_sea",
                 startSiteId = "kin_h2",
@@ -523,8 +523,8 @@ namespace Rotorcraft.Game
                 dual = true,
                 manifest = new[]
                 {
-                    new ManifestLeg { leg = "Kinloch â†’ Kittiwake Alpha", pax = 6, kg = 600 },
-                    new ManifestLeg { leg = "Kittiwake Alpha â†’ Kinloch", pax = 4, kg = 400 },
+                    new ManifestLeg { leg = "Kinloch → Kittiwake Alpha", pax = 6, kg = 600 },
+                    new ManifestLeg { leg = "Kittiwake Alpha → Kinloch", pax = 4, kg = 400 },
                 },
                 objectives = Objs(
                     A.StartUp(),
@@ -549,7 +549,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "off02_crew_change",
-                title = "Offshore Â· Crew Change to Cormorant Bravo",
+                title = "Offshore · Crew Change to Cormorant Bravo",
                 shortTitle = "Crew Change",
                 category = MissionCategory.Offshore,
                 employer = PENTLAND,
@@ -557,7 +557,7 @@ namespace Rotorcraft.Game
                 pathway = Pathway.Offshore,
                 callsign = "Pentland 23",
                 summary = "A scheduled crew change: eight out to Cormorant Bravo, nine back. On time and on fuel.",
-                briefing = new[] { "Cormorant Bravo: 16.5 nm, bearing 083Â°. Deck 38 m on the accommodation platform. Slot: on deck by 15 minutes, back at Kinloch by 34." },
+                briefing = new[] { "Cormorant Bravo: 16.5 nm, bearing 083°. Deck 38 m on the accommodation platform. Slot: on deck by 15 minutes, back at Kinloch by 34." },
                 risks = new[] { "Heavy take-off with a full cabin", "Wake turbulence from the bridge-linked platforms" },
                 weatherId = "north_sea",
                 startSiteId = "kin_h2",
@@ -568,8 +568,8 @@ namespace Rotorcraft.Game
                 dual = false,
                 manifest = new[]
                 {
-                    new ManifestLeg { leg = "Kinloch â†’ Cormorant Bravo", pax = 8, kg = 800 },
-                    new ManifestLeg { leg = "Cormorant Bravo â†’ Kinloch", pax = 9, kg = 900 },
+                    new ManifestLeg { leg = "Kinloch → Cormorant Bravo", pax = 8, kg = 800 },
+                    new ManifestLeg { leg = "Cormorant Bravo → Kinloch", pax = 9, kg = 900 },
                 },
                 objectives = Objs(
                     A.StartUp(),
@@ -592,14 +592,14 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "off03_multi_platform",
-                title = "Offshore Â· Three-Platform Rotation",
+                title = "Offshore · Three-Platform Rotation",
                 shortTitle = "Three-Platform Rotation",
                 category = MissionCategory.Offshore,
                 employer = PENTLAND,
                 aircraftId = "northstar",
                 pathway = Pathway.Offshore,
                 callsign = "Pentland 25",
-                summary = "Kinloch â€“ Cormorant Alpha â€“ Kittiwake â€“ Cormorant Bravo â€“ Kinloch, with passengers and freight changing at every deck.",
+                summary = "Kinloch – Cormorant Alpha – Kittiwake – Cormorant Bravo – Kinloch, with passengers and freight changing at every deck.",
                 briefing = new[] { "The longest rotation on the contract, about 45 nm. Plan fuel for the whole route plus the 300 kg reserve: there is no refuelling offshore today.", "Loads change at every stop, so hover power changes too. Slots: Cormorant Alpha by 10 min, Kittiwake by 22, Cormorant Bravo by 35, Kinloch by 50." },
                 risks = new[] { "Fuel over a long multi-leg route", "Changing mass at every deck" },
                 weatherId = "north_sea",
@@ -611,10 +611,10 @@ namespace Rotorcraft.Game
                 dual = false,
                 manifest = new[]
                 {
-                    new ManifestLeg { leg = "Kinloch â†’ Cormorant A", pax = 4, kg = 700 },
-                    new ManifestLeg { leg = "Cormorant A â†’ Kittiwake", pax = 2, kg = 500 },
-                    new ManifestLeg { leg = "Kittiwake â†’ Cormorant B", pax = 2, kg = 200 },
-                    new ManifestLeg { leg = "Cormorant B â†’ Kinloch", pax = 8, kg = 800 },
+                    new ManifestLeg { leg = "Kinloch → Cormorant A", pax = 4, kg = 700 },
+                    new ManifestLeg { leg = "Cormorant A → Kittiwake", pax = 2, kg = 500 },
+                    new ManifestLeg { leg = "Kittiwake → Cormorant B", pax = 2, kg = 200 },
+                    new ManifestLeg { leg = "Cormorant B → Kinloch", pax = 8, kg = 800 },
                 },
                 objectives = Objs(
                     A.StartUp(),
@@ -643,7 +643,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "off04_fog_decision",
-                title = "Offshore Â· Fog at Kinloch",
+                title = "Offshore · Fog at Kinloch",
                 shortTitle = "Fog at Kinloch",
                 category = MissionCategory.Offshore,
                 employer = PENTLAND,
@@ -666,8 +666,8 @@ namespace Rotorcraft.Game
                 dual = false,
                 manifest = new[]
                 {
-                    new ManifestLeg { leg = "Kinloch â†’ Cormorant A", pax = 4, kg = 400 },
-                    new ManifestLeg { leg = "Cormorant A â†’ Kinloch", pax = 3, kg = 300 },
+                    new ManifestLeg { leg = "Kinloch → Cormorant A", pax = 4, kg = 400 },
+                    new ManifestLeg { leg = "Cormorant A → Kinloch", pax = 3, kg = 300 },
                 },
                 objectives = Objs(
                     A.StartUp(),
@@ -694,7 +694,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "off05_medevac",
-                title = "Offshore Â· Medevac from Kittiwake",
+                title = "Offshore · Medevac from Kittiwake",
                 shortTitle = "Offshore Medevac",
                 category = MissionCategory.Offshore,
                 employer = PENTLAND,
@@ -702,7 +702,7 @@ namespace Rotorcraft.Game
                 pathway = Pathway.Offshore,
                 callsign = "Pentland 99",
                 summary = "An injured worker on Kittiwake Alpha needs hospital care. Fly out, collect him and a medic, and land at Balnagown Hospital.",
-                briefing = new[] { "Kittiwake Alpha: 16 nm, bearing 125Â°. Balnagown Hospital helipad: 2.6 nm north-west of Kinloch, ground level, 70 ft.", "Patient: suspected fractured femur, stable. The target is hospital within 45 minutes of the call." },
+                briefing = new[] { "Kittiwake Alpha: 16 nm, bearing 125°. Balnagown Hospital helipad: 2.6 nm north-west of Kinloch, ground level, 70 ft.", "Patient: suspected fractured femur, stable. The target is hospital within 45 minutes of the call." },
                 risks = new[] { "Dusk approaching on the way back", "Haste leading to shortcuts" },
                 weatherId = "north_sea",
                 timeOfDay = TimeOfDay.Dusk,
@@ -735,7 +735,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "sar_t1_search",
-                title = "SAR Training Â· Search Patterns",
+                title = "SAR Training · Search Patterns",
                 shortTitle = "Search Patterns",
                 category = MissionCategory.Training,
                 employer = SALTIRE,
@@ -743,7 +743,7 @@ namespace Rotorcraft.Game
                 pathway = Pathway.Winch,
                 callsign = "Rescue 9-1-2",
                 summary = "A training dummy has been placed somewhere on Kinloch Moor. Search the area, find it, and land beside it.",
-                briefing = new[] { "There is no arrow to the dummy. The map shows the search area; the crew in the back look out and call when they see it. Their chance of seeing it depends on your height, speed and the visibility.", "Fly parallel tracks across the area. 300â€“500 ft above the ground and 60 kt is a good start. Overlap the strips: the map shows which parts have been covered.", "When the crew call \"contact\", land within 60 m of the dummy on ground sloping no more than 8Â°, then return to H2." },
+                briefing = new[] { "There is no arrow to the dummy. The map shows the search area; the crew in the back look out and call when they see it. Their chance of seeing it depends on your height, speed and the visibility.", "Fly parallel tracks across the area. 300–500 ft above the ground and 60 kt is a good start. Overlap the strips: the map shows which parts have been covered.", "When the crew call \"contact\", land within 60 m of the dummy on ground sloping no more than 8°, then return to H2." },
                 risks = new[] { "Rising ground in the area", "Looking down instead of flying" },
                 weatherId = "fair_nw",
                 startSiteId = "kin_h2",
@@ -764,7 +764,7 @@ namespace Rotorcraft.Game
                     A.StartUp(),
                     A.Lift(),
                     new ObjectiveDef { kind = ObjectiveKind.Search, label = "Search Kinloch Moor for the dummy", phase = "Search", areaId = "moor", targetId = "dummy", hintAfterMin = 8, say = "Search area is Kinloch Moor, south-west. Plan your pattern." },
-                    new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land beside the dummy (within 60 m, slope â‰¤ 8Â°)", phase = "Landing", nearTarget = "dummy", maxDistM = 60, maxSlopeDeg = 8 },
+                    new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land beside the dummy (within 60 m, slope ≤ 8°)", phase = "Landing", nearTarget = "dummy", maxDistM = 60, maxSlopeDeg = 8 },
                     new ObjectiveDef { kind = ObjectiveKind.LiftOff, label = "Lift off", phase = "Return", minAglM = 2 },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Return to H2", phase = "Return", siteId = "kin_h2", maxDistM = 12 },
                     A.Shutdown()),
@@ -779,15 +779,15 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "sar_t2_winch",
-                title = "SAR Assessment Â· Winch",
+                title = "SAR Assessment · Winch",
                 shortTitle = "Winch Assessment",
                 category = MissionCategory.Test,
-                employer = "Saltire Rescue Â· Capt. Fiona Mackay",
+                employer = "Saltire Rescue · Capt. Fiona Mackay",
                 aircraftId = "guardian",
                 pathway = Pathway.Winch,
                 callsign = "Rescue 9-1-2",
                 summary = "Winch the training dummy from the moor: precise hover, following the winch operator's calls.",
-                briefing = new[] { "The dummy is on the moor south-west of the field (marked). Come to a hover at 60â€“150 ft beside it and follow the winch operator's conning: \"forward 5\", \"right 3\", \"steady\".", "Press WINCH to send the winchman down when the operator says you are ready. Hold the hover while he secures the dummy (about 10 seconds); drifting more than 14 m from him aborts the lift.", "Pass standard: rescue score 65%, overall 70%, no exceedances." },
+                briefing = new[] { "The dummy is on the moor south-west of the field (marked). Come to a hover at 60–150 ft beside it and follow the winch operator's conning: \"forward 5\", \"right 3\", \"steady\".", "Press WINCH to send the winchman down when the operator says you are ready. Hold the hover while he secures the dummy (about 10 seconds); drifting more than 14 m from him aborts the lift.", "Pass standard: rescue score 65%, overall 70%, no exceedances." },
                 risks = new[] { "Drift while the winchman is on the ground", "Swing on the cable in gusts" },
                 weatherId = "light_sw",
                 startSiteId = "kin_h2",
@@ -818,10 +818,10 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "lc_sar",
-                title = "SAR Â· Line Check",
+                title = "SAR · Line Check",
                 shortTitle = "SAR Line Check",
                 category = MissionCategory.Test,
-                employer = "Saltire Rescue Â· Capt. Fiona Mackay",
+                employer = "Saltire Rescue · Capt. Fiona Mackay",
                 aircraftId = "guardian",
                 pathway = Pathway.Sar,
                 callsign = "Rescue 9-1-2",
@@ -864,7 +864,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "sar01_missing_walker",
-                title = "SAR Â· Missing Walker",
+                title = "SAR · Missing Walker",
                 shortTitle = "Missing Walker",
                 category = MissionCategory.Sar,
                 employer = SALTIRE,
@@ -872,7 +872,7 @@ namespace Rotorcraft.Game
                 pathway = Pathway.Sar,
                 callsign = "Rescue 9-1-2",
                 summary = "A hill walker is overdue in upper Glen Ardoch and the cloud is coming down. Find them, winch them out and take them to Balnagown.",
-                briefing = new[] { "Police report a walker, dressed in dark clothing, overdue since early afternoon somewhere in upper Glen Ardoch. Mobile phone not answering.", "Weather: cloud lowering from the west during the search. The glen floor is around 1,100â€“1,400 ft and the ridges about 1,800 ft: you may run out of room under the cloud. Search the valley floor and lower slopes.", "Casualty likely hypothermic: hospital within 60 minutes of the callout." },
+                briefing = new[] { "Police report a walker, dressed in dark clothing, overdue since early afternoon somewhere in upper Glen Ardoch. Mobile phone not answering.", "Weather: cloud lowering from the west during the search. The glen floor is around 1,100–1,400 ft and the ridges about 1,800 ft: you may run out of room under the cloud. Search the valley floor and lower slopes.", "Casualty likely hypothermic: hospital within 60 minutes of the callout." },
                 risks = new[] { "Cloud lowering onto the glen", "Rising ground on both sides", "Turbulence over the ridges" },
                 weatherId = "breezy_w",
                 weatherTimeline = new[]
@@ -913,7 +913,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "sar02_coastal_swimmer",
-                title = "SAR Â· Swimmer in Difficulty",
+                title = "SAR · Swimmer in Difficulty",
                 shortTitle = "Swimmer in Difficulty",
                 category = MissionCategory.Sar,
                 employer = SALTIRE,
@@ -921,7 +921,7 @@ namespace Rotorcraft.Game
                 pathway = Pathway.Sar,
                 callsign = "Rescue 9-1-2",
                 summary = "A swimmer has been swept off the rocks at Tarbat Ness. Every minute in cold water counts.",
-                briefing = new[] { "A walker saw a swimmer carried out from the rocks below Tarbat Light about ten minutes ago. Sea temperature 10 Â°C.", "Search the inshore area. A head in the water is tiny: slow down, keep low, and use the crew. Hospital: Balnagown, target 35 minutes from the callout." },
+                briefing = new[] { "A walker saw a swimmer carried out from the rocks below Tarbat Light about ten minutes ago. Sea temperature 10 °C.", "Search the inshore area. A head in the water is tiny: slow down, keep low, and use the crew. Hospital: Balnagown, target 35 minutes from the callout." },
                 risks = new[] { "Low flying over the sea", "Spray and few visual references in the hover" },
                 weatherId = "fair_nw",
                 startSiteId = "kin_h2",
@@ -958,7 +958,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "sar03_mountain",
-                title = "SAR Â· Climber on Beinn Ardoch",
+                title = "SAR · Climber on Beinn Ardoch",
                 shortTitle = "Mountain Rescue",
                 category = MissionCategory.Sar,
                 employer = SALTIRE,
@@ -1003,7 +1003,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "sar04_road_accident",
-                title = "SAR Â· Road Accident in the Glen",
+                title = "SAR · Road Accident in the Glen",
                 shortTitle = "Road Accident",
                 category = MissionCategory.Sar,
                 employer = SALTIRE,
@@ -1011,7 +1011,7 @@ namespace Rotorcraft.Game
                 pathway = Pathway.Sar,
                 callsign = "Rescue 9-1-2",
                 summary = "A car has left the glen road. Land beside the scene, take the casualty and a paramedic aboard, and fly them to Balnagown fast.",
-                briefing = new[] { "Ambulance control reports one seriously injured driver on the glen road, about 2.5 nm west of Kinloch. Police are holding the road. The scene is marked on your map.", "Land within 80 m of the scene on ground sloping no more than 8Â°: power lines and trees line the road, so pick your spot. Then Balnagown: the hospital wants the patient within 25 minutes of the call." },
+                briefing = new[] { "Ambulance control reports one seriously injured driver on the glen road, about 2.5 nm west of Kinloch. Police are holding the road. The scene is marked on your map.", "Land within 80 m of the scene on ground sloping no more than 8°: power lines and trees line the road, so pick your spot. Then Balnagown: the hospital wants the patient within 25 minutes of the call." },
                 risks = new[] { "Wires along the road", "People and vehicles at the scene", "Slope" },
                 weatherId = "light_sw",
                 startSiteId = "kin_h2",
@@ -1028,7 +1028,7 @@ namespace Rotorcraft.Game
                 objectives = Objs(
                     A.StartUp(),
                     A.Lift(),
-                    new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land beside the scene (â‰¤ 80 m, slope â‰¤ 8Â°)", phase = "Scene", nearTarget = "car", maxDistM = 80, maxSlopeDeg = 8, deadlineMin = 10 },
+                    new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land beside the scene (≤ 80 m, slope ≤ 8°)", phase = "Scene", nearTarget = "car", maxDistM = 80, maxSlopeDeg = 8, deadlineMin = 10 },
                     new ObjectiveDef { kind = ObjectiveKind.Load, label = "Casualty and paramedic aboard", phase = "Scene", what = "casualty and paramedic", payloadKg = 170, seconds = 45, pickup = true },
                     new ObjectiveDef { kind = ObjectiveKind.LiftOff, label = "Lift from the scene", phase = "Hospital", minAglM = 2 },
                     new ObjectiveDef { kind = ObjectiveKind.Land, label = "Land at Balnagown Hospital", phase = "Hospital", siteId = "balnagown", maxDistM = 10, deliver = true, deadlineMin = 22 },
@@ -1046,7 +1046,7 @@ namespace Rotorcraft.Game
             new MissionDef
             {
                 id = "sar05_night_liferaft",
-                title = "SAR Â· Liferaft at Night",
+                title = "SAR · Liferaft at Night",
                 shortTitle = "Night Liferaft",
                 category = MissionCategory.Sar,
                 employer = SALTIRE,

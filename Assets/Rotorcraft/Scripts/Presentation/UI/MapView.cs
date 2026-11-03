@@ -182,36 +182,87 @@ namespace Rotorcraft.Presentation.UI
             return l;
         }
 
+        // labels already on the map (and the site markers), so later ones go where they do not overlap
+        readonly List<Rect> taken = new List<Rect>();
+
+        static float TextWidth(string s, int size) => s.Length * size * 0.65f;   // B612 Mono: every character 0.65 em
+
+        bool Free(Rect r)
+        {
+            var padded = new Rect(r.x - 2, r.y - 1, r.width + 4, r.height + 2);
+            foreach (var t in taken) if (t.Overlaps(padded)) return false;
+            return true;
+        }
+
+        /// <summary>Put a label beside a marker at (x, y): to the right if there is room, else left, above or
+        /// below; dropped if all four would cover another label (the marker itself is still drawn).</summary>
+        void Beside(string s, double x, double y, Color c, float gap, int size = 11)
+        {
+            float tw = TextWidth(s, size), th = size * 1.3f, fx = (float)x, fy = (float)y;
+            var tries = new[]
+            {
+                new Rect(fx + gap, fy - th / 2, tw, th), new Rect(fx - gap - tw, fy - th / 2, tw, th),
+                new Rect(fx - tw / 2, fy - gap - th, tw, th), new Rect(fx - tw / 2, fy + gap, tw, th),
+            };
+            foreach (var r in tries)
+                if (Free(r)) { taken.Add(r); Text(s, r.x, r.y + size * 0.75f, c, size); return; }
+        }
+
+        /// <summary>A label centred on (x, y), nudged up or down to clear others.</summary>
+        void Centred(string s, double x, double y, Color c, int size = 11, bool italic = false)
+        {
+            float tw = TextWidth(s, size), th = size * 1.3f;
+            foreach (var dy in new[] { 0f, -th, th, -2 * th })
+            {
+                var r = new Rect((float)x - tw / 2, (float)y + dy - th / 2, tw, th);
+                if (Free(r)) { taken.Add(r); Text(s, r.x, r.y + size * 0.75f, c, size, false, italic); return; }
+            }
+        }
+
         void PlaceLabels(float w, float h)
         {
             var o = Options;
             var mpp = o.metresPerPx;
-            foreach (var t in Places.SETTLEMENTS)
-            {
-                var (x, y) = ToScreen(t.x, t.z, w, h);
-                if (x < -100 || x > w + 100 || y < -40 || y > h + 40) continue;
-                Text(t.name.ToUpperInvariant(), x, y - t.r / mpp * 0.8 - 7, new Color(0.96f, 0.94f, 0.88f, 0.75f), 11, true, true);
-            }
+            taken.Clear();
+            bool Visible(double x, double y, double m = 40) => x > -m && x < w + m && y > -m / 2 && y < h + m / 2;
+            // the markers first, so no name covers one
             foreach (var s in WorldMap.SITES)
             {
-                var (x, y) = ToScreen(s.x, s.z, w, h);
-                if (x < -40 || x > w + 40 || y < -20 || y > h + 20) continue;
                 if (s.kind == SiteKind.Pad && mpp > 8) continue;
-                var name = s.kind != SiteKind.Landmark && s.kind != SiteKind.Pad ? $"{s.name} {Math.Round(WorldMap.SiteElevation(s) * SimMath.FT)}′" : s.name;
-                Text(name, x + 7, y, new Color(0.9f, 0.93f, 0.94f, 0.92f));
+                var (x, y) = ToScreen(s.x, s.z, w, h);
+                if (Visible(x, y)) taken.Add(new Rect((float)x - 5, (float)y - 5, 10, 10));
             }
+            if (o.aircraft != null) { var (x, y) = ToScreen(o.aircraft.Value.x, o.aircraft.Value.z, w, h); taken.Add(new Rect((float)x - 9, (float)y - 9, 18, 18)); }
+            taken.Add(new Rect(0, 0, 36, 22));                                      // north arrow
+            taken.Add(new Rect(0, h - 22, (float)(1852 / mpp) + 50, 22));          // scale bar
+            Text("N ↑", 8, 12, new Color(0.9f, 0.93f, 0.94f));
+            Text("1 nm", 12 + 1852 / mpp, h - 9, new Color(0.9f, 0.93f, 0.94f));
+            // then the names, most important first
             var amber = new Color32(0xf2, 0xb5, 0x3c, 255);
-            if (o.areas != null) foreach (var a in o.areas) { var c = Centre(a.corners); var (x, y) = ToScreen(c.x, c.z, w, h); Text(a.name, x, y, amber, 11, true); }
-            if (o.search is var sv && sv != null) { var c = Centre(sv.Value.corners); var (x, y) = ToScreen(c.x, c.z, w, h); Text($"{sv.Value.name} · {Math.Round(sv.Value.coverage * 100)}%", x, y, amber, 11, true); }
             var orange = new Color32(0xff, 0x6a, 0x2a, 255);
-            if (o.found != null) foreach (var f in o.found) { var (x, y) = ToScreen(f.x, f.z, w, h); Text(f.name, x + 9, y, orange); }
             if (o.callouts != null) foreach (var c in o.callouts)
                 {
                     var col = c.active ? new Color32(0xe0, 0x5c, 0xc8, 255) : c.priority == 1 ? new Color32(0xff, 0x5a, 0x4a, 255) : amber;
-                    var (x, y) = ToScreen(c.x, c.z, w, h); Text(c.label, x + 10, y, col);
+                    var (x, y) = ToScreen(c.x, c.z, w, h); Beside(c.label, x, y, col, 10);
                 }
-            Text("N ↑", 8, 12, new Color(0.9f, 0.93f, 0.94f));
-            Text("1 nm", 12 + 1852 / mpp, h - 9, new Color(0.9f, 0.93f, 0.94f));
+            if (o.found != null) foreach (var f in o.found) { var (x, y) = ToScreen(f.x, f.z, w, h); Beside(f.name, x, y, orange, 9); }
+            if (o.search is var sv && sv != null) { var c = Centre(sv.Value.corners); var (x, y) = ToScreen(c.x, c.z, w, h); Centred($"{sv.Value.name} · {Math.Round(sv.Value.coverage * 100)}%", x, y, amber); }
+            if (o.areas != null) foreach (var a in o.areas) { var c = Centre(a.corners); var (x, y) = ToScreen(c.x, c.z, w, h); Centred(a.name, x, y, amber); }
+            foreach (var pads in new[] { false, true })
+                foreach (var s in WorldMap.SITES)
+                {
+                    if ((s.kind == SiteKind.Pad) != pads || (pads && mpp > 8)) continue;
+                    var (x, y) = ToScreen(s.x, s.z, w, h);
+                    if (!Visible(x, y)) continue;
+                    var name = s.kind != SiteKind.Landmark && s.kind != SiteKind.Pad ? $"{s.name} {Math.Round(WorldMap.SiteElevation(s) * SimMath.FT)}′" : s.name;
+                    Beside(name, x, y, new Color(0.9f, 0.93f, 0.94f, 0.92f), 7);
+                }
+            foreach (var t in Places.SETTLEMENTS)
+            {
+                var (x, y) = ToScreen(t.x, t.z, w, h);
+                if (!Visible(x, y, 100)) continue;
+                Centred(t.name.ToUpperInvariant(), x, y - t.r / mpp * 0.8 - 7, new Color(0.96f, 0.94f, 0.88f, 0.75f), 11, true);
+            }
         }
 
         static (double x, double z) Centre((double x, double z)[] cs) => (cs.Average(p => p.x), cs.Average(p => p.z));

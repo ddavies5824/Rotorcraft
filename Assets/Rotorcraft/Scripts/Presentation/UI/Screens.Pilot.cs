@@ -103,6 +103,9 @@ namespace Rotorcraft.Presentation.UI
         }
 
         // --------------------------------------------------------------------------------------- hangar
+        /// <summary>Room for "0.0/2.5 h" on one line, the same in both rows so the bars line up.</summary>
+        static void WideValue(VisualElement row) => row.Q<Label>(className: "scorerow-v").With(v => { v.style.width = 80; v.style.whiteSpace = WhiteSpace.NoWrap; });
+
         static VisualElement AirframePanel(GameApp app, string acId)
         {
             var c = app.Career;
@@ -111,8 +114,8 @@ namespace Rotorcraft.Presentation.UI
             var due = a.hoursSinceInspection / CareerManager.INSPECTION_INTERVAL_H;
             var cost = CareerManager.MaintenanceCost(c, acId);
             var box = E("stack tight").With(x => { x.style.borderTopWidth = 1; x.style.borderTopColor = (Color)new Color32(0x2c, 0x3a, 0x44, 255); x.style.paddingTop = 8; });
-            box.Add(ScoreRow("Condition", a.condition, $"{a.condition:0}", a.condition < CareerManager.SERVICEABLE_MIN ? "w" : a.condition < 85 ? "c" : null));
-            box.Add(ScoreRow("Inspection", Math.Min(100, due * 100), $"{a.hoursSinceInspection:F1}/{CareerManager.INSPECTION_INTERVAL_H} h", due >= 1 ? "w" : due > 0.8 ? "c" : null));
+            box.Add(ScoreRow("Condition", a.condition, $"{a.condition:0}", a.condition < CareerManager.SERVICEABLE_MIN ? "w" : a.condition < 85 ? "c" : null).With(WideValue));
+            box.Add(ScoreRow("Inspection", Math.Min(100, due * 100), $"{a.hoursSinceInspection:F1}/{CareerManager.INSPECTION_INTERVAL_H} h", due >= 1 ? "w" : due > 0.8 ? "c" : null).With(WideValue));
             if (a.lastEvent != null) box.Add(Muted("Tech log: " + a.lastEvent, "small"));
             var pf = CareerManager.PowerFactor(c, acId);
             if (pf < 1) box.Add(Muted($"Worn engine: {pf * 100:0}% of rated power until maintained.", "small"));
@@ -144,7 +147,7 @@ namespace Rotorcraft.Presentation.UI
                     Kv(("Engines", $"{ac.engines} · {ac.ratedPowerKW:0} kW"), ("Max mass", $"{N0(ac.maxGross)} kg"), ("Fuel", $"{N0(ac.fuelCapacity)} kg · {ac.fuelBurnKgH:0} kg/h max"),
                         ("Rotor", $"{ac.rotorDiameter} m · VNE {ac.vneKt:0} kt"), ("Equipment", EquipmentText(ac.equipment)), ("Cost", $"£{N0(ac.operatingCostPerHour)}/h")),
                     AirframePanel(app, ac.id));
-                if (!pic) p.Add(Muted(dual ? $"Flown with an instructor or training captain until you hold {string.Join(", ", missing)}." : $"Training needs {string.Join(", ", (ac.trainingQualifications ?? new string[0]).Select(q => Qualifications.ById(q)?.abbrev ?? q).DefaultIfEmpty("nothing"))};pilot-in-command needs {string.Join(", ", missing)}.", "small"));
+                if (!pic) p.Add(Muted(dual ? $"Flown with an instructor or training captain until you hold {string.Join(", ", missing)}." : $"Training needs {string.Join(", ", (ac.trainingQualifications ?? new string[0]).Select(q => Qualifications.ById(q)?.abbrev ?? q).DefaultIfEmpty("nothing"))}; pilot-in-command needs {string.Join(", ", missing)}.", "small"));
                 grid.Add(p);
             }
             return E("page", E("page-head", H1("Hangar"), Muted("Generic simulated types, not reproductions of real products.", "small")), grid);

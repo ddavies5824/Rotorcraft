@@ -81,7 +81,7 @@ namespace Rotorcraft.Presentation.UI
                 if (ac.engines == 2 && baseId == "kin_h1") app.ScreenState["base"] = "kin_h2";
                 app.Later(app.Refresh);
             }
-            var picks = E("grid3");
+            var picks = E("acrow");
             foreach (var ac in Aircraft.All.Values)
             {
                 var id = ac.id;

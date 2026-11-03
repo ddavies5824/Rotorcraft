@@ -155,7 +155,6 @@ namespace Rotorcraft.Presentation
             hudRoot?.RemoveFromHierarchy();
             hudRoot = E("hud");
             hudRoot.pickingMode = PickingMode.Ignore;
-            hudRoot.Add(E("vignette").With(v => v.pickingMode = PickingMode.Ignore));
             hood = E("hood", Up("Instrument hood: fly by the instruments", "hood-l")); hood.pickingMode = PickingMode.Ignore; hudRoot.Add(hood);
             readouts = E("readouts");
             ro.Clear();

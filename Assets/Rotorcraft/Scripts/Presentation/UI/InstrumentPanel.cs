@@ -34,11 +34,22 @@ namespace Rotorcraft.Presentation.UI
 
         static void Disc(Painter2D p, Vector2 c, float r, Color col) { p.fillColor = col; p.BeginPath(); p.Arc(c, r, Angle.Degrees(0), Angle.Degrees(360)); p.Fill(); }
 
-        static void Gauge(MeshGenerationContext m, Vector2 c, float r, string label)
+        /// <summary>Bezel, face and the dial's name, just below the hub (clear of the scale numbers at the ends of the sweep).</summary>
+        static void Gauge(MeshGenerationContext m, Vector2 c, float r, string label, float labelY = 0.3f)
         {
             var p = m.painter2D;
             Disc(p, c, r + 4, BEZEL); Disc(p, c, r, FACE);
-            if (!string.IsNullOrEmpty(label)) Text(m, label, c + new Vector2(0, r * 0.42f), r * 0.17f, DIM);
+            if (!string.IsNullOrEmpty(label)) Text(m, label, c + new Vector2(0, r * labelY), r * 0.14f, DIM);
+        }
+
+        /// <summary>A digital readout in a dark window, so the needles crossing it never hide the figures.</summary>
+        static void Readout(MeshGenerationContext m, string t, Vector2 centre, float size, Color col)
+        {
+            var p = m.painter2D;
+            float hw = t.Length * size * 0.3f + size * 0.25f, hh = size * 0.62f;
+            p.fillColor = Hex(0x1a2025); p.strokeColor = BEZEL; p.lineWidth = 1;
+            p.BeginPath(); p.MoveTo(centre + new Vector2(-hw, -hh)); p.LineTo(centre + new Vector2(hw, -hh)); p.LineTo(centre + new Vector2(hw, hh)); p.LineTo(centre + new Vector2(-hw, hh)); p.ClosePath(); p.Fill(); p.Stroke();
+            Text(m, t, centre, size, col);
         }
 
         static void Text(MeshGenerationContext m, string t, Vector2 centre, float size, Color col)
@@ -165,10 +176,10 @@ namespace Rotorcraft.Presentation.UI
             // 3. Altimeter (1,000 ft a turn of the long needle, 10,000 the short)
             case Gauges.Altimeter:
             {
-                Gauge(m, c, r, "ALT FT");
+                Gauge(m, c, r, "ALT FT", 0.43f);
                 Dial(m, c, r, 0, 1000, 0, Mathf.PI * 2 * 0.999f, 100, 100, v => (v / 100 % 10).ToString("0"));
                 var alt = Math.Max(0, o.altFt);
-                Text(m, alt.ToString("0").PadLeft(4), c + new Vector2(0, -r * 0.28f), r * 0.2f, TICK);
+                Readout(m, alt.ToString("0"), c + new Vector2(0, r * 0.22f), r * 0.17f, TICK);
                 Needle(p, c, r * 0.55f, (float)(alt % 10000 / 10000 * Math.PI * 2), TICK, 5);
                 Needle(p, c, r * 0.85f, (float)(alt % 1000 / 1000 * Math.PI * 2), TICK, 2.5f);
             } break;
@@ -243,16 +254,16 @@ namespace Rotorcraft.Presentation.UI
                 DialArc(p, c, r * 0.93f, ang(0), ang(ac.torqueMcp), GREEN, 5);
                 DialArc(p, c, r * 0.93f, ang(ac.torqueMcp), ang(ac.torqueMax), AMBER, 5);
                 Needle(p, c, r * 0.88f, ang(Math.Min(120, o.torque)), o.torque > ac.torqueMcp ? AMBER : TICK);
-                Text(m, $"hover OGE {o.hoverPowerOGE:0}%", c + new Vector2(0, r * 0.66f), r * 0.15f, DIM);
+                Text(m, $"OGE {o.hoverPowerOGE:0}%", c + new Vector2(0, r * 0.64f), r * 0.13f, DIM);
             } break;
             // 8. Fuel
             case Gauges.Fuel:
             {
-                Gauge(m, c, r, "FUEL KG");
+                Gauge(m, c, r, "FUEL KG", 0.6f);
                 var ang = Dial(m, c, r, 0, 1, -2.0f, 2.0f, 0.25, 0.5, v => v == 0 ? "E" : v == 1 ? "F" : "½");
                 var frac = s.fuel / ac.fuelCapacity;
+                Readout(m, s.fuel.ToString(ac.fuelCapacity < 200 ? "F1" : "F0"), c + new Vector2(0, r * 0.36f), r * 0.17f, TICK);
                 Needle(p, c, r * 0.86f, ang(frac), frac < 0.15 ? AMBER : TICK);
-                Text(m, s.fuel.ToString(ac.fuelCapacity < 200 ? "F1" : "F0"), c + new Vector2(0, r * 0.22f), r * 0.2f, TICK);
             } break;
             // 9. Engine temperature (CHT for a piston, TOT for a turbine)
             case Gauges.EngineTemp:
@@ -274,7 +285,8 @@ namespace Rotorcraft.Presentation.UI
                 DialArc(p, c, r * 0.93f, ang(25), ang(40), AMBER, 5);
                 DialArc(p, c, r * 0.93f, ang(40), ang(110), GREEN, 5);
                 Needle(p, c, r * 0.86f, ang(Math.Min(120, o.oilPress)), o.oilPress < 25 && s.engine == EngineState.Running ? RED : TICK);
-                Text(m, $"THR {s.sys.throttle * 100:0}%{(s.sys.governor ? "" : " GOV OFF")}", c + new Vector2(0, r * 0.66f), r * 0.15f, DIM);
+                Text(m, $"THR {s.sys.throttle * 100:0}%", c + new Vector2(0, r * 0.64f), r * 0.13f, DIM);
+                if (!s.sys.governor) Text(m, "GOV OFF", c + new Vector2(0, r * 0.8f), r * 0.13f, AMBER);
             } break;
             }
         }

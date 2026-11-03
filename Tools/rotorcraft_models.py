@@ -3147,7 +3147,7 @@ def build_nightjar():
     meta = {
         "format": "RCM1", "model": "Nightjar N4", "refRotorDiameter": 11.0, "generator": VERSION,
         "points": {
-            "mastY": 3.42, "tailPos": [0.0, 2.02, 6.62], "eye": [0.42, 1.86, -2.05], "fuel": [0.95, 1.05, 1.2],
+            "mastY": 3.42, "tailPos": [0.0, 2.02, 6.62], "eye": [0.42, 1.78, -1.92], "fuel": [0.95, 1.05, 1.2],
             "lights": {"navL": [-1.07, 2.4, 5.48], "navR": [1.07, 2.4, 5.48], "tail": [0, 2.02, 7.33], "beacon": [0, 3.1, 6.87],
                        "strobes": [[0, 3.1, 6.9], [0, 0.56, -0.4]], "landing": {"pos": [0, 0.64, -3.26], "dir": [0, -0.3, -1]},
                        "search": {"pos": [0.72, 0.38, -2.46], "dir": [0, -0.7, -0.7]}, "cabin": [0, 1.6, -0.2]},

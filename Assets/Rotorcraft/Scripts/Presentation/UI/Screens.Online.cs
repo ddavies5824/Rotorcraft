@@ -165,20 +165,23 @@ namespace Rotorcraft.Presentation.UI
             if (tab == "boards")
             {
                 var picks = Row();
-                foreach (var b in BOARDS) { var bid = b.id; var bt = new Button(() => Set(app, "board", bid)) { text = b.label.ToUpperInvariant() }.Cls("chip" + (b.id == boardId ? " nav" : "")); picks.Add(bt); }
+                foreach (var b in BOARDS) { var bid = b.id; var bt = new Button(() => Set(app, "board", bid)) { text = b.label.ToUpperInvariant() }.Cls("chip chip-btn" + (b.id == boardId ? " nav" : "")); picks.Add(bt); }
                 var p = Panel(picks);
                 if (rows != null && rows.Count == 0 && !loading) p.Add(Muted("Nobody on this board yet. Be the first: fly, and your profile publishes after each save."));
                 if (rows != null && rows.Count > 0)
                 {
+                    // every column sized from a zero basis, so the header and the rows share the same widths
+                    TE Col<TE>(TE e, float grow) where TE : VisualElement { e.style.flexGrow = grow; e.style.flexBasis = 0; e.style.flexShrink = 1; return e; }
                     var t = E("table");
-                    t.Add(E("tr", Up("#", "th td").With(x => x.style.width = 40), Up("Pilot", "th td").With(x => x.style.flexGrow = 2), Up("Rank", "th td").With(x => x.style.flexGrow = 2), Up(board.label, "th td num").With(x => x.style.flexGrow = 1), Up("Hours", "th td num").With(x => x.style.flexGrow = 1)));
+                    t.Add(E("tr", Up("#", "th td").With(x => x.style.width = 40), Col(Up("Pilot", "th td"), 2), Col(Up("Rank", "th td"), 2),
+                        Col(Up(board.id == "rank" ? "Level" : board.label, "th td num"), 1.4f), Col(Up("Hours", "th td num"), 1)));
                     for (int i = 0; i < rows.Count; i++)
                     {
                         var r = rows[i];
                         var tr = new Button(() => Set(app, "sel", r)).Cls("tr lb-row" + (r.uid == c.PilotUid ? " me" : "") + (i < 3 ? $" top{i + 1}" : ""));
                         tr.style.backgroundColor = r.uid == c.PilotUid ? new Color(0.88f, 0.36f, 0.78f, 0.14f) : new Color(0, 0, 0, 0); tr.style.borderLeftWidth = tr.style.borderRightWidth = tr.style.borderTopWidth = 0; tr.style.marginLeft = tr.style.marginRight = 0;
-                        tr.Add(T($"{i + 1}", "lb-pos td")); tr.Add(Row(T(r.profile.name, "b"), r.uid == c.PilotUid ? Chip("You", "ok") : null).With(x => x.style.flexGrow = 2));
-                        tr.Add(Muted(r.profile.rank).With(x => x.style.flexGrow = 2)); tr.Add(T(board.fmt(r.profile), "td num").With(x => x.style.flexGrow = 1)); tr.Add(T($"{r.profile.hours:F1}", "td num").With(x => x.style.flexGrow = 1));
+                        tr.Add(T($"{i + 1}", "lb-pos td")); tr.Add(Col(E("row nowrap", T(r.profile.name, "b"), r.uid == c.PilotUid ? Chip("You", "ok") : null), 2));
+                        tr.Add(Col(Muted(r.profile.rank, "td"), 2)); tr.Add(Col(T(board.fmt(r.profile), "td num"), 1.4f)); tr.Add(Col(T($"{r.profile.hours:F1}", "td num"), 1));
                         t.Add(tr);
                     }
                     p.Add(t);

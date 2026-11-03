@@ -100,6 +100,29 @@ namespace Rotorcraft.Presentation.UI
             return page;
         }
 
+        /// <summary>An exam that cannot be sat yet: what it is, and the modules to pass first (each a step away).</summary>
+        static VisualElement LockedExam(GameApp app, ExamDef ex)
+        {
+            var c = app.Career;
+            var passed = c.exams.TryGetValue(ex.id, out var er) && er.passed;
+            var list = E("list");
+            foreach (var id in ex.prerequisites)
+            {
+                var m = Theory.ModuleById(id);
+                if (m == null) continue;
+                var done = c.modules.TryGetValue(id, out var r) && r.passed;
+                list.Add(E("item", E("item-main stack tight", T(m.title, "item-title"), E("item-meta", T($"{m.minutes} min read · {m.quiz.Length}-question check"))),
+                    done ? Chip("Passed", "ok") : Btn("Study", "small", () => app.Go(Route.Module(id)))));
+            }
+            var page = E("page",
+                E("page-head", Tight(Placard($"{ex.questionCount} questions · pass mark {ex.passMark:0}%"), H1(ex.title, true)), passed ? Chip("Passed", "ok") : Chip("Locked", "caution")),
+                P(ex.description),
+                Panel(H3(passed ? "Already passed" : "Pass these modules first"), list),
+                Row(Btn("Ground school", "", () => app.Go("school"))));
+            page.style.maxWidth = 780;
+            return page;
+        }
+
         static VisualElement ExamView(GameApp app, string examId)
         {
             var c = app.Career;
@@ -112,7 +135,7 @@ namespace Rotorcraft.Presentation.UI
             var answers = St(app, "answers", new int?[questions.Count]);
             app.ScreenState["answers"] = answers;
             var avail = CareerManager.ExamAvailability(c, examId);
-            if (!avail.available && result == null) return E("page", H1(ex.title), Muted(string.Join(" · ", avail.reasons)), Btn("Back", "", () => app.Go("school")));
+            if (!avail.available && result == null) return LockedExam(app, ex);
             var shownAttempt = result != null ? attempt - 1 : attempt;
             var page = E("page", Tight(Placard($"Attempt {shownAttempt} · pass {ex.passMark:0}%"), H1(ex.title, true)));
             page.style.maxWidth = 780;

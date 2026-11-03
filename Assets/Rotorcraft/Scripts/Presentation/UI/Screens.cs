@@ -109,7 +109,7 @@ namespace Rotorcraft.Presentation.UI
             var wrap = E("standalone");
             wrap.style.alignItems = Align.Center;
             page.style.width = Length.Percent(100);
-            page.style.maxWidth = 1100;
+            page.style.maxWidth = 1360;
             wrap.Add(page);
             s.Add(wrap);
             return E("app", s);
@@ -231,6 +231,7 @@ namespace Rotorcraft.Presentation.UI
             page.Add(strip);
             page.Add(Panel(Stats(Stat(Hm(CareerManager.Hours(c) * 3600), "Flight hours"), Stat(c.stats.flights.ToString(), "Flights"),
                 Stat(Money(c.money.balance), "Balance" + (c.money.loan > 0 ? $" · loan {Money(c.money.loan)}" : "")), Stat(quals.Count.ToString(), "Qualifications"))));
+            page.Add(E("grid2", AircraftCard(app, rec), SchoolCard(app)));
             if (c.log.Count > 0)
             {
                 var p = Panel(RowBetween(H3("Recent flights"), Btn("Logbook", "small ghost", () => app.Go("records"))));
@@ -238,6 +239,42 @@ namespace Rotorcraft.Presentation.UI
                 page.Add(p);
             }
             return page;
+        }
+
+        /// <summary>The aircraft the next lesson or job is flown in, and its state.</summary>
+        static VisualElement AircraftCard(GameApp app, Recommendation rec)
+        {
+            var c = app.Career;
+            var acId = (rec.kind == "mission" ? Missions.ById(rec.id)?.aircraftId : null) ?? "kestrel";
+            var ac = Aircraft.Get(acId);
+            var a = CareerManager.Airframe(c, acId);
+            var grounded = CareerManager.Serviceability(c, acId).Count > 0;
+            return Panel(RowBetween(H3("Your aircraft"), Btn("Hangar", "small ghost", () => app.Go("hangar"))),
+                AircraftPicture(acId),
+                RowBetween(T(ac.name, "h2"), grounded ? Chip("Grounded", "warn") : Chip("Serviceable", "ok")),
+                ScoreRow("Condition", a.condition, $"{a.condition:0}", a.condition < CareerManager.SERVICEABLE_MIN ? "w" : a.condition < 85 ? "c" : null));
+        }
+
+        /// <summary>Theory progress: modules and exams passed, and what to read next.</summary>
+        static VisualElement SchoolCard(GameApp app)
+        {
+            var c = app.Career;
+            bool Passed<TR>(Dictionary<string, TR> d, string id, Func<TR, bool> ok) => d.TryGetValue(id, out var r) && ok(r);
+            var modules = Theory.MODULES.Count(m => Passed(c.modules, m.id, r => r.passed));
+            var exams = Theory.EXAMS.Count(e => Passed(c.exams, e.id, r => r.passed));
+            var next = Theory.MODULES.FirstOrDefault(m => !Passed(c.modules, m.id, r => r.passed));
+            var p = Panel(RowBetween(H3("Ground school"), Btn("Open", "small ghost", () => app.Go("school"))),
+                Stats(Stat($"{modules}/{Theory.MODULES.Count}", "Modules passed"), Stat($"{exams}/{Theory.EXAMS.Count}", "Exams passed")),
+                Bar(100.0 * (modules + exams) / (Theory.MODULES.Count + Theory.EXAMS.Count)).With(b => b.style.flexGrow = 0),
+                Spacer());   // the card is as tall as the aircraft beside it: keep the next module at the foot
+            if (next != null)
+            {
+                var nm = next;
+                p.Add(RowBetween(Tight(Eyebrow("Next to read"), T(next.title), Muted($"{next.minutes} min read · {next.quiz.Length}-question check", "small")),
+                    Btn("Study", "small", () => app.Go(Route.Module(nm.id)))));
+            }
+            else p.Add(Muted("Every theory module passed. Exams open as your flying progresses."));
+            return p;
         }
 
         static Label OutcomeChip(FlightOutcome o)

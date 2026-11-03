@@ -43,6 +43,7 @@ Shader "Rotorcraft/Sea"
             float _Waves;               // wave strength 0..1 (wind)
             float _Foam;                // whitecaps 0..1 (wind)
             float4 _SeaColor, _DeepColor;
+            float4 _SkyGlow;            // the evening or night sky near the horizon (set with the time of day)
 
             struct Attributes { float3 positionOS : POSITION; };
             struct Varyings { float4 positionCS : SV_POSITION; float3 w : TEXCOORD0; float fog : TEXCOORD1; };
@@ -81,6 +82,9 @@ Shader "Rotorcraft/Sea"
                 float3 R = reflect(-V, N);
                 R.y = abs(R.y);
                 float3 refl = GlossyEnvironmentReflection(R, 0.06, 1);
+                // after dark the probe (captured by day) is turned right down: reflect the evening or night
+                // sky's own horizon colour instead, so the sea meets the sky rather than ending in black
+                refl += _SkyGlow.rgb * (1 - 0.6 * saturate(R.y * 3));
 
                 float4 shadowCoord = TransformWorldToShadowCoord(w);
                 Light sun = GetMainLight(shadowCoord);

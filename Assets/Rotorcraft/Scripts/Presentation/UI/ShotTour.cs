@@ -7,6 +7,7 @@ using System.Linq;
 using Rotorcraft.Game;
 using Rotorcraft.Sim;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Rotorcraft.Presentation.UI
 {
@@ -28,16 +29,17 @@ namespace Rotorcraft.Presentation.UI
             app = GameApp.Instance;
             Directory.CreateDirectory(folder);
             yield return Wait(2.5f);
-            yield return Shot("menu");
-            app.Go("new"); yield return Shot("new-career");
+            yield return Page("menu");
+            app.Go("new"); yield return Page("new-career");
             app.CommitCareer(CareerManager.CreateCareer("Alex Ross", null, CareerStart.Student));
-            foreach (var r in new[] { "hq", "school", "missions", "employers", "quals", "hangar", "records", "settings" }) { app.Go(r); yield return Shot(r); }
-            app.Go(Route.Module(Theory.MODULES[0].id)); yield return Shot("ground-school-module");
-            app.Go(Route.Brief("ex01_controls")); yield return Shot("briefing");
-            app.Go("freeplay"); yield return Shot("freeplay-setup");
-            app.Go("company"); yield return Shot("company");
-            app.Go("pilots"); yield return Shot("pilots");
-            app.Go("account"); yield return Shot("account");
+            foreach (var r in new[] { "hq", "school", "missions", "employers", "quals", "hangar", "records", "settings", "tutorial" }) { app.Go(r); yield return Page(r); }
+            app.Go(Route.Module(Theory.MODULES[0].id)); yield return Page("ground-school-module");
+            app.Go(Route.Exam(Theory.EXAMS[0].id)); yield return Page("exam");
+            app.Go(Route.Brief("ex01_controls")); yield return Page("briefing");
+            app.Go("freeplay"); yield return Page("freeplay-setup");
+            app.Go("company"); yield return Page("company");
+            app.Go("pilots"); yield return Page("pilots");
+            app.Go("account"); yield return Page("account");
 
             // a freeplay shift in the Northstar: loading screen, then the HUD and its panels
             var cfg = new FreeplayConfig { aircraftId = "northstar", kit = Loadout.DefaultKit(Aircraft.Get("northstar")), fuelKg = 900, pace = FreeplayPace.Busy };
@@ -66,7 +68,7 @@ namespace Rotorcraft.Presentation.UI
             f.SkipForTour(); f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitDist = 6f; f.cam.orbitPitch = 5; f.cam.orbitYaw = 30; yield return Wait(1.5f); yield return Shot("close-front-kestrel");
             f.cam.orbitYaw = 145; f.cam.orbitPitch = 10; yield return Wait(1); yield return Shot("close-rear-kestrel");
             f.cam.orbitDist = 12; f.heli.SetCamera(CameraMode.Cockpit); yield return Wait(1); yield return Shot("cockpit-kestrel");
-            f.Finish(FlightEnd.Aborted); yield return Wait(1);
+            f.Finish(FlightEnd.Aborted); yield return Wait(1.5f); yield return Page("debrief");
 
             // every type: the cockpit with its live instruments, and from outside
             foreach (var id in new[] { "northstar", "guardian", "nightjar" })
@@ -194,6 +196,30 @@ namespace Rotorcraft.Presentation.UI
             f.heli.SetCamera(CameraMode.Chase);
             yield return Hold(new Vec3(20700, 70, -6026), 4, false, System.Math.PI / 2); yield return Shot("fx-platform-flare-night");
             f.cam.orbitDist = 12; f.Finish(FlightEnd.Complete); yield return Wait(1);
+        }
+
+        /// <summary>A screen, then further down it a screenful at a time when it scrolls (up to four more).</summary>
+        IEnumerator Page(string name)
+        {
+            yield return Shot(name);
+            yield return null;
+            ScrollView best = null; float extra = 0;
+            if (app.document != null)
+                foreach (var sv in app.document.rootVisualElement.Query<ScrollView>().ToList())
+                {
+                    var e = sv.contentContainer.layout.height - sv.contentViewport.layout.height;
+                    if (sv.resolvedStyle.display != DisplayStyle.None && e > extra + 1) { extra = e; best = sv; }
+                }
+            if (best == null || extra < 40) yield break;
+            var step = best.contentViewport.layout.height * 0.9f;
+            for (int k = 1; k <= 4 && step > 1; k++)
+            {
+                var y = Mathf.Min(extra, step * k);
+                best.scrollOffset = new Vector2(0, y);
+                yield return Shot(name + "-" + (k + 1));
+                if (y >= extra) break;
+            }
+            best.scrollOffset = Vector2.zero;
         }
 
         static IEnumerator Wait(float s) { var t = Time.realtimeSinceStartup + s; while (Time.realtimeSinceStartup < t) yield return null; }

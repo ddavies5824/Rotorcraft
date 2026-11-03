@@ -31,10 +31,10 @@ namespace Rotorcraft.Game
                 },
                 quiz = new[]
                 {
-                    new Question { id = "p1", q = "Raising the collective lever primarilyâ€¦", options = new[] { "Tilts the rotor disc forward", "Increases the pitch of all main rotor blades", "Increases tail rotor thrust", "Increases engine RPM above 100%" }, answer = 1, explain = "The collective changes the pitch of all blades collectively, increasing thrust and power required." },
-                    new Question { id = "p2", q = "You raise the collective in the hover. Without a pedal input, the nose will tend toâ€¦", options = new[] { "Stay where it is", "Yaw because of the increased torque", "Pitch down", "Roll right" }, answer = 1, explain = "More power means more torque reaction; the pedals must compensate." },
-                    new Question { id = "p3", q = "Hovering at 3 ft compared with 100 ft requiresâ€¦", options = new[] { "More power", "The same power", "Less power", "More tail rotor" }, answer = 2, explain = "In ground effect the induced flow is reduced, so less power is needed." },
-                    new Question { id = "p4", q = "Accelerating through about 15 kt you notice vibration and a tendency to climb. This isâ€¦", options = new[] { "Vortex ring state", "Retreating blade stall", "Effective translational lift", "Ground resonance" }, answer = 2, explain = "ETL: the rotor becomes more efficient as it moves into clean air." },
+                    new Question { id = "p1", q = "Raising the collective lever primarily…", options = new[] { "Tilts the rotor disc forward", "Increases the pitch of all main rotor blades", "Increases tail rotor thrust", "Increases engine RPM above 100%" }, answer = 1, explain = "The collective changes the pitch of all blades collectively, increasing thrust and power required." },
+                    new Question { id = "p2", q = "You raise the collective in the hover. Without a pedal input, the nose will tend to…", options = new[] { "Stay where it is", "Yaw because of the increased torque", "Pitch down", "Roll right" }, answer = 1, explain = "More power means more torque reaction; the pedals must compensate." },
+                    new Question { id = "p3", q = "Hovering at 3 ft compared with 100 ft requires…", options = new[] { "More power", "The same power", "Less power", "More tail rotor" }, answer = 2, explain = "In ground effect the induced flow is reduced, so less power is needed." },
+                    new Question { id = "p4", q = "Accelerating through about 15 kt you notice vibration and a tendency to climb. This is…", options = new[] { "Vortex ring state", "Retreating blade stall", "Effective translational lift", "Ground resonance" }, answer = 2, explain = "ETL: the rotor becomes more efficient as it moves into clean air." },
                     new Question { id = "p5", q = "What happens if you demand more power than the engine can deliver?", options = new[] { "Nothing, the governor handles it", "The rotor RPM droops", "The tail rotor stalls", "The aircraft yaws left only" }, answer = 1, explain = "With no spare power, the rotor slows down, reducing thrust and control authority." },
                 },
             },
@@ -46,18 +46,18 @@ namespace Rotorcraft.Game
                 passMark = 75,
                 sections = new[]
                 {
-                    new TheorySection { heading = "Headings, bearings and distance", body = "Bearings are measured clockwise from north: 090Â° is east, 270Â° is west. Distances in aviation are in nautical miles (1 nm = 1,852 m). At 60 kt you cover one nautical mile per minute, which makes timing easy." },
+                    new TheorySection { heading = "Headings, bearings and distance", body = "Bearings are measured clockwise from north: 090° is east, 270° is west. Distances in aviation are in nautical miles (1 nm = 1,852 m). At 60 kt you cover one nautical mile per minute, which makes timing easy." },
                     new TheorySection { heading = "Altitude and QNH", body = "With the regional pressure (QNH) set, the altimeter shows altitude above mean sea level. Kinloch heliport is 124 ft above sea level, so a 500 ft circuit is flown at about 620 ft on the altimeter. The ground rises steeply inland: always know the elevation beneath you." },
-                    new TheorySection { heading = "Reading a METAR", body = "EGKN 23008KT 9999 SCT035 12/08 Q1015 means: wind from 230Â° at 8 kt, visibility 10 km or more, scattered cloud at 3,500 ft, temperature 12 Â°C, dew point 8 Â°C, QNH 1015 hPa. Wind direction is always where the wind is coming FROM." },
+                    new TheorySection { heading = "Reading a METAR", body = "EGKN 23008KT 9999 SCT035 12/08 Q1015 means: wind from 230° at 8 kt, visibility 10 km or more, scattered cloud at 3,500 ft, temperature 12 °C, dew point 8 °C, QNH 1015 hPa. Wind direction is always where the wind is coming FROM." },
                     new TheorySection { heading = "Wind and drift", body = "In the hover the aircraft drifts downwind unless you hold cyclic into wind. In forward flight a crosswind pushes you off track: point the nose slightly into wind to stay on the line. Gusty wind makes precise hovering harder and calls for small, quick corrections." },
                 },
                 quiz = new[]
                 {
-                    new Question { id = "n1", q = "A METAR gives the wind as 27014G23KT. The wind isâ€¦", options = new[] { "Blowing towards 270Â° at 14 kt", "From 270Â° at 14 kt, gusting 23 kt", "From 140Â° at 27 kt", "From 270Â° at 23 kt, gusting 14 kt" }, answer = 1, explain = "Direction is where the wind comes from; G marks the gust speed." },
-                    new Question { id = "n2", q = "Kinloch is 124 ft AMSL. For a 500 ft circuit the altimeter (QNH) should read aboutâ€¦", options = new[] { "500 ft", "376 ft", "620 ft", "1,000 ft" }, answer = 2, explain = "500 ft above the field plus 124 ft elevation â‰ˆ 620 ft." },
+                    new Question { id = "n1", q = "A METAR gives the wind as 27014G23KT. The wind is…", options = new[] { "Blowing towards 270° at 14 kt", "From 270° at 14 kt, gusting 23 kt", "From 140° at 27 kt", "From 270° at 23 kt, gusting 14 kt" }, answer = 1, explain = "Direction is where the wind comes from; G marks the gust speed." },
+                    new Question { id = "n2", q = "Kinloch is 124 ft AMSL. For a 500 ft circuit the altimeter (QNH) should read about…", options = new[] { "500 ft", "376 ft", "620 ft", "1,000 ft" }, answer = 2, explain = "500 ft above the field plus 124 ft elevation ≈ 620 ft." },
                     new Question { id = "n3", q = "At 60 kt groundspeed, how long does a 4 nm leg take?", options = new[] { "2 minutes", "4 minutes", "6 minutes", "15 minutes" }, answer = 1, explain = "60 kt is one nautical mile per minute." },
-                    new Question { id = "n4", q = "Hovering with the wind from your right, you needâ€¦", options = new[] { "Left cyclic", "Right cyclic, into wind", "Forward cyclic only", "No cyclic: the wind helps" }, answer = 1, explain = "Hold cyclic into wind to stop the drift." },
-                    new Question { id = "n5", q = "Bearing 258Â° from Kinloch points roughlyâ€¦", options = new[] { "North-east", "South-east", "West, slightly south", "North-west" }, answer = 2, explain = "270Â° is due west; 258Â° is a little south of west." },
+                    new Question { id = "n4", q = "Hovering with the wind from your right, you need…", options = new[] { "Left cyclic", "Right cyclic, into wind", "Forward cyclic only", "No cyclic: the wind helps" }, answer = 1, explain = "Hold cyclic into wind to stop the drift." },
+                    new Question { id = "n5", q = "Bearing 258° from Kinloch points roughly…", options = new[] { "North-east", "South-east", "West, slightly south", "North-west" }, answer = 2, explain = "270° is due west; 258° is a little south of west." },
                 },
             },
             new TheoryModule
@@ -74,10 +74,10 @@ namespace Rotorcraft.Game
                 },
                 quiz = new[]
                 {
-                    new Question { id = "l1", q = "An offshore authorisation is granted byâ€¦", options = new[] { "The licensing authority, as part of the licence", "The employer, after its own training and checks", "Any flight school", "It comes automatically with a CPL(H)" }, answer = 1, explain = "Operator authorisations are employer-specific." },
-                    new Question { id = "l2", q = "A PPL(H) holder mayâ€¦", options = new[] { "Fly passengers for payment", "Fly for leisure without payment", "Fly offshore crew changes", "Fly any helicopter type" }, answer = 1, explain = "Private flying is not for remuneration and is limited to rated types." },
+                    new Question { id = "l1", q = "An offshore authorisation is granted by…", options = new[] { "The licensing authority, as part of the licence", "The employer, after its own training and checks", "Any flight school", "It comes automatically with a CPL(H)" }, answer = 1, explain = "Operator authorisations are employer-specific." },
+                    new Question { id = "l2", q = "A PPL(H) holder may…", options = new[] { "Fly passengers for payment", "Fly for leisure without payment", "Fly offshore crew changes", "Fly any helicopter type" }, answer = 1, explain = "Private flying is not for remuneration and is limited to rated types." },
                     new Question { id = "l3", q = "Which is a rating rather than a licence?", options = new[] { "CPL(H)", "PPL(H)", "Instrument rating IR(H)", "None of these" }, answer = 2, explain = "IR(H) is added to a licence." },
-                    new Question { id = "l4", q = "A type rating allows you toâ€¦", options = new[] { "Fly that specific aircraft type", "Fly every helicopter", "Fly at night", "Fly in cloud" }, answer = 0, explain = "Type ratings are aircraft-type specific." },
+                    new Question { id = "l4", q = "A type rating allows you to…", options = new[] { "Fly that specific aircraft type", "Fly every helicopter", "Fly at night", "Fly in cloud" }, answer = 0, explain = "Type ratings are aircraft-type specific." },
                 },
             },
             new TheoryModule
@@ -95,17 +95,17 @@ namespace Rotorcraft.Game
                 },
                 quiz = new[]
                 {
-                    new Question { id = "e1", q = "The engine fails in cruise. Your first action isâ€¦", options = new[] { "Raise the collective to hold height", "Lower the collective fully", "Apply full right pedal", "Pull aft cyclic" }, answer = 1, explain = "Lower the lever immediately to preserve rotor RPM." },
-                    new Question { id = "e2", q = "Rotor RPM is decaying below the green arc with the engine running. You shouldâ€¦", options = new[] { "Raise the collective", "Lower the collective", "Increase airspeed", "Apply left pedal" }, answer = 1, explain = "Lowering the collective reduces power required and lets RPM recover." },
-                    new Question { id = "e3", q = "Dynamic rollover is most likely whenâ€¦", options = new[] { "In cruise at 90 kt", "One skid is on the ground and lateral cyclic is excessive", "Hovering at 50 ft", "Autorotating" }, answer = 1, explain = "The skid acts as a pivot point." },
-                    new Question { id = "e4", q = "Vortex ring state is most likelyâ€¦", options = new[] { "In a fast cruise descent", "Descending slowly at low airspeed with power applied", "Climbing at 60 kt", "On the ground" }, answer = 1, explain = "Low airspeed, high rate of descent, power on." },
-                    new Question { id = "e5", q = "A typical autorotation airspeed in a light trainer isâ€¦", options = new[] { "0 kt", "20 kt", "50â€“60 kt", "VNE" }, answer = 2, explain = "Best glide or minimum descent speeds are typically around 50â€“60 kt." },
+                    new Question { id = "e1", q = "The engine fails in cruise. Your first action is…", options = new[] { "Raise the collective to hold height", "Lower the collective fully", "Apply full right pedal", "Pull aft cyclic" }, answer = 1, explain = "Lower the lever immediately to preserve rotor RPM." },
+                    new Question { id = "e2", q = "Rotor RPM is decaying below the green arc with the engine running. You should…", options = new[] { "Raise the collective", "Lower the collective", "Increase airspeed", "Apply left pedal" }, answer = 1, explain = "Lowering the collective reduces power required and lets RPM recover." },
+                    new Question { id = "e3", q = "Dynamic rollover is most likely when…", options = new[] { "In cruise at 90 kt", "One skid is on the ground and lateral cyclic is excessive", "Hovering at 50 ft", "Autorotating" }, answer = 1, explain = "The skid acts as a pivot point." },
+                    new Question { id = "e4", q = "Vortex ring state is most likely…", options = new[] { "In a fast cruise descent", "Descending slowly at low airspeed with power applied", "Climbing at 60 kt", "On the ground" }, answer = 1, explain = "Low airspeed, high rate of descent, power on." },
+                    new Question { id = "e5", q = "A typical autorotation airspeed in a light trainer is…", options = new[] { "0 kt", "20 kt", "50–60 kt", "VNE" }, answer = 2, explain = "Best glide or minimum descent speeds are typically around 50–60 kt." },
                 },
             },
             new TheoryModule
             {
                 id = "gs5_performance",
-                title = "CPL Â· Performance and Planning",
+                title = "CPL · Performance and Planning",
                 minutes = 5,
                 passMark = 75,
                 sections = new[]
@@ -117,38 +117,38 @@ namespace Rotorcraft.Game
                 },
                 quiz = new[]
                 {
-                    new Question { id = "pf1", q = "On a hot day at a high landing site, hover power will beâ€¦", options = new[] { "Lower than at sea level", "Higher than at sea level", "Unchanged", "Only affected by wind" }, answer = 1, explain = "High density altitude means more power is required, and less is available." },
-                    new Question { id = "pf2", q = "A 30 nm leg at 90 kt airspeed into a 30 kt headwind takesâ€¦", options = new[] { "20 min", "25 min", "30 min", "40 min" }, answer = 2, explain = "Groundspeed 60 kt: 30 nm takes 30 minutes." },
-                    new Question { id = "pf3", q = "Before landing in a confined area you should firstâ€¦", options = new[] { "Land as quickly as possible", "Recce it from height and plan the way out", "Approach downwind for a shallower angle", "Turn the landing light off" }, answer = 1, explain = "High and low recce: wind, obstacles, surface, slope and escape route." },
-                    new Question { id = "pf4", q = "Reserve fuel isâ€¦", options = new[] { "Used on every flight", "Fuel you plan to land with and not use", "The fuel for taxiing", "Optional on short flights" }, answer = 1, explain = "The reserve stays in the tanks unless something goes wrong." },
-                    new Question { id = "pf5", q = "On a slope, the first skid to touch should beâ€¦", options = new[] { "The downslope skid", "The upslope skid", "Both together", "Either" }, answer = 1, explain = "Upslope skid first, then lower slowly with cyclic into the slope." },
+                    new Question { id = "pf1", q = "On a hot day at a high landing site, hover power will be…", options = new[] { "Lower than at sea level", "Higher than at sea level", "Unchanged", "Only affected by wind" }, answer = 1, explain = "High density altitude means more power is required, and less is available." },
+                    new Question { id = "pf2", q = "A 30 nm leg at 90 kt airspeed into a 30 kt headwind takes…", options = new[] { "20 min", "25 min", "30 min", "40 min" }, answer = 2, explain = "Groundspeed 60 kt: 30 nm takes 30 minutes." },
+                    new Question { id = "pf3", q = "Before landing in a confined area you should first…", options = new[] { "Land as quickly as possible", "Recce it from height and plan the way out", "Approach downwind for a shallower angle", "Turn the landing light off" }, answer = 1, explain = "High and low recce: wind, obstacles, surface, slope and escape route." },
+                    new Question { id = "pf4", q = "Reserve fuel is…", options = new[] { "Used on every flight", "Fuel you plan to land with and not use", "The fuel for taxiing", "Optional on short flights" }, answer = 1, explain = "The reserve stays in the tanks unless something goes wrong." },
+                    new Question { id = "pf5", q = "On a slope, the first skid to touch should be…", options = new[] { "The downslope skid", "The upslope skid", "Both together", "Either" }, answer = 1, explain = "Upslope skid first, then lower slowly with cyclic into the slope." },
                 },
             },
             new TheoryModule
             {
                 id = "gs6_decisions",
-                title = "CPL Â· Decision Making and Weather",
+                title = "CPL · Decision Making and Weather",
                 minutes = 4,
                 passMark = 75,
                 sections = new[]
                 {
                     new TheorySection { heading = "The weather trap", body = "Most fatal helicopter accidents involve continued flight into worsening weather. Cloud lowering onto hills, drizzle reducing visibility and the pressure to finish the job combine. Set your personal limits before departure and turn back early: a diversion is never a failure." },
                     new TheorySection { heading = "Decide, then act", body = "A simple model: Detect the change, Estimate its significance, Choose an option with the most safety margin, Act, then Evaluate. Options are usually: continue, return, divert or land. The safest option keeps the most choices open." },
-                    new TheorySection { heading = "Inadvertent cloud", body = "If you enter cloud by accident without an instrument rating: level the wings on the attitude indicator, hold the attitude, and make a gentle 180Â° turn to fly back out the way you came. Do not descend blindly over high ground." },
+                    new TheorySection { heading = "Inadvertent cloud", body = "If you enter cloud by accident without an instrument rating: level the wings on the attitude indicator, hold the attitude, and make a gentle 180° turn to fly back out the way you came. Do not descend blindly over high ground." },
                 },
                 quiz = new[]
                 {
-                    new Question { id = "dm1", q = "Cloud is lowering onto the hills ahead. The best choice is usuallyâ€¦", options = new[] { "Press on below the cloud", "Climb into the cloud", "Turn back or divert while you still can", "Speed up to get through quickly" }, answer = 2, explain = "Keep options open: turn back early." },
-                    new Question { id = "dm2", q = "Inadvertent cloud entry without an instrument rating: firstâ€¦", options = new[] { "Descend immediately", "Level the wings on the attitude indicator", "Look outside for gaps", "Increase speed" }, answer = 1, explain = "Attitude first, then a gentle turn back." },
-                    new Question { id = "dm3", q = "The safest option is usually the one thatâ€¦", options = new[] { "Saves the most time", "Keeps the most choices open", "The passenger prefers", "Uses the least fuel" }, answer = 1, explain = "Margins and options keep you safe." },
-                    new Question { id = "dm4", q = "A diversion because of weather isâ€¦", options = new[] { "A failure of planning", "A sound decision", "Not allowed in training", "Only for instrument pilots" }, answer = 1, explain = "Diverting is good airmanship." },
-                    new Question { id = "dm5", q = "Drizzle reduces visibility to 2 km in the glen. For a VFR helicopter this meansâ€¦", options = new[] { "No change", "Slow down and consider turning back", "Fly faster to save time", "Fly higher into cloud" }, answer = 1, explain = "Slow down to keep sight of obstacles and turn back if it gets worse." },
+                    new Question { id = "dm1", q = "Cloud is lowering onto the hills ahead. The best choice is usually…", options = new[] { "Press on below the cloud", "Climb into the cloud", "Turn back or divert while you still can", "Speed up to get through quickly" }, answer = 2, explain = "Keep options open: turn back early." },
+                    new Question { id = "dm2", q = "Inadvertent cloud entry without an instrument rating: first…", options = new[] { "Descend immediately", "Level the wings on the attitude indicator", "Look outside for gaps", "Increase speed" }, answer = 1, explain = "Attitude first, then a gentle turn back." },
+                    new Question { id = "dm3", q = "The safest option is usually the one that…", options = new[] { "Saves the most time", "Keeps the most choices open", "The passenger prefers", "Uses the least fuel" }, answer = 1, explain = "Margins and options keep you safe." },
+                    new Question { id = "dm4", q = "A diversion because of weather is…", options = new[] { "A failure of planning", "A sound decision", "Not allowed in training", "Only for instrument pilots" }, answer = 1, explain = "Diverting is good airmanship." },
+                    new Question { id = "dm5", q = "Drizzle reduces visibility to 2 km in the glen. For a VFR helicopter this means…", options = new[] { "No change", "Slow down and consider turning back", "Fly faster to save time", "Fly higher into cloud" }, answer = 1, explain = "Slow down to keep sight of obstacles and turn back if it gets worse." },
                 },
             },
             new TheoryModule
             {
                 id = "gs7_instruments",
-                title = "IR Â· Instrument Flying",
+                title = "IR · Instrument Flying",
                 minutes = 5,
                 passMark = 75,
                 sections = new[]
@@ -160,11 +160,11 @@ namespace Rotorcraft.Game
                 },
                 quiz = new[]
                 {
-                    new Question { id = "ir1", q = "The centre of the instrument scan is theâ€¦", options = new[] { "Altimeter", "Attitude indicator", "Torque gauge", "Fuel gauge" }, answer = 1, explain = "Set and hold attitude, then cross-check." },
-                    new Question { id = "ir2", q = "At the missed-approach point you cannot see the site. Youâ€¦", options = new[] { "Descend a little more", "Fly the missed approach", "Hover and wait", "Turn towards where it should be" }, answer = 1, explain = "No visual reference at minima means go around." },
-                    new Question { id = "ir3", q = "The ALT mode holdsâ€¦", options = new[] { "Heading", "Altitude", "Airspeed", "Hover position" }, answer = 1, explain = "ALT is altitude hold." },
-                    new Question { id = "ir4", q = "After an attitude change you shouldâ€¦", options = new[] { "Make another change immediately", "Wait for the instruments to settle", "Look outside", "Disengage the autopilot" }, answer = 1, explain = "Instruments lag: change, hold, check." },
-                    new Question { id = "ir5", q = "The autopilot can seeâ€¦", options = new[] { "Terrain ahead", "Weather", "Neither: you must monitor", "Other aircraft" }, answer = 2, explain = "It flies what it is told; you remain responsible." },
+                    new Question { id = "ir1", q = "The centre of the instrument scan is the…", options = new[] { "Altimeter", "Attitude indicator", "Torque gauge", "Fuel gauge" }, answer = 1, explain = "Set and hold attitude, then cross-check." },
+                    new Question { id = "ir2", q = "At the missed-approach point you cannot see the site. You…", options = new[] { "Descend a little more", "Fly the missed approach", "Hover and wait", "Turn towards where it should be" }, answer = 1, explain = "No visual reference at minima means go around." },
+                    new Question { id = "ir3", q = "The ALT mode holds…", options = new[] { "Heading", "Altitude", "Airspeed", "Hover position" }, answer = 1, explain = "ALT is altitude hold." },
+                    new Question { id = "ir4", q = "After an attitude change you should…", options = new[] { "Make another change immediately", "Wait for the instruments to settle", "Look outside", "Disengage the autopilot" }, answer = 1, explain = "Instruments lag: change, hold, check." },
+                    new Question { id = "ir5", q = "The autopilot can see…", options = new[] { "Terrain ahead", "Weather", "Neither: you must monitor", "Other aircraft" }, answer = 2, explain = "It flies what it is told; you remain responsible." },
                 },
             },
             new TheoryModule
@@ -181,11 +181,11 @@ namespace Rotorcraft.Game
                 },
                 quiz = new[]
                 {
-                    new Question { id = "me1", q = "An engine fails in the cruise in a twin. Firstâ€¦", options = new[] { "Shut the other engine down", "Keep rotor RPM in the green and fly at best climb speed", "Autorotate immediately", "Climb at maximum torque" }, answer = 1, explain = "The remaining engine can usually carry you; protect the rotor RPM." },
-                    new Question { id = "me2", q = "OEI power from the remaining engine isâ€¦", options = new[] { "Half the total power", "About 60â€“65% of the total, briefly", "All of the twin-engine power", "Nothing" }, answer = 1, explain = "The emergency rating gives more than half for a limited time." },
-                    new Question { id = "me3", q = "The pilot monitoringâ€¦", options = new[] { "Flies the aircraft", "Runs checklists and radios", "Only watches", "Operates the winch" }, answer = 1, explain = "Crew roles divide workload." },
-                    new Question { id = "me4", q = "Performance planning for helideck landings limitsâ€¦", options = new[] { "Speed", "Mass", "Radio use", "Altitude above 5,000 ft" }, answer = 1, explain = "Mass is limited so an engine failure is survivable." },
-                    new Question { id = "me5", q = "Best climb speed in the twins is aboutâ€¦", options = new[] { "20 kt", "70 kt", "140 kt", "VNE" }, answer = 1, explain = "Around 70 kt gives the most climb for the least power." },
+                    new Question { id = "me1", q = "An engine fails in the cruise in a twin. First…", options = new[] { "Shut the other engine down", "Keep rotor RPM in the green and fly at best climb speed", "Autorotate immediately", "Climb at maximum torque" }, answer = 1, explain = "The remaining engine can usually carry you; protect the rotor RPM." },
+                    new Question { id = "me2", q = "OEI power from the remaining engine is…", options = new[] { "Half the total power", "About 60–65% of the total, briefly", "All of the twin-engine power", "Nothing" }, answer = 1, explain = "The emergency rating gives more than half for a limited time." },
+                    new Question { id = "me3", q = "The pilot monitoring…", options = new[] { "Flies the aircraft", "Runs checklists and radios", "Only watches", "Operates the winch" }, answer = 1, explain = "Crew roles divide workload." },
+                    new Question { id = "me4", q = "Performance planning for helideck landings limits…", options = new[] { "Speed", "Mass", "Radio use", "Altitude above 5,000 ft" }, answer = 1, explain = "Mass is limited so an engine failure is survivable." },
+                    new Question { id = "me5", q = "Best climb speed in the twins is about…", options = new[] { "20 kt", "70 kt", "140 kt", "VNE" }, answer = 1, explain = "Around 70 kt gives the most climb for the least power." },
                 },
             },
             new TheoryModule
@@ -203,11 +203,11 @@ namespace Rotorcraft.Game
                 },
                 quiz = new[]
                 {
-                    new Question { id = "of1", q = "Downwind of an offshore platform you can expectâ€¦", options = new[] { "Smooth air", "Turbulence and sinking air", "Better visibility", "Stronger lift" }, answer = 1, explain = "The structure creates a turbulent wake." },
-                    new Question { id = "of2", q = "Approach a helideckâ€¦", options = new[] { "Downwind, over the structure", "Into wind, from the clear side", "Vertically from 1,000 ft", "At 120 kt" }, answer = 1, explain = "Into wind and away from the structure and exhaust." },
-                    new Question { id = "of3", q = "Fuel offshore must coverâ€¦", options = new[] { "The first leg only", "Every leg, a return to the coast and a reserve", "Half the route", "The longest leg" }, answer = 1, explain = "There is nowhere else to land." },
-                    new Question { id = "of4", q = "Passengers boardâ€¦", options = new[] { "While hovering", "With rotors running and the collective down", "Only with the engines off", "From the tail" }, answer = 1, explain = "Rotors-running loading with the lever fully down." },
-                    new Question { id = "of5", q = "After a ditching and inversion, you firstâ€¦", options = new[] { "Release the harness immediately", "Wait for the motion to stop, then find the exit", "Open the door underwater at once", "Inflate your life jacket inside" }, answer = 1, explain = "Wait for motion to stop, locate the exit, then release." },
+                    new Question { id = "of1", q = "Downwind of an offshore platform you can expect…", options = new[] { "Smooth air", "Turbulence and sinking air", "Better visibility", "Stronger lift" }, answer = 1, explain = "The structure creates a turbulent wake." },
+                    new Question { id = "of2", q = "Approach a helideck…", options = new[] { "Downwind, over the structure", "Into wind, from the clear side", "Vertically from 1,000 ft", "At 120 kt" }, answer = 1, explain = "Into wind and away from the structure and exhaust." },
+                    new Question { id = "of3", q = "Fuel offshore must cover…", options = new[] { "The first leg only", "Every leg, a return to the coast and a reserve", "Half the route", "The longest leg" }, answer = 1, explain = "There is nowhere else to land." },
+                    new Question { id = "of4", q = "Passengers board…", options = new[] { "While hovering", "With rotors running and the collective down", "Only with the engines off", "From the tail" }, answer = 1, explain = "Rotors-running loading with the lever fully down." },
+                    new Question { id = "of5", q = "After a ditching and inversion, you first…", options = new[] { "Release the harness immediately", "Wait for the motion to stop, then find the exit", "Open the door underwater at once", "Inflate your life jacket inside" }, answer = 1, explain = "Wait for motion to stop, locate the exit, then release." },
                 },
             },
             new TheoryModule
@@ -218,18 +218,18 @@ namespace Rotorcraft.Game
                 passMark = 75,
                 sections = new[]
                 {
-                    new TheorySection { heading = "Searching", body = "The crew can only see a person within a limited sweep width, which shrinks with speed, height, poor visibility and darkness. Fly parallel tracks spaced to cover the area, typically 300â€“500 ft above the ground at 60 kt or slower. Higher sees more ground but makes a person too small; faster gives the crew less time to look." },
+                    new TheorySection { heading = "Searching", body = "The crew can only see a person within a limited sweep width, which shrinks with speed, height, poor visibility and darkness. Fly parallel tracks spaced to cover the area, typically 300–500 ft above the ground at 60 kt or slower. Higher sees more ground but makes a person too small; faster gives the crew less time to look." },
                     new TheorySection { heading = "At night", body = "With the naked eye a person is almost invisible at night. The searchlight helps at short range; the FLIR camera sees body heat and is far more effective. Survivors in liferafts often carry lights and flares." },
-                    new TheorySection { heading = "Winching", body = "Come to a hover beside and slightly above the casualty, typically 50â€“150 ft. The winch operator then conns you with short calls such as \"forward 5, right 3, steady\". Respond with tiny inputs and fix your eyes on an outside reference. Once the winchman is on the ground, drifting more than a few metres drags him or aborts the lift." },
+                    new TheorySection { heading = "Winching", body = "Come to a hover beside and slightly above the casualty, typically 50–150 ft. The winch operator then conns you with short calls such as \"forward 5, right 3, steady\". Respond with tiny inputs and fix your eyes on an outside reference. Once the winchman is on the ground, drifting more than a few metres drags him or aborts the lift." },
                     new TheorySection { heading = "The casualty", body = "Time matters: the \"golden hour\" after a serious injury is when hospital treatment does most good. Plan the most direct route to an appropriate hospital and tell them you are coming." },
                 },
                 quiz = new[]
                 {
-                    new Question { id = "sr1", q = "Searching faster than about 80 ktâ€¦", options = new[] { "Covers the area better", "Reduces the chance the crew sees the casualty", "Has no effect", "Is required at night" }, answer = 1, explain = "Less time to look means lower probability of detection." },
-                    new Question { id = "sr2", q = "Track spacing should be aboutâ€¦", options = new[] { "Twice the sweep width", "The sweep width or less, so the strips overlap", "One mile", "As wide as possible" }, answer = 1, explain = "Strips must join up or the casualty can sit in a gap." },
-                    new Question { id = "sr3", q = "At night, the most effective sensor for a person isâ€¦", options = new[] { "The landing light", "The FLIR thermal camera", "Night vision without a camera", "Strobe lights" }, answer = 1, explain = "FLIR sees body heat." },
-                    new Question { id = "sr4", q = "The winch operator calls \"back 5\". Youâ€¦", options = new[] { "Make a large aft cyclic input", "Make a small aft input and stop", "Climb", "Turn the aircraft" }, answer = 1, explain = "Small precise inputs." },
-                    new Question { id = "sr5", q = "With the winchman on the ground, drifting offâ€¦", options = new[] { "Is harmless", "Can drag him and aborts the lift", "Helps the casualty", "Shortens the cable" }, answer = 1, explain = "Hold the hover steady over him." },
+                    new Question { id = "sr1", q = "Searching faster than about 80 kt…", options = new[] { "Covers the area better", "Reduces the chance the crew sees the casualty", "Has no effect", "Is required at night" }, answer = 1, explain = "Less time to look means lower probability of detection." },
+                    new Question { id = "sr2", q = "Track spacing should be about…", options = new[] { "Twice the sweep width", "The sweep width or less, so the strips overlap", "One mile", "As wide as possible" }, answer = 1, explain = "Strips must join up or the casualty can sit in a gap." },
+                    new Question { id = "sr3", q = "At night, the most effective sensor for a person is…", options = new[] { "The landing light", "The FLIR thermal camera", "Night vision without a camera", "Strobe lights" }, answer = 1, explain = "FLIR sees body heat." },
+                    new Question { id = "sr4", q = "The winch operator calls \"back 5\". You…", options = new[] { "Make a large aft cyclic input", "Make a small aft input and stop", "Climb", "Turn the aircraft" }, answer = 1, explain = "Small precise inputs." },
+                    new Question { id = "sr5", q = "With the winchman on the ground, drifting off…", options = new[] { "Is harmless", "Can drag him and aborts the lift", "Helps the casualty", "Shortens the cable" }, answer = 1, explain = "Hold the hover steady over him." },
                 },
             },
             new TheoryModule
@@ -246,11 +246,11 @@ namespace Rotorcraft.Game
                 },
                 quiz = new[]
                 {
-                    new Question { id = "in1", q = "A trainee starts an approach with the landing light off at night. Youâ€¦", options = new[] { "Say nothing until the debrief", "Prompt them now: it affects safety", "Take control immediately and land", "Fail them on the spot" }, answer = 1, explain = "Safety items are corrected immediately, with the lightest intervention that works." },
-                    new Question { id = "in2", q = "A minor radio phrasing slip in cruise is best handledâ€¦", options = new[] { "At once, loudly", "In the debrief or a quiet moment", "By taking the radio yourself for the rest of the flight", "Ignored entirely" }, answer = 1, explain = "Non-safety errors are better discussed when workload is low." },
-                    new Question { id = "in3", q = "Assessment should be based onâ€¦", options = new[] { "Your personal style", "The published standard and recorded facts", "How confident the trainee seemed", "The weather" }, answer = 1, explain = "Assess against the standard, with evidence." },
-                    new Question { id = "in4", q = "A good debriefâ€¦", options = new[] { "Lists every fault", "Starts with what went well and ends with clear actions", "Only covers the final landing", "Is skipped if the flight went well" }, answer = 1, explain = "Balanced and specific." },
-                    new Question { id = "in5", q = "When demonstrating a hover, your standard should beâ€¦", options = new[] { "Roughly what the student can do", "Clearly better than the test standard", "Not important", "The same as on a first lesson" }, answer = 1, explain = "Demonstrations set the standard." },
+                    new Question { id = "in1", q = "A trainee starts an approach with the landing light off at night. You…", options = new[] { "Say nothing until the debrief", "Prompt them now: it affects safety", "Take control immediately and land", "Fail them on the spot" }, answer = 1, explain = "Safety items are corrected immediately, with the lightest intervention that works." },
+                    new Question { id = "in2", q = "A minor radio phrasing slip in cruise is best handled…", options = new[] { "At once, loudly", "In the debrief or a quiet moment", "By taking the radio yourself for the rest of the flight", "Ignored entirely" }, answer = 1, explain = "Non-safety errors are better discussed when workload is low." },
+                    new Question { id = "in3", q = "Assessment should be based on…", options = new[] { "Your personal style", "The published standard and recorded facts", "How confident the trainee seemed", "The weather" }, answer = 1, explain = "Assess against the standard, with evidence." },
+                    new Question { id = "in4", q = "A good debrief…", options = new[] { "Lists every fault", "Starts with what went well and ends with clear actions", "Only covers the final landing", "Is skipped if the flight went well" }, answer = 1, explain = "Balanced and specific." },
+                    new Question { id = "in5", q = "When demonstrating a hover, your standard should be…", options = new[] { "Roughly what the student can do", "Clearly better than the test standard", "Not important", "The same as on a first lesson" }, answer = 1, explain = "Demonstrations set the standard." },
                 },
             },
         };

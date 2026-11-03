@@ -41,10 +41,7 @@ namespace Rotorcraft.Presentation
             clouds = Renderer("Cloud layer", "Rotorcraft/Clouds", CloudMesh());
             if (clouds != null) clouds.sharedMaterial.SetTexture("_Noise", FxNoise.NoiseTexture);
             stars = Renderer("Stars", "Rotorcraft/Stars", StarMesh());
-            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            var veilMesh = sphere.GetComponent<MeshFilter>().sharedMesh;
-            Destroy(sphere);
-            veil = Renderer("Cloud veil", "Rotorcraft/Veil", veilMesh);
+            veil = Renderer("Cloud veil", "Rotorcraft/Veil", SphereMesh());
             if (veil != null) { veilMat = veil.sharedMaterial; veil.transform.localScale = Vector3.one * 700; }
             flareFlames = ParticleFx.Make("Flare flames", root, true, 420, 0, 0, 1.8f, 0.05f, 0.4f);
             flareSmoke = ParticleFx.Make("Flare smoke", root, false, 260, 0, 0, 8f, 0.05f, 0.5f);
@@ -105,6 +102,32 @@ namespace Rotorcraft.Presentation
             }
             var m = new Mesh { name = "Cloud layer" };
             m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateBounds();
+            return m;
+        }
+
+        /// <summary>A sphere of diameter 1 (built here: a primitive would bring a collider, which the web build
+        /// strips, and log an error).</summary>
+        static Mesh SphereMesh()
+        {
+            const int LON = 32, LAT = 16;
+            var v = new List<Vector3>(); var t = new List<int>();
+            for (int j = 0; j <= LAT; j++)
+            {
+                var th = Mathf.PI * j / LAT;
+                for (int i = 0; i <= LON; i++)
+                {
+                    var ph = Mathf.PI * 2 * i / LON;
+                    v.Add(0.5f * new Vector3(Mathf.Sin(th) * Mathf.Cos(ph), Mathf.Cos(th), Mathf.Sin(th) * Mathf.Sin(ph)));
+                }
+            }
+            for (int j = 0; j < LAT; j++)
+                for (int i = 0; i < LON; i++)
+                {
+                    int a = j * (LON + 1) + i, b = a + LON + 1;
+                    t.AddRange(new[] { a, a + 1, b, a + 1, b + 1, b });
+                }
+            var m = new Mesh { name = "Cloud veil" };
+            m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateNormals(); m.RecalculateBounds();
             return m;
         }
 
