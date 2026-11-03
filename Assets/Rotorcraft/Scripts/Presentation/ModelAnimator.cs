@@ -24,6 +24,8 @@ namespace Rotorcraft.Presentation
         Transform model;
         /// <summary>Door groups held open by the game (boarding, loading, the winch), as well as the player's toggle.</summary>
         readonly HashSet<string> held = new HashSet<string>();
+        /// <summary>Door groups the crew on foot need open (kept apart from the session's own holds).</summary>
+        public readonly HashSet<string> crewHeld = new HashSet<string>();
         bool playerOpen;
         public event Action<bool> DoorMoved;   // true = opening (for a sound)
 
@@ -75,6 +77,13 @@ namespace Rotorcraft.Presentation
         }
 
         public bool AnyOpen => doors.Any(d => d.pos > 0.02f);
+        /// <summary>How far a door group is open (0 shut .. 1 open); 1 when the model has no such door.</summary>
+        public float Openness(string group)
+        {
+            float best = -1;
+            foreach (var d in doors) if (d.group == group) best = Mathf.Max(best, d.pos);
+            return best < 0 ? 1 : best;
+        }
         public IEnumerable<string> Groups => doors.Select(d => d.group).Distinct();
 
         /// <summary>Hold a door group open (or let it close).</summary>
@@ -98,7 +107,7 @@ namespace Rotorcraft.Presentation
             var airborne = !heli.State.onGround;
             foreach (var d in doors)
             {
-                var want = (playerOpen && !airborne) || held.Contains(d.group) ? 1f : 0f;
+                var want = (playerOpen && !airborne) || held.Contains(d.group) || crewHeld.Contains(d.group) ? 1f : 0f;
                 if (playerOpen && airborne) playerOpen = false;
                 if (want != d.target) { d.target = want; DoorMoved?.Invoke(want > 0); }
                 var speed = d.kind == DoorKind.Hinge ? 1 / 1.2f : 1 / 1.8f;

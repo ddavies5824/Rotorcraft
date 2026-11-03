@@ -89,6 +89,7 @@ namespace Rotorcraft.Presentation
             if (GetComponent<RotorAudio>() == null) gameObject.AddComponent<RotorAudio>();
             if (GetComponent<AircraftLights>() == null) gameObject.AddComponent<AircraftLights>();
             if (GetComponent<AircraftEffects>() == null) gameObject.AddComponent<AircraftEffects>();
+            if (GetComponent<CrewOnFoot>() == null) gameObject.AddComponent<CrewOnFoot>();
         }
 
         void FindParts()
@@ -152,6 +153,7 @@ namespace Rotorcraft.Presentation
             GetComponent<RotorAudio>()?.Configure();
             GetComponent<AircraftLights>()?.Configure();
             GetComponent<AircraftEffects>()?.Configure();
+            GetComponent<CrewOnFoot>()?.Configure();
         }
 
         /// <summary>Where and how the next flight starts (call ResetToStart to begin it).</summary>

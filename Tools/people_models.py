@@ -46,6 +46,7 @@ def rot_about(j, keys, pivot, euler):
     p = Vector(j[pivot])
     for k in keys: j[k] = tuple(p + m @ (Vector(j[k]) - p))
 
+WALK_FRAMES = 8
 ARM = lambda s: ["elbow" + s, "wrist" + s, "hand" + s]
 FORE = lambda s: ["wrist" + s, "hand" + s]
 LEG = lambda s: ["knee" + s, "ankle" + s, "toe" + s]
@@ -86,6 +87,19 @@ def pose(name):
         rot_about(j, LEG("L"), "hipL", (0, 0.08, 0)); rot_about(j, SHIN("R"), "kneeR", (-0.4, 0, 0))
         for k in list(j): j[k] = tuple(Euler((-math.pi / 2, 0, 0)).to_matrix() @ Vector(j[k]))
         for k in list(j): j[k] = (j[k][0], j[k][1], j[k][2] + 0.12)
+    elif name.startswith("walk"):
+        # one frame of the walk cycle (WALK_FRAMES frames, two steps): thighs swing, the leg coming forward
+        # bends at the knee, the arms swing against the legs, the body rises a little over each step
+        th = 2 * math.pi * int(name[4:]) / WALK_FRAMES
+        for s, ph in (("L", 0.0), ("R", math.pi)):
+            a = th + ph
+            rot_about(j, SHIN(s), "knee" + s, (0.12 + 0.75 * max(0.0, math.cos(a)) ** 1.5, 0, 0))
+            rot_about(j, LEG(s), "hip" + s, (-0.42 * math.sin(a), 0, 0))
+            rot_about(j, ARM(s), "shoulder" + s, (0.38 * math.sin(a), 0.08 if s == "L" else -0.08, 0))
+            rot_about(j, FORE(s), "elbow" + s, (-0.3 - 0.2 * max(0.0, -math.sin(a)), 0, 0))
+        # the lower foot stays on the ground
+        dz = 0.09 - min(j["ankleL"][2], j["ankleR"][2])
+        for k in list(j): j[k] = (j[k][0], j[k][1], j[k][2] + dz)
     elif name == "swim":
         # head and shoulders out of the water, arms out: the rest is below the surface (origin = water line)
         rot_about(j, ARM("L"), "shoulderL", (0, 1.3, 0)); rot_about(j, ARM("R"), "shoulderR", (0, -1.3, 0))
@@ -178,8 +192,11 @@ def keep(o, name):
 
 for p in ("stand", "wave", "wave2", "phone", "kneel", "hang", "sit", "lie", "swim"):
     keep(figure("pose_" + p, p), "pose_" + p)
-for p in ("stand", "hang", "lie"):
+for p in ("stand", "hang", "lie", "kneel"):
     keep(figure("helmet_" + p, p, helmet=True), "helmet_" + p)
+for f in range(WALK_FRAMES):
+    keep(figure("pose_walk%d" % f, "walk%d" % f), "pose_walk%d" % f)
+    keep(figure("helmet_walk%d" % f, "walk%d" % f, helmet=True), "helmet_walk%d" % f)
 
 # stretcher with a casualty under a blanket
 STEEL = mat("Steel", (0.62, 0.64, 0.66), 0.35, 1.0)

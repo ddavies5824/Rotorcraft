@@ -3,6 +3,7 @@
 // career exercise, captures each view as a .png and quits.
 using System.Collections;
 using System.IO;
+using System.Linq;
 using Rotorcraft.Game;
 using Rotorcraft.Sim;
 using UnityEngine;
@@ -82,6 +83,7 @@ namespace Rotorcraft.Presentation.UI
                 f.Finish(FlightEnd.Complete); yield return Wait(1);
             }
             yield return Effects();
+            yield return Life();
             Debug.Log($"Shot tour done: {n} pictures in {folder}");
             Application.Quit();
         }
@@ -112,6 +114,46 @@ namespace Rotorcraft.Presentation.UI
                 if (running) { s.engine = EngineState.Running; s.engineN = 1; s.rotorE = 1; s.govTarget = 1; s.crashed = false; }
                 yield return null;
             }
+        }
+
+        /// <summary>The moving world: the crew walking out after a shutdown, traffic, people in town, a fishing boat, traffic at night.</summary>
+        IEnumerator Life()
+        {
+            yield return Fly("northstar", "calm", TimeOfDay.Day);
+            var start = f.heli.State.pos.Clone();
+            // a short hop so the crew know the aircraft has been somewhere, then down and shut down
+            yield return Hold(new Vec3(start.x, start.y + 0.6, start.z), 1.2f);
+            yield return Hold(new Vec3(start.x, start.y + 0.03, start.z), 0.3f);
+            f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitDist = 26; f.cam.orbitPitch = 22; f.cam.orbitYaw = 70;
+            yield return Wait(6); yield return Shot("life-crew-door");
+            yield return Wait(7); yield return Shot("life-crew-out");
+            f.cam.orbitDist = 12; f.Finish(FlightEnd.Complete); yield return Wait(1);
+
+            yield return Fly("kestrel", "calm", TimeOfDay.Day);
+            var road = Rotorcraft.World.Places.ROADS.First(r => r.name == "Kinloch road");
+            var rp = road.pts[road.pts.Length / 2];
+            f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitDist = 60; f.cam.orbitPitch = 28;
+            yield return Hold(new Vec3(rp.x, Rotorcraft.World.WorldMap.TerrainHeight(rp.x, rp.z) + 30, rp.z), 4); yield return Shot("life-traffic");
+            // close up: the nearest car, walker and boat, seen past the aircraft (heading west, the camera behind)
+            var life = FindAnyObjectByType<AmbientLife>();
+            foreach (var (kind, h, d) in new[] { ("car", 8.0, 22f), ("walker", 6.0, 16f), ("boat", 14.0, 30f) })
+            {
+                var town = Rotorcraft.World.Places.SETTLEMENTS[0];
+                var near = kind == "boat" ? new Vector2((float)Rotorcraft.World.Terrain.CoastX(-6000) + 2500, -6000) : new Vector2((float)town.x, (float)town.z);
+                if (kind == "boat") yield return Hold(new Vec3(near.x, 200, near.y), 1, false, -System.Math.PI / 2);
+                var at = life != null ? life.Nearest(kind, near) : null;
+                if (at == null) continue;
+                f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitDist = d; f.cam.orbitPitch = 14; f.cam.orbitYaw = 0;
+                var g = kind == "boat" ? 0 : Rotorcraft.World.WorldMap.TerrainHeight(at.Value.x + 18, at.Value.y);
+                yield return Hold(new Vec3(at.Value.x + 18, g + h, at.Value.y), 0.3f, false, -System.Math.PI / 2);
+                yield return Shot("life-" + kind);
+            }
+            f.cam.orbitDist = 12; f.Finish(FlightEnd.Complete); yield return Wait(1);
+
+            yield return Fly("kestrel", "calm", TimeOfDay.Night);
+            f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitDist = 80; f.cam.orbitPitch = 25;
+            yield return Hold(new Vec3(rp.x, Rotorcraft.World.WorldMap.TerrainHeight(rp.x, rp.z) + 40, rp.z), 4); yield return Shot("life-traffic-night");
+            f.cam.orbitDist = 12; f.Finish(FlightEnd.Complete); yield return Wait(1);
         }
 
         /// <summary>Effects and weather: rain under a broken layer, inside and above the cloud, rotor spray and dust, engine smoke, a clear night and a platform flare.</summary>

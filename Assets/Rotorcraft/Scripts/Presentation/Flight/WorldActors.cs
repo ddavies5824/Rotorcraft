@@ -33,7 +33,26 @@ namespace Rotorcraft.Presentation
         static readonly Color[] HAIR = { C(0.16f, 0.11f, 0.07f), C(0.05f, 0.04f, 0.03f), C(0.45f, 0.3f, 0.15f), C(0.55f, 0.53f, 0.5f) };
         static Color C(float r, float g, float b) => new Color(r, g, b);
 
-        void Awake() => Index();
+        readonly List<Vector2> propPatients = new List<Vector2>(), targetPatients = new List<Vector2>();
+        /// <summary>People needing the crew (casualties on the ground, sim x and z), for the crew on foot.</summary>
+        public IEnumerable<Vector2> Patients => propPatients.Concat(targetPatients);
+
+        void Awake()
+        {
+            Index();
+            if (GetComponent<AmbientLife>() == null) gameObject.AddComponent<AmbientLife>();
+        }
+
+        // ---- for the ambient life and the crew on foot
+        public GameObject SpawnVehicle(string kind, Transform parent) => Spawn(vehicleParts, kind, parent);
+        public GameObject SpawnProp(string key, Transform parent) => Spawn(peopleParts, key, parent);
+        public GameObject MakePerson(string outfit, string pose, int seed, Transform parent) { Index(); return Person(outfit, pose, seed, parent); }
+        /// <summary>The meshes of a library figure, in the order its parts are found (for swapping walk frames).</summary>
+        public Mesh[] FrameMeshes(string key)
+        {
+            Index();
+            return peopleParts.TryGetValue(key, out var g) ? g.GetComponentsInChildren<MeshFilter>(true).Select(f => f.sharedMesh).ToArray() : null;
+        }
 
         void Index()
         {
@@ -55,7 +74,7 @@ namespace Rotorcraft.Presentation
         public void Clear()
         {
             foreach (var g in props.Concat(targets)) if (g != null) Destroy(g);
-            props.Clear(); targets.Clear(); wavers.Clear(); beacons.Clear();
+            props.Clear(); targets.Clear(); wavers.Clear(); beacons.Clear(); propPatients.Clear(); targetPatients.Clear();
             if (cable != null) cable.enabled = false;
             if (winchman != null) { winchman.SetActive(false); winchmanGround.SetActive(false); strop.SetActive(false); }
         }
@@ -75,7 +94,7 @@ namespace Rotorcraft.Presentation
         /// <summary>A figure dressed for the role (casual, walker, medic, police, fire, hivis, worker, scrubs, winchman).</summary>
         GameObject Person(string outfit, string pose, int seed, Transform parent)
         {
-            var helmet = outfit == "fire" || outfit == "worker" || outfit == "winchman" || outfit == "climber";
+            var helmet = outfit == "fire" || outfit == "worker" || outfit == "winchman" || outfit == "climber" || outfit == "aircrew";
             var key = helmet && peopleParts.ContainsKey("helmet_" + pose) ? "helmet_" + pose : "pose_" + pose;
             var g = Spawn(peopleParts, key, parent);
             if (g == null) return null;
@@ -91,6 +110,7 @@ namespace Rotorcraft.Presentation
                 case "worker": top = C(0.98f, 0.45f, 0.06f); legs = C(0.12f, 0.14f, 0.22f); hat = rnd.NextDouble() < 0.5 ? C(0.92f, 0.92f, 0.9f) : C(0.92f, 0.8f, 0.1f); break;
                 case "scrubs": top = legs = Pick(new[] { C(0.35f, 0.55f, 0.75f), C(0.2f, 0.45f, 0.45f), C(0.15f, 0.22f, 0.45f) }); break;
                 case "winchman": top = C(0.95f, 0.45f, 0.08f); legs = C(0.95f, 0.45f, 0.08f); hat = C(0.92f, 0.92f, 0.9f); break;
+                case "aircrew": top = legs = C(0.2f, 0.24f, 0.19f); hat = C(0.9f, 0.9f, 0.88f); break;   // flight suit and helmet
                 case "walker": case "climber": top = Pick(OUTDOOR); legs = C(0.12f, 0.13f, 0.14f); hat = C(0.85f, 0.2f, 0.1f); break;
                 default: top = Pick(CASUAL_TOP); legs = Pick(CASUAL_LEGS); break;
             }
@@ -134,7 +154,7 @@ namespace Rotorcraft.Presentation
         public void SetProps(List<PropDef> defs)
         {
             foreach (var g in props) if (g != null) Destroy(g);
-            props.Clear(); beacons.Clear();
+            props.Clear(); beacons.Clear(); propPatients.Clear();
             wavers.RemoveAll(w => w.a == null);
             Index();
             foreach (var p in defs ?? new List<PropDef>())
@@ -149,6 +169,7 @@ namespace Rotorcraft.Presentation
                             var outfit = parts.Length > 1 ? parts[1] : "casual"; var pose = parts.Length > 2 ? parts[2] : "stand";
                             var seed = parts.Length > 3 && int.TryParse(parts[3], out var sd) ? sd : 1;
                             if (outfit == "phone") outfit = "casual";
+                            if (pose == "lie") propPatients.Add(new Vector2((float)p.x, (float)p.z));
                             if (pose == "wave") { var a = Person(outfit, "wave", seed, t); var b = Person(outfit, "wave2", seed, t); if (a != null && b != null) wavers.Add((a, b)); }
                             else Person(outfit, pose, seed, t);
                             break;
@@ -181,7 +202,7 @@ namespace Rotorcraft.Presentation
         public void SetTargets(IList<PlacedTarget> list, uint seed)
         {
             foreach (var g in targets) if (g != null) Destroy(g);
-            targets.Clear();
+            targets.Clear(); targetPatients.Clear();
             wavers.RemoveAll(w => w.a == null);
             Index();
             if (list == null) return;
@@ -191,6 +212,7 @@ namespace Rotorcraft.Presentation
                 var hdg = (seed % 628) / 100.0 + i * 1.7;
                 var t = Place("Target " + tg.id, tg.x, tg.y, tg.z, hdg, 0, targets);
                 var sd = (int)(seed % 1000) + i * 13;
+                if (tg.kind != TargetKind.Swimmer && tg.kind != TargetKind.Liferaft && tg.kind != TargetKind.Vessel) targetPatients.Add(new Vector2((float)tg.x, (float)tg.z));
                 switch (tg.kind)
                 {
                     case TargetKind.Walker:
