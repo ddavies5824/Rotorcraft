@@ -234,6 +234,28 @@ namespace Rotorcraft.Game
             },
             new TheoryModule
             {
+                id = "gs12_ops",
+                title = "Police and Military Operations",
+                minutes = 5,
+                passMark = 75,
+                sections = new[]
+                {
+                    new TheorySection { heading = "The Peregrine", body = "The Peregrine P3 is a fast medium twin modelled on the AS365 N3 Dauphin. Its rotor turns clockwise seen from above, the opposite way to the school's aircraft: as you raise the collective the nose swings left, so it takes right pedal, not left. The anti-torque fan sits in a duct in the fin (a fenestron), quieter and safer on the ground than an open tail rotor. The wheels retract: raise them (Q) once you are climbing away above about 60 kt, and lower them before every approach. The crew will call \"Gear!\" if you are low and slow with them up, but a wheels-up landing still damages the aircraft and grounds it." },
+                    new TheorySection { heading = "Searching with the camera", body = "The thermal camera (FLIR, J) sees body heat, so a person in dark clothes on a dark hillside shows up white against the cold ground, by day or night. It sees best looking down at a slant from 500 to 1,000 ft. Fly slower than for a visual search, and keep your tracks overlapping. The searchlight (H) is for the final approach to what the camera has found, and for the officers on the ground, not for searching wide areas: it dazzles and has a small footprint." },
+                    new TheorySection { heading = "Working with the police", body = "The aircraft is a tool for the officers on the ground: find, then talk them in. Give positions from landmarks they can see (\"the wall at the north end of the quarry\"), not bearings. Stay high and offset so your noise does not drown their radios or warn a suspect, and orbit rather than hover overhead. A firearms deployment is a fast, short flight: land as close as is safe, keep the rotors turning, and lift as soon as the doors are shut." },
+                    new TheorySection { heading = "Military tasking", body = "Low-level navigation uses the terrain for cover: plan on a map, fly from feature to feature, and hold a height band rather than a height. Time on target matters: the troops on the ground expect you within a minute of the planned time. A landing zone may be small, sloping and dusty: make a high recce, approach into wind, and touch down where you planned, not where the dust lets you. Deck landings are flown to a moving or pitching deck: hover alongside, match the deck, then move across and land firmly as it steadies." },
+                },
+                quiz = new[]
+                {
+                    new Question { id = "o1", q = "In the Peregrine you raise the collective from the ground. The nose will tend to swing…", options = new[] { "Right: hold left pedal", "Left: hold right pedal", "Nowhere: the fenestron cancels it", "Up: hold forward cyclic" }, answer = 1, explain = "Its rotor turns clockwise from above, so the torque reaction turns the nose left; right pedal holds it." },
+                    new Question { id = "o2", q = "When should the Peregrine's wheels be raised?", options = new[] { "Before lift-off", "In the hover", "Climbing away, above about 60 kt", "Only above 2,000 ft" }, answer = 2, explain = "Once safely airborne and accelerating; lower them again before every approach." },
+                    new Question { id = "o3", q = "The best way to search a dark moor for a person at night is…", options = new[] { "Searchlight sweeps from 200 ft", "The thermal camera, slant view from 500–1,000 ft, overlapping tracks", "Fly fast at 2,000 ft", "Hover over the middle of the area" }, answer = 1, explain = "Body heat shows clearly on the camera; the searchlight is for the final approach." },
+                    new Question { id = "o4", q = "Talking officers on the ground onto a suspect, you should…", options = new[] { "Hover directly overhead at 100 ft", "Give bearings and ranges in degrees", "Orbit offset and describe landmarks they can see", "Land beside the suspect" }, answer = 2, explain = "Keep the noise off the scene and use references the ground team can see." },
+                    new Question { id = "o5", q = "Approaching a dusty military landing zone you should…", options = new[] { "Approach downwind for speed", "Make a high recce, approach into wind and touch down where planned", "Hover high and let the dust settle", "Land on the nearest road instead" }, answer = 1, explain = "Plan the touchdown point in advance; the dust cloud hides the ground in the final metres." },
+                },
+            },
+            new TheoryModule
+            {
                 id = "gs11_instructing",
                 title = "Instructing and Line Training",
                 minutes = 4,
@@ -285,7 +307,7 @@ namespace Rotorcraft.Game
                 questionCount = 5,
                 passMark = 80,
                 prerequisites = new[] { "gs8_multi" },
-                description = "Systems and one-engine-inoperative procedures for the Northstar 175 and Guardian S9. Pass mark 80%.",
+                description = "Systems and one-engine-inoperative procedures for the Northstar 175, Guardian S9 and Peregrine P3. Pass mark 80%.",
             },
             new ExamDef
             {
@@ -306,6 +328,16 @@ namespace Rotorcraft.Game
                 passMark = 80,
                 prerequisites = new[] { "gs10_sar" },
                 description = "Search planning, detection and winch procedures. Pass mark 80%.",
+            },
+            new ExamDef
+            {
+                id = "exam_ops",
+                title = "Police and Military Operations Examination",
+                modules = new[] { "gs12_ops", "gs10_sar" },
+                questionCount = 6,
+                passMark = 80,
+                prerequisites = new[] { "gs12_ops" },
+                description = "The Peregrine's handling and gear, camera searches, working with police officers, low-level and landing-zone procedures. Pass mark 80%.",
             },
             new ExamDef
             {

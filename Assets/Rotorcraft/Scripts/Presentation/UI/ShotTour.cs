@@ -2,6 +2,7 @@
 // the menus with a fresh test career (saved in that folder, not the player's), flies a freeplay shift and a
 // career exercise, captures each view as a .png and quits.
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Rotorcraft.Game;
@@ -71,7 +72,7 @@ namespace Rotorcraft.Presentation.UI
             f.Finish(FlightEnd.Aborted); yield return Wait(1.5f); yield return Page("debrief");
 
             // every type: the cockpit with its live instruments, and from outside
-            foreach (var id in new[] { "northstar", "guardian", "nightjar" })
+            foreach (var id in new[] { "northstar", "guardian", "nightjar", "peregrine" })
             {
                 var ac = Aircraft.Get(id);
                 app.FlyFreeplay(new FreeplayConfig { aircraftId = id, kit = Loadout.DefaultKit(ac), fuelKg = ac.fuelCapacity * 0.6, pace = FreeplayPace.Off });
@@ -84,6 +85,21 @@ namespace Rotorcraft.Presentation.UI
                 f.cam.orbitDist = 12;
                 f.Finish(FlightEnd.Complete); yield return Wait(1);
             }
+            // the Peregrine in its other paint schemes and fits, and in the air with the wheels up
+            foreach (var (skin, kit) in new[] { ("army", new List<KitId> { KitId.Seats, KitId.Searchlight }), ("navy", new List<KitId> { KitId.Floats, KitId.Hoist }), ("rescue", new List<KitId> { KitId.Medical, KitId.Hoist, KitId.Searchlight }) })
+            {
+                app.FlyFreeplay(new FreeplayConfig { aircraftId = "peregrine", kit = kit, skin = skin, fuelKg = 600, pace = FreeplayPace.Off });
+                while (!f.Active || f.Runtime == null) yield return null;
+                yield return Wait(3);
+                f.ShowForTour(); f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitDist = 14; f.cam.orbitYaw = 35; f.cam.orbitPitch = 8; yield return Wait(1); yield return Shot("peregrine-" + skin);
+                f.cam.orbitDist = 12; f.Finish(FlightEnd.Complete); yield return Wait(1);
+            }
+            yield return Fly("peregrine", "calm", TimeOfDay.Day);
+            var p0 = f.heli.State.pos.Clone();
+            f.heli.State.sys.gearDown = false; f.heli.State.gearPos = 0;
+            f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitDist = 16; f.cam.orbitYaw = 110; f.cam.orbitPitch = 3;
+            yield return Hold(new Vec3(p0.x, p0.y + 40, p0.z), 3, true); yield return Shot("peregrine-gear-up");
+            f.cam.orbitDist = 12; f.Finish(FlightEnd.Complete); yield return Wait(1);
             yield return Effects();
             yield return Life();
             Debug.Log($"Shot tour done: {n} pictures in {folder}");

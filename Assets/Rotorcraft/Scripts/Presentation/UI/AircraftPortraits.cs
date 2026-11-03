@@ -1,6 +1,8 @@
 // Pictures of each aircraft for the hangar, rendered from the real models once and kept: three-quarter view
 // from the front left, soft studio light, transparent background.
 using System.Collections.Generic;
+using Rotorcraft.Game;
+using Rotorcraft.Sim;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -18,17 +20,19 @@ namespace Rotorcraft.Presentation.UI
             var lib = Object.FindAnyObjectByType<AircraftLibrary>();
             var prefab = lib != null ? lib.ModelFor(aircraftId) : null;
             if (prefab == null) return null;
-            t = Render(prefab);
+            var ac = Aircraft.Find(aircraftId);
+            t = Render(prefab, ac != null ? Loadout.Fit(ac, Loadout.DefaultKit(ac)).ac : null);
             cache[aircraftId] = t;
             return t;
         }
 
-        static Texture2D Render(GameObject prefab)
+        static Texture2D Render(GameObject prefab, AircraftConfig ac)
         {
             var stage = new GameObject("Portrait stage");
             stage.transform.position = new Vector3(0, -6000, 0);
             var model = Object.Instantiate(prefab, stage.transform, false);
             model.transform.localRotation = Quaternion.Euler(0, 180, 0);
+            AircraftDress.Apply(model.transform, ac);   // its standard paint and kit
             foreach (var tr in model.GetComponentsInChildren<Transform>(true))
             {
                 tr.gameObject.layer = LAYER;

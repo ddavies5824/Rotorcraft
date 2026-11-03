@@ -49,7 +49,20 @@ namespace Rotorcraft.Presentation
                 ("door_cabin_l", "cabin_l", DoorKind.Slide, 0, new Vector3(-0.075f, 0, 0), new Vector3(0, 0, 1.0f)), ("door_cabin_r", "cabin_r", DoorKind.Slide, 0, new Vector3(0.075f, 0, 0), new Vector3(0, 0, 1.0f)),
                 ("door_rear_l", "rear", DoorKind.Hinge, -1.9f, Vector3.zero, Vector3.zero), ("door_rear_r", "rear", DoorKind.Hinge, 1.9f, Vector3.zero, Vector3.zero),
             },
+            ["peregrine"] = new[]
+            {
+                ("door_crew_l", "crew_l", DoorKind.Hinge, -1.2f, Vector3.zero, Vector3.zero), ("door_crew_r", "crew_r", DoorKind.Hinge, 1.2f, Vector3.zero, Vector3.zero),
+                ("door_cabin_l", "cabin_l", DoorKind.Slide, 0, new Vector3(-0.08f, 0, 0), new Vector3(0, 0, 1.42f)), ("door_cabin_r", "cabin_r", DoorKind.Slide, 0, new Vector3(0.08f, 0, 0), new Vector3(0, 0, 1.42f)),
+            },
         };
+
+        /// <summary>Retractable wheels: the nose leg folds back about x (radians when up), the main legs slide up into the sponsons.</summary>
+        static readonly Dictionary<string, (string part, float upAngle, Vector3 upMove)[]> GEAR = new Dictionary<string, (string, float, Vector3)[]>
+        {
+            ["peregrine"] = new[] { ("gear_nose", -1.5708f, Vector3.zero), ("gear_main_l", 0f, new Vector3(0, 0.38f, 0)), ("gear_main_r", 0f, new Vector3(0, 0.38f, 0)) },
+        };
+        sealed class Leg { public Transform t; public float upAngle; public Vector3 upMove; public Quaternion rest; public Vector3 restPos; }
+        readonly List<Leg> legs = new List<Leg>();
 
         void Awake() { if (heli == null) heli = GetComponent<HelicopterController>(); }
 
@@ -57,7 +70,7 @@ namespace Rotorcraft.Presentation
         public void Bind(Transform modelRoot, string aircraftId)
         {
             model = modelRoot;
-            doors.Clear(); controls.Clear(); held.Clear(); playerOpen = false;
+            doors.Clear(); controls.Clear(); held.Clear(); legs.Clear(); playerOpen = false;
             if (model == null) return;
             var all = model.GetComponentsInChildren<Transform>(true);
             Transform Find(string name) => all.FirstOrDefault(t => t.name == name) ?? all.FirstOrDefault(t => t.name.StartsWith(name + "."));
@@ -68,6 +81,13 @@ namespace Rotorcraft.Presentation
                     if (t == null) continue;
                     // the mirror on import: x flips, and rotations about y and z turn the other way
                     doors.Add(new Door { t = t, group = group, kind = kind, open = -open * Mathf.Rad2Deg, outV = new Vector3(-outV.x, outV.y, outV.z), moveV = new Vector3(-move.x, move.y, move.z), rest = t.localRotation, restPos = t.localPosition });
+                }
+            if (GEAR.TryGetValue(aircraftId, out var gear))
+                foreach (var (part, up, move) in gear)
+                {
+                    var t = Find(part);
+                    // rotations about x keep their sense through the import mirror; moves along x flip
+                    if (t != null) legs.Add(new Leg { t = t, upAngle = up * Mathf.Rad2Deg, upMove = new Vector3(-move.x, move.y, move.z), rest = t.localRotation, restPos = t.localPosition });
                 }
             foreach (var t in all.Where(t => t.name.StartsWith("ctl_")))
             {
@@ -120,6 +140,13 @@ namespace Rotorcraft.Presentation
                     var outK = Mathf.Clamp01(d.pos / 0.2f); var slideK = Mathf.Clamp01((d.pos - 0.2f) / 0.8f);
                     d.t.localPosition = d.restPos + d.outV * Ease(outK) + d.moveV * Ease(slideK);
                 }
+            }
+            // wheels follow the simulated gear (it takes several seconds each way)
+            var up = 1 - Ease(Mathf.Clamp01((float)heli.State.gearPos));
+            foreach (var l in legs)
+            {
+                l.t.localRotation = l.rest * Quaternion.AngleAxis(l.upAngle * up, Vector3.right);
+                l.t.localPosition = l.restPos + l.upMove * up;
             }
             // controls follow the pilot's hands (the actual inputs, smoothed a little as real linkages are)
             var c = heli.CurrentControls;

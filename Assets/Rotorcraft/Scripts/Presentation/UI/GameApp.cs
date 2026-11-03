@@ -180,7 +180,8 @@ namespace Rotorcraft.Presentation.UI
         public void FlyMission(string missionId, double fuelKg, TimeOfDay tod, string weatherId)
         {
             var m = Missions.ById(missionId);
-            var b = Aircraft.Get(m.aircraftId);
+            var b = Aircraft.WithSkin(Aircraft.Get(m.aircraftId), m.skin);
+            if (m.kit != null) b = Loadout.Fit(b, m.kit).ac;
             var pf = CareerManager.PowerFactor(Career, b.id);
             var ac = b;
             if (pf < 1) { ac = b.Clone(); ac.ratedPowerKW = b.ratedPowerKW * pf; }

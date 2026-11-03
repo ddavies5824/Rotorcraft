@@ -4,7 +4,7 @@ using Rotorcraft.Sim;
 
 namespace Rotorcraft.Game
 {
-    public enum ObjectiveKind { EngineStart, RotorRpm, LiftOff, Hover, Climb, Waypoint, Land, Autorotation, PowerRecovery, Shutdown, Radio, Decision, Load, Search, Winch, FailEngine, Failure, Hold, Ap }
+    public enum ObjectiveKind { EngineStart, RotorRpm, LiftOff, Hover, Climb, Waypoint, Land, Autorotation, PowerRecovery, Shutdown, Radio, Decision, Load, Search, Winch, FailEngine, Failure, Hold, Ap, Gear }
     public enum ObjectiveStatus { Pending, Active, Complete, Failed }
     public enum DecisionEffect { Continue, Return, Divert }
 
@@ -73,14 +73,16 @@ namespace Rotorcraft.Game
         public double altFt, altTolFt, headingDeg, hdgTolDeg;
         // ap
         public APMode mode;
+        // gear: the wheels down (true) or up
+        public bool gearDown;
 
         public ObjectiveDef Clone() => (ObjectiveDef)MemberwiseClone();
     }
 
     public enum ScoreCategory { Landing, Hover, Navigation, Handling, Procedures, Fuel, Safety, Search, Rescue, Decisions, Instrument, Timeliness }
-    public enum MissionCategory { Training, Test, Private, Practice, Sar, Offshore, Utility, Medical, Freeplay }
+    public enum MissionCategory { Training, Test, Private, Practice, Sar, Offshore, Utility, Medical, Freeplay, Police, Military }
     /// <summary>Career pathways: used to order recommendations and hide finished training.</summary>
-    public enum Pathway { None, Ppl, Cpl, Night, Ir, Ns175, S9, Offshore, Sar, Winch, Tc }
+    public enum Pathway { None, Ppl, Cpl, Night, Ir, Ns175, S9, Offshore, Sar, Winch, Tc, P3, Police, Military }
 
     public sealed class AssessmentCriteria
     {
@@ -149,6 +151,10 @@ namespace Rotorcraft.Game
         public double? minStanding;
         /// <summary>Passengers carried (for the logbook).</summary>
         public int? passengers;
+        /// <summary>Paint scheme the aircraft wears for this flight (one of its skins).</summary>
+        public string skin;
+        /// <summary>Role kit fitted for this flight (null: the type's standard equipment).</summary>
+        public KitId[] kit;
 
         public MissionDef Clone() => (MissionDef)MemberwiseClone();
     }

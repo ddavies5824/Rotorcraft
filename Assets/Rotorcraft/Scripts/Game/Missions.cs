@@ -298,7 +298,7 @@ namespace Rotorcraft.Game
                 assessment = Pass(0),
                 prerequisites = new Prerequisites(), estMinutes = 15, xp = 20, availableFromMilestone = 3, maxRangeM = 5000,
             },
-        }.Concat(MissionsAdvanced.All).Concat(MissionsCareer.All).ToList();
+        }.Concat(MissionsAdvanced.All).Concat(MissionsCareer.All).Concat(MissionsOps.All).ToList();
 
         public static MissionDef ById(string id) => All.FirstOrDefault(m => m.id == id);
     }

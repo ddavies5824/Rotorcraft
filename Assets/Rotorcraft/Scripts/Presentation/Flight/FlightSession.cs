@@ -196,6 +196,7 @@ namespace Rotorcraft.Presentation
                 }
                 if (Runtime.weatherVersion != wxVer) { wxVer = Runtime.weatherVersion; SkyEnvironment.Current?.Apply(Setup.tod, Runtime.WeatherAt(s.t)); }
                 UpdateDoors(s);
+                if (heli.Aircraft.retractableGear) GearWarning(s);
                 // translational-lift shudder is felt less in a low hover in a breeze (in ground effect) than in a transition
                 var ige = Mathf.Clamp01((float)(s.@out.aglM / heli.Aircraft.rotorDiameter));
                 cam.shake = s.onGround ? 0 : Mathf.Min(1, (float)(s.@out.etlShudder * 0.7 * (0.4 + 0.6 * ige) + s.@out.vrs * 0.8 + s.@out.bladeStall * 0.8));
@@ -242,11 +243,32 @@ namespace Rotorcraft.Presentation
                 case GameAction.Flir: Runtime.ToggleFlir(); break;
                 case GameAction.Tablet: if (Director != null) showTablet = !showTablet; break;
                 case GameAction.Doors: if (!animator.TogglePlayer()) Runtime.Say(s.t, "Crew", "Doors stay shut in flight.", MessageKind.Caution); break;
+                case GameAction.Gear: ToggleGear(); break;
                 case GameAction.Voice: Runtime.Say(s.t, "Voice", "Voice commands are not available in this version: use the buttons or keys instead.", MessageKind.Caution); break;
                 case GameAction.Engine: App.Later(() => { }); break;
             }
             hudDirty = true;
         }
+
+        /// <summary>The landing gear lever (aircraft with retractable wheels).</summary>
+        void ToggleGear()
+        {
+            var s = heli.State; var ac = heli.Aircraft;
+            if (!ac.retractableGear) return;
+            if (FlightModel.CommandGear(s, ac)) Runtime.Say(s.t, "Crew", s.sys.gearDown ? "Gear down." : "Gear coming up.", MessageKind.Info);
+            else if (s.onGround) Runtime.Say(s.t, "Crew", "The wheels stay down on the ground.", MessageKind.Caution);
+            hudDirty = true;
+        }
+
+        /// <summary>Low, slow and coming down with the wheels still up: the crew calls it once per approach.</summary>
+        void GearWarning(HeliState s)
+        {
+            var o = s.@out;
+            var low = !s.onGround && s.gearPos < 0.95 && o.aglM < 60 && o.iasKt < 60 && o.vsFpm < -150;
+            if (low && !gearWarned) { gearWarned = true; Runtime.Say(s.t, "Crew", "Gear! The wheels are still up.", MessageKind.Warning); }
+            else if (s.gearPos > 0.95 || o.aglM > 90) gearWarned = false;
+        }
+        bool gearWarned;
 
         void ApToggle(APMode mode)
         {
@@ -307,6 +329,7 @@ namespace Rotorcraft.Presentation
             ["northstar"] = (new Vector3(1.42f, 1.2f, 0.9f), 3.55f, new Vector3(0.42f, 3.4f, 7.6f), new Vector3(-0.4f, 0.52f, -3.2f)),
             ["guardian"] = (new Vector3(1.6f, 1.35f, 1.0f), 3.95f, new Vector3(0.47f, 3.8f, 8.5f), new Vector3(-0.45f, 0.58f, -3.6f)),
             ["nightjar"] = (new Vector3(0.95f, 1.05f, 1.2f), 3.42f, new Vector3(0, 2.02f, 6.62f), new Vector3(0, 0.64f, -3.26f)),
+            ["peregrine"] = (new Vector3(0.95f, 1.62f, 1.18f), 3.40f, new Vector3(0, 1.66f, 6.95f), new Vector3(0, 0.52f, -3.77f)),
         };
 
         Vector3 WalkPoint(CheckId id)

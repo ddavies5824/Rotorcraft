@@ -23,7 +23,7 @@ namespace Rotorcraft.Inputs
             ["engine"] = Key.E, ["throttleUp"] = Key.R, ["throttleDown"] = Key.F, ["governor"] = Key.G,
             ["beacon"] = Key.B, ["navLights"] = Key.N, ["strobe"] = Key.O, ["landingLight"] = Key.L, ["searchlight"] = Key.H,
             ["trim"] = Key.T, ["trimRelease"] = Key.U, ["camera"] = Key.C, ["pause"] = Key.P, ["panel"] = Key.I, ["map"] = Key.M, ["switches"] = Key.K,
-            ["apAlt"] = Key.Digit1, ["apHdg"] = Key.Digit2, ["apHover"] = Key.Digit3, ["winch"] = Key.X, ["transmit"] = Key.V, ["flir"] = Key.J, ["voice"] = Key.Y, ["tablet"] = Key.Tab, ["doors"] = Key.Z,
+            ["apAlt"] = Key.Digit1, ["apHdg"] = Key.Digit2, ["apHover"] = Key.Digit3, ["winch"] = Key.X, ["transmit"] = Key.V, ["flir"] = Key.J, ["voice"] = Key.Y, ["tablet"] = Key.Tab, ["doors"] = Key.Z, ["gear"] = Key.Q,
         };
 
         /// <summary>The name an action's key binding is stored under: Engine → "engine", ApAlt → "apAlt".</summary>

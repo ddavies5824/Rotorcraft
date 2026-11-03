@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Rotorcraft.Sim
 {
-    public enum AircraftRole { Training, Offshore, Sar, Hems }
+    public enum AircraftRole { Training, Offshore, Sar, Hems, Police }
     public enum LandingGear { Skids, Wheels }
 
     public sealed class Livery
@@ -82,6 +82,17 @@ namespace Rotorcraft.Sim
         public Skin[] skins;
         /// <summary>Radio callsign that goes with the chosen skin.</summary>
         public string callsign;
+        /// <summary>The paint scheme worn (null: the first of the skins, or the only livery).</summary>
+        public string skinId;
+        /// <summary>Kit fitted for the flight, by name ("seats", "cargo"...): null when no loadout was chosen.</summary>
+        public string[] fitted;
+        /// <summary>Main rotor turns clockwise seen from above (French and European types): the torque swings
+        /// the nose left, so it takes right pedal as power goes on.</summary>
+        public bool rotorClockwise;
+        /// <summary>Wheels the pilot raises in flight (Q key) and must lower to land.</summary>
+        public bool retractableGear;
+        /// <summary>Extra flat-plate drag area (m²) with the wheels down.</summary>
+        public double gearDragArea;
 
         public AircraftConfig Clone() => (AircraftConfig)MemberwiseClone();
     }
@@ -292,6 +303,69 @@ namespace Rotorcraft.Sim
                     new Skin { id = "corporate", name = "Corporate (silver and blue)", livery = new Livery(C(0.62, 0.64, 0.66), C(0.1, 0.28, 0.6), C(0.1, 0.28, 0.6)) },
                 },
             },
+            // Modelled on the AS365 N3 Dauphin: two Arriel 2C turbines (about 635 kW each), 4,300 kg maximum,
+            // an 11.94 m four-blade rotor turning clockwise, a ten-blade fenestron, retractable tricycle wheels.
+            ["peregrine"] = new AircraftConfig
+            {
+                id = "peregrine",
+                name = "Peregrine P3",
+                shortName = "P3",
+                role = AircraftRole.Police,
+                description = "Fast medium twin for police and military work, modelled on the AS365 N3 Dauphin: a sleek fuselage with wheels that retract, a shrouded fan in the fin, a four-axis autopilot and a four-blade rotor that turns clockwise, so it needs right pedal as you lift. Raise the wheels after take-off (Q) and lower them for landing.",
+                realWorldClass = "Medium twin-turbine police and military helicopter (modelled on the AS365 N3 Dauphin)",
+                engines = 2,
+                emptyMass = 2400,
+                maxGross = 4300,
+                fuelCapacity = 900,
+                crewMass = 260, // two pilots, observer or crewman
+                maxPayload = 1100,
+                rotorDiameter = 11.94,
+                hubHeight = 3.40,
+                thrustMaxFactor = 1.40,
+                ratedPowerKW = 1270,
+                rotorEnergyTime = 3.8,
+                profilePowerFrac = 0.14,
+                fuelBurnKgH = 380,
+                idleBurnKgH = 75,
+                startTime = 11,
+                spinUpRate = 6.5,
+                pitchRate = 0.62,
+                rollRate = 0.92,
+                yawRate = 0.85,
+                controlTau = 0.34,
+                torqueYaw = 0.24,
+                weathervane = 0.055,
+                blowback = 0.0045,
+                heaveDamping = 0.27,
+                dragArea = new DragArea { f = 1.10, s = 7.5, v = 11 },
+                gustSensitivity = 0.65,
+                hasAFCS = true,
+                vneKt = 175,
+                torqueMcp = 100,
+                torqueMax = 110,
+                rpmMin = 95,
+                rpmMax = 106,
+                landingGear = LandingGear.Wheels,
+                maxTouchdownMs = 2.0,
+                equipment = new Equipment { radalt = true, flir = true, searchlight = true, autopilot = true },
+                operatingCostPerHour = 3400,
+                requiredQualifications = new[] { "cpl_h", "type_peregrine" },
+                trainingQualifications = new[] { "cpl_h" },
+                rotorClockwise = true,
+                retractableGear = true,
+                gearDragArea = 0.35,
+                callsign = "Police 6-1",
+                // body, the band low along the fuselage and over the sponsons, the dome over the main gearbox
+                livery = new Livery(C(0.045, 0.07, 0.19), C(0.92, 0.92, 0.90), C(0.92, 0.92, 0.90)),
+                skins = new[]
+                {
+                    new Skin { id = "police", name = "Police (dark blue and white)", livery = new Livery(C(0.045, 0.07, 0.19), C(0.92, 0.92, 0.90), C(0.92, 0.92, 0.90)), callsign = "Police 6-1" },
+                    new Skin { id = "executive", name = "Executive (dark blue and white, unmarked)", livery = new Livery(C(0.045, 0.07, 0.19), C(0.92, 0.92, 0.90), C(0.92, 0.92, 0.90)), callsign = "Charter 3-1" },
+                    new Skin { id = "army", name = "Army (olive drab)", livery = new Livery(C(0.25, 0.28, 0.20), C(0.20, 0.22, 0.16), C(0.25, 0.28, 0.20)), callsign = "Army 4-2" },
+                    new Skin { id = "navy", name = "Navy (grey)", livery = new Livery(C(0.45, 0.48, 0.51), C(0.36, 0.38, 0.41), C(0.45, 0.48, 0.51)), callsign = "Navy 3-1" },
+                    new Skin { id = "rescue", name = "Rescue (red and white)", livery = new Livery(C(0.78, 0.09, 0.06), C(0.93, 0.93, 0.91), C(0.93, 0.93, 0.91)), callsign = "Rescue 3-6" },
+                },
+            },
         };
 
         public static AircraftConfig Get(string id)
@@ -308,7 +382,7 @@ namespace Rotorcraft.Sim
         {
             var sk = string.IsNullOrEmpty(skinId) || ac.skins == null ? null : Array.Find(ac.skins, s => s.id == skinId);
             if (sk == null) return ac;
-            var copy = ac.Clone(); copy.livery = sk.livery; copy.callsign = sk.callsign;
+            var copy = ac.Clone(); copy.livery = sk.livery; copy.callsign = sk.callsign ?? ac.callsign; copy.skinId = sk.id;
             return copy;
         }
     }

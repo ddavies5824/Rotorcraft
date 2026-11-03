@@ -110,6 +110,7 @@ namespace Rotorcraft.Sim
         public bool strobe;            // white high-intensity strobes
         public bool landingLight;
         public bool searchlight;       // SAR aircraft only
+        public bool gearDown = true;   // landing gear lever (retractable wheels only)
 
         public bool this[SwitchName n]
         {
@@ -173,6 +174,8 @@ namespace Rotorcraft.Sim
         public string crashReason;
         public double torqueSmoothed;
         public double pedalTrim;
+        /// <summary>Retractable wheels: 1 down and locked, 0 up; in between while they travel.</summary>
+        public double gearPos = 1;
         public FlightOutputs @out;
         public List<SimEvent> events = new List<SimEvent>();
     }
@@ -275,6 +278,19 @@ namespace Rotorcraft.Sim
             return true;
         }
 
+        /// <summary>Seconds the retractable wheels take to travel up or down.</summary>
+        public const double GEAR_TRAVEL_S = 6;
+
+        /// <summary>Move the landing gear lever. Weight on the wheels stops them coming up on the ground.</summary>
+        public static bool CommandGear(HeliState s, AircraftConfig ac, bool? down = null)
+        {
+            if (s.crashed || !ac.retractableGear) return false;
+            var want = down ?? !s.sys.gearDown;
+            if (!want && s.onGround) return false;
+            s.sys.gearDown = want;
+            return true;
+        }
+
         /// <summary>Engine start / stop commands are discrete and validated against state.</summary>
         public static bool CommandEngine(HeliState s, EngineCommand cmd)
         {
@@ -327,6 +343,11 @@ namespace Rotorcraft.Sim
             // ---- environment ---------------------------------------------------------------------------
             var ground = world.GroundAt(s.pos.x, s.pos.z);
             var agl = Math.Max(0, s.pos.y - ground.h);
+            if (ac.retractableGear) s.gearPos = Clamp(s.gearPos + (s.sys.gearDown ? dt : -dt) / GEAR_TRAVEL_S, 0, 1);
+            else s.gearPos = 1;
+            var dragF = ac.dragArea.f + (ac.retractableGear ? ac.gearDragArea * s.gearPos : 0);
+            // a clockwise rotor (seen from above) reverses the torque reaction and the side the retreating blade is on
+            var rotorSign = ac.rotorClockwise ? -1.0 : 1.0;
             var sigma = Weather.DensityRatio(Math.Max(0, s.pos.y), wx.oatC);
             var rho = 1.225 * sigma;
             var mass = MassOf(s, ac);
@@ -375,7 +396,7 @@ namespace Rotorcraft.Sim
             var vi = vhInduced > 0 ? (vhInduced * vhInduced) / Math.Sqrt(vh * vh + vhInduced * vhInduced) : 0;
             var pInduced = 1.15 * thrust * vi / Math.Pow(ige, 1.5);
             var pProfile = ac.profilePowerFrac * ratedW * rpmFrac * rpmFrac * rpmFrac * (1 + 3 * Math.Pow(vh / 200, 2)) * (0.6 + 0.4 * sigma);
-            var pParasite = 0.5 * rho * ac.dragArea.f * vh * vh * vh;
+            var pParasite = 0.5 * rho * dragF * vh * vh * vh;
             var pClimb = mass * G * va.y; // potential-energy rate; negative in descent (autorotation source)
             var pFriction = 0.012 * ratedW * Math.Min(1, rpmFrac * 5);
             var pReq = pInduced + pProfile + pParasite + pClimb + pFriction;
@@ -480,7 +501,7 @@ namespace Rotorcraft.Sim
             pCmd = pCmd * ctrlPower + turb.p * gustScale;
             // buffet in vortex ring; pitch-up and roll towards the retreating (left) side in blade stall
             if (vrs > 0) { qCmd += SmoothNoise(s.t * 6, 3) * 0.35 * vrs; pCmd += SmoothNoise(s.t * 5.3, 4) * 0.45 * vrs; }
-            if (bladeStall > 0) { qCmd += 0.35 * bladeStall; pCmd -= 0.5 * bladeStall; }
+            if (bladeStall > 0) { qCmd += 0.35 * bladeStall; pCmd -= 0.5 * bladeStall * rotorSign; }
 
             // Yaw: pedals vs torque reaction and weathervane
             var torqueFrac = torque / 100;
@@ -488,6 +509,7 @@ namespace Rotorcraft.Sim
             if (assist == AssistMode.Realistic) torqueYaw = ac.torqueYaw * (ac.hasAFCS ? 0.25 : 1) * (torqueFrac - 0.0);
             else if (assist == AssistMode.Standard) torqueYaw = ac.torqueYaw * (torque - s.torqueSmoothed) / 100 * 1.5; // transients only
             else torqueYaw = 0;
+            torqueYaw *= rotorSign;
             var rCmd = c.pedals * ac.yawRate * ctrlPower + torqueYaw * ctrlPower + ac.weathervane * vaR * (assist == AssistMode.Beginner ? 0.4 : 1) + turb.r * gustScale;
             if (assist == AssistMode.Beginner && Math.Abs(c.pedals) < 0.05) rCmd -= s.r * 0.5; // heading hold-lite
             var fl = s.failures;
@@ -495,7 +517,7 @@ namespace Rotorcraft.Sim
             {
                 // no anti-torque: the fuselage turns against the rotor in proportion to power; airflow over the
                 // fin (weathervaning) holds the nose straight at speed, so the answer is speed and a running landing
-                rCmd = ac.torqueYaw * 1.4 * torqueFrac * ctrlPower + ac.weathervane * 2.2 * vaR + turb.r * gustScale;
+                rCmd = rotorSign * ac.torqueYaw * 1.4 * torqueFrac * ctrlPower + ac.weathervane * 2.2 * vaR + turb.r * gustScale;
             }
             var hyd = fl != null && fl.hydraulics;
             if (hyd) { qCmd *= 0.55; pCmd *= 0.55; rCmd *= 0.7; }
@@ -528,7 +550,7 @@ namespace Rotorcraft.Sim
             // ---- forces --------------------------------------------------------------------------------
             var ax2 = BodyAxesOf(s.psi, s.theta, s.phi);
             var q2 = 0.5 * rho;
-            var dF = -q2 * ac.dragArea.f * vaF * Math.Abs(vaF);
+            var dF = -q2 * dragF * vaF * Math.Abs(vaF);
             var dR = -q2 * ac.dragArea.s * vaR * Math.Abs(vaR);
             var dU = -q2 * ac.dragArea.v * vaU * Math.Abs(vaU) * 0.3;
             // rotor in-plane (H-force) damping: resists translation relative to the air, scaled by rotor speed
@@ -542,7 +564,7 @@ namespace Rotorcraft.Sim
                 // normal force and friction
                 var normal = Math.Max(0, -fy);
                 if (fy < 0) fy = 0;
-                var mu = ac.landingGear == LandingGear.Skids ? 0.5 : 0.35; // wheels with parking brake
+                var mu = ac.landingGear == LandingGear.Skids || s.gearPos < 0.95 ? 0.5 : 0.35; // wheels with parking brake
                 var hs0 = Js.Hypot(s.vel.x, s.vel.z);
                 var fric = mu * normal;
                 if (hs0 > 1e-4)
@@ -580,10 +602,19 @@ namespace Rotorcraft.Sim
                     else if (gs > 9) Crash(s, $"Touched down at {Js.Fixed(gs * KT, 0)} kt ground speed — the {GearName(ac)} dug in");
                     else if (Math.Abs(roll) > 16 || Math.Abs(pitch) > 22) Crash(s, $"Touched down with {(Math.Abs(roll) > 16 ? $"{Js.Fixed(Math.Abs(roll), 0)}° of bank" : $"{Js.Fixed(Math.Abs(pitch), 0)}° of pitch")} — the aircraft rolled over");
                     else if (g2.slope > 0.24) Crash(s, "Landed on a slope too steep for the aircraft — it rolled over");
+                    else if (ac.retractableGear && s.gearPos < 0.95 && (gs > 5 || vs > ac.maxTouchdownMs * 1.4)) Crash(s, "Landed with the wheels up — the aircraft slid onto its belly and broke up");
                     if (!s.crashed)
                     {
                         var severity = TouchdownSeverity.Smooth;
-                        if (vs > ac.maxTouchdownMs)
+                        if (ac.retractableGear && s.gearPos < 0.95)
+                        {
+                            // a gentle wheels-up landing: the belly and the gear doors take it, and the aircraft is grounded
+                            severity = TouchdownSeverity.Hard;
+                            var dmg = 0.45;
+                            s.damage = Clamp(s.damage + dmg, 0, 1);
+                            s.events.Add(new SimEvent { type = SimEventType.Damage, t = s.t, amount = dmg, reason = "Wheels-up landing" });
+                        }
+                        else if (vs > ac.maxTouchdownMs)
                         {
                             severity = TouchdownSeverity.Hard;
                             var dmg = Clamp((vs - ac.maxTouchdownMs) * 0.25, 0.05, 0.6);

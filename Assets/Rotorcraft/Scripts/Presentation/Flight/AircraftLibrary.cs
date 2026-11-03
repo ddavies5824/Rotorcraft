@@ -5,7 +5,7 @@ namespace Rotorcraft.Presentation
 {
     public sealed class AircraftLibrary : MonoBehaviour
     {
-        public GameObject kestrel, northstar, guardian, nightjar;
+        public GameObject kestrel, northstar, guardian, nightjar, peregrine;
 
         public GameObject ModelFor(string id)
         {
@@ -14,6 +14,7 @@ namespace Rotorcraft.Presentation
                 case "northstar": return northstar;
                 case "guardian": return guardian;
                 case "nightjar": return nightjar;
+                case "peregrine": return peregrine;
                 default: return kestrel;
             }
         }

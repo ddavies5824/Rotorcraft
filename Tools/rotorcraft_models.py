@@ -19,7 +19,9 @@ WHICH MODELS: set BUILD just below, e.g. BUILD = ["landmarks"], ["northstar", "g
   "vehicles" is the road vehicles (hatchback, saloon, estate, SUV, pickup, van, police car, ambulance,
   mountain rescue 4x4 and fire engine): one vehicles.rcm. The game paints each car itself.
   "nightjar" is the Nightjar N4 light twin (air ambulance / police) with opening doors and a furnished cabin.
-  Every aircraft now has opening doors, a cabin interior and crew seats: rebuild all four.
+  "peregrine" is the Peregrine P3 medium twin (police and military), drawn as closely as possible to the AS365 N3
+  Dauphin, with retractable wheels, a clockwise rotor, role kit and paint schemes the game tints.
+  Every aircraft now has opening doors, a cabin interior and crew seats.
   "trees" is two versions each of oak, ash, beech, sycamore, birch, hawthorn, Scots pine, spruce and larch:
   one trees.rcm. The game scales, turns and colours each tree (autumn shades) as it plants them.
 
@@ -36,8 +38,8 @@ Blender gets them turned so the nose points along +Y and up is +Z.
 """
 import math, os, sys, json, struct, time
 
-VERSION = "rotorcraft_models.py 3.4"
-BUILD = os.environ.get("RC_BUILD", "kestrel,northstar,guardian,nightjar").split(",")   # set RC_BUILD to build fewer
+VERSION = "rotorcraft_models.py 3.5"
+BUILD = os.environ.get("RC_BUILD", "kestrel,northstar,guardian,nightjar,peregrine").split(",")   # set RC_BUILD to build fewer
 
 # ============================================================================ materials
 # key: (r, g, b, gloss, livery slot, emissive)   slot 0 fixed colour; 1 body; 2 stripe; 3 tail.
@@ -139,6 +141,7 @@ MATS["lantern_glow"] = (1.0, 0.93, 0.78, 0.0, 0, True)
 MATS["deck_light"] = (0.95, 0.85, 0.30, 0.0, 0, True)
 MAT_TEX = {k: v[4] for k, v in LANDMARK_MATS.items() if v[4]}
 LIVERY_PREVIEW = {1: (0.93, 0.93, 0.90), 2: (0.85, 0.36, 0.12), 3: (0.12, 0.20, 0.30)}
+LIVERY_PREVIEW_DEFAULT = dict(LIVERY_PREVIEW)
 
 
 # Physically based materials for the .glb only (the .rcm keeps the game's own colour, gloss and slot data):
@@ -2238,6 +2241,8 @@ SHOTS = {
     "kestrel": [("front", (5.2, 2.9, -7.0), (0, 1.2, -0.3), 50), ("side", (-7.8, 1.6, 1.6), (0, 1.3, 1.6), 40), ("cockpit", (0.3, 1.68, -0.42), (0.05, 1.05, -1.6), 18)],
     "nightjar": [("front", (7.0, 3.0, -9.5), (0, 1.5, 0.2), 45), ("side", (-12.5, 2.2, 1.6), (0, 1.7, 1.6), 35), ("rear", (6.0, 2.4, 9.5), (0, 1.5, 1.0), 40), ("cockpit", (0.42, 1.66, -2.18), (0.1, 1.25, -3.3), 18)],
     "twin": [("front", (9.5, 4.2, -13.0), (0, 1.8, -0.2), 50), ("side", (-17.0, 2.6, 1.6), (0, 2.0, 1.6), 35), ("cockpit", (0.45, 2.08, -2.8), (0.15, 1.6, -4.4), 18)],
+    "peregrine": [("front", (8.0, 3.0, -10.5), (0, 1.5, 0.4), 42), ("side", (-15.0, 2.2, 1.6), (0, 1.8, 1.6), 33), ("rear", (7.5, 2.8, 11.5), (0, 1.6, 1.6), 38),
+                  ("cockpit", (0.45, 1.86, -1.98), (0.1, 1.3, -3.2), 18)],
 }
 # ============================================================================ vehicles (model "vehicles")
 # One part per kind of road vehicle, named as the game names them (src/world/places.ts VehicleKind). Local
@@ -3171,6 +3176,591 @@ def build_nightjar():
     return m, meta
 
 
+# ============================================================================ Peregrine P3 (model "peregrine")
+# A medium twin drawn as closely as these tools allow to the AS365 N3 Dauphin: the long rounded nose, a steeply
+# raked two-piece windscreen wrapping back to the crew doors, green-tinted overhead windows, hinged crew doors
+# with big windows, big sliding cabin doors, the twin-engine deck faired back into a tapering boom, a
+# tailplane with end-plate fins, a ten-blade fan in the base of a tall swept fin, and a four-blade rotor on a
+# star-shaped hub turning clockwise seen from above (the blades are mirrored to suit). The wheels retract: the
+# twin nose wheels fold back into a bay under the cockpit floor and the main wheels pull up into the side
+# sponsons (parts gear_nose and gear_main_l/r, meta "gear"). Role kit: camera ball, searchlight, hoist and floats
+# (eq_*), and cabin fits for police (observer console), troops (wall and bench seats) and a stretcher (fit_*).
+# Livery, as the reference photos of a dark blue N3: slot 1 the body, 2 the band along the lower fuselage and
+# the sponsons (white on the photos) and the blade tips, 3 the dome over the main gearbox. The painted surfaces are
+# baked as shading only and tinted by the game (meta "liveryTint"), so every paint scheme shows; the scheme's
+# lettering (POLICE, ARMY, NAVY, RESCUE) is a part of its own (mark_*), wrapped round the boom.
+MATS.update({
+    "pg_well":    (0.07, 0.075, 0.08, 0.20, 0, False),
+    "pg_trim":    (0.20, 0.21, 0.22, 0.18, 0, False),
+    "tyre":       (0.045, 0.045, 0.05, 0.12, 0, False),
+    "wheelhub":   (0.55, 0.57, 0.60, 0.55, 0, False),
+    "oleo":       (0.82, 0.83, 0.85, 0.85, 0, False),
+    "webbing":    (0.20, 0.22, 0.17, 0.12, 0, False),
+    "mark_white": (0.93, 0.93, 0.91, 0.40, 0, False),
+    "mark_black": (0.035, 0.035, 0.04, 0.30, 0, False),
+})
+GLTF_PBR.update({"tyre": (0.0, 0.9, 0.0), "wheelhub": (0.9, 0.38, 0.0), "oleo": (1.0, 0.08, 0.0), "pg_trim": (0.0, 0.7, 0.0),
+                 "webbing": (0.0, 0.85, 0.0), "mark_white": (0.0, 0.32, 1.0), "mark_black": (0.0, 0.40, 1.0)})
+
+# side-view outline (z, y) of the top and bottom lines, the half-width and the height of the widest line, and
+# the section's squareness (superellipse exponent), nose (z -4.35) to the fan housing (z 6.40)
+PG_END = 6.40
+PG_TOP = [(-4.35, 1.05), (-4.28, 1.20), (-4.15, 1.31), (-3.95, 1.41), (-3.70, 1.49), (-3.45, 1.57), (-3.15, 1.78), (-2.85, 2.00), (-2.55, 2.16),
+          (-2.25, 2.23), (-1.5, 2.25), (0.6, 2.25), (1.2, 2.23), (1.8, 2.20), (2.5, 2.17), (3.2, 2.14), (4.5, 2.09), (5.6, 2.04), (PG_END, 2.00)]
+PG_BOT = [(-4.35, 0.99), (-4.28, 0.85), (-4.15, 0.75), (-3.95, 0.65), (-3.70, 0.575), (-3.45, 0.53), (-3.15, 0.51), (-2.85, 0.50), (0.55, 0.50),
+          (0.95, 0.53), (1.35, 0.66), (1.75, 0.90), (2.15, 1.20), (2.55, 1.40), (3.0, 1.51), (4.5, 1.61), (5.6, 1.65), (PG_END, 1.67)]
+PG_WID = [(-4.35, 0.02), (-4.28, 0.22), (-4.15, 0.38), (-3.95, 0.55), (-3.70, 0.70), (-3.45, 0.80), (-3.15, 0.87), (-2.85, 0.92), (-2.55, 0.945),
+          (-2.25, 0.955), (0.6, 0.955), (1.0, 0.93), (1.45, 0.86), (1.9, 0.72), (2.4, 0.54), (2.9, 0.42), (3.6, 0.35), (4.8, 0.29), (5.8, 0.24), (PG_END, 0.21)]
+PG_WAIST = [(-4.35, 1.02), (-3.95, 1.05), (-3.45, 1.12), (-2.85, 1.20), (-2.25, 1.24), (0.6, 1.24), (1.45, 1.40), (2.15, 1.62), (2.9, 1.80), (4.5, 1.85), (PG_END, 1.835)]
+PG_EXP = [(-4.35, 2.0), (-3.95, 2.3), (-3.45, 2.9), (-2.85, 3.4), (-2.25, 3.7), (0.6, 3.7), (1.45, 3.2), (2.4, 2.5), (3.2, 2.2), (PG_END, 2.05)]
+PG_T, PG_B, PG_W, PG_Y, PG_N = (pchip([p[0] for p in t], [p[1] for p in t]) for t in (PG_TOP, PG_BOT, PG_WID, PG_WAIST, PG_EXP))
+PG_CAB_T, PG_CAB_B, PG_CAB_W = 2.25, 0.50, 0.955
+
+# doors and windows on each side (z0, z1, y0, y1), heights where the skin has a row of vertices on every section
+PG_CREW_DOOR, PG_CREW_WIN = (-2.62, -1.62, 0.70, 2.02), (-2.54, -1.70, 1.32, 1.92)
+PG_CABIN_DOOR, PG_CABIN_WIN = (-1.52, -0.06, 0.90, 2.08), (-1.40, -0.18, 1.32, 1.92)
+PG_REAR_WIN = (0.10, 0.82, 1.32, 1.92)
+PG_BAGGAGE = (0.98, 1.62, 0.86, 1.42)          # baggage hold door (right side), drawn as a seam
+PG_ROOF_WIN = (-2.58, -1.95, 0.10, 0.62)       # overhead windows: z0, z1 and |x| from the centre line
+PG_WELL = (-3.42, -2.92, 0.16)                 # nose wheel bay: z0, z1, half-width
+PG_BAND = 0.84                                 # top of the band along the lower fuselage (cabin height)
+PG_BELLY = 0.60
+PG_FLOOR = 0.70
+PG_FEAT_Y = [0.60, 0.70, PG_BAND, 0.90, 1.00, 1.09, 1.17, 1.29, 1.32, 1.40, 1.55, 1.72, 1.92, 2.02, 2.08]
+PG_ROOF_X = [0.62, 0.49, 0.36, 0.23, 0.10]
+PG_FAN = (6.95, 1.66)                          # fan centre (z, y)
+PG_SLIDE = 1.42                                # how far the cabin doors run back
+PG_SPONSON = [(-0.22, 0.70, 0.02, 0.02, 0.02, 2.0, 0.90), (-0.02, 0.69, 0.13, 0.14, 0.16, 2.4, 0.93), (0.38, 0.68, 0.18, 0.20, 0.24, 2.8, 0.96),
+              (0.85, 0.69, 0.17, 0.18, 0.22, 2.7, 0.95), (1.22, 0.72, 0.10, 0.10, 0.12, 2.3, 0.91), (1.42, 0.74, 0.02, 0.02, 0.02, 2.0, 0.87)]
+
+
+def pg_hull():
+    zs = [round(-4.35 + 0.05 * i, 3) for i in range(int(round((PG_END + 4.35) / 0.05)) + 1)]
+    return Hull([(z, PG_Y(z), PG_W(z), max(0.008, PG_T(z) - PG_Y(z)), max(0.008, PG_Y(z) - PG_B(z)), PG_N(z)) for z in zs])
+
+
+def pg_exact(z):
+    """1 through the cabin (doors and windows sit at their true heights), 0 in the nose and boom."""
+    return smooth(-3.25, -2.75, z) * (1 - smooth(0.95, 1.5, z))
+
+
+def pg_map(z, y):
+    """A height on the cabin sides carried fore and aft: exact through the cabin, scaled to the section elsewhere."""
+    prop = PG_B(z) + (y - PG_CAB_B) / (PG_CAB_T - PG_CAB_B) * (PG_T(z) - PG_B(z))
+    return lerp(prop, y, pg_exact(z))
+
+
+def pg_ws_low(z): return 1.56 - 0.22 * clamp01((z + 3.45) / 0.83)      # lower edge of the windscreen, down to the doors
+def pg_ws_feat(z): return pg_ws_low(z) if z < PG_CREW_DOOR[0] else pg_map(z, 1.345)
+
+
+def pg_th_at_x(H, z, x):
+    lo, hi = 0.0, math.pi / 2
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if H.P(z, mid)[0] > abs(x): lo = mid
+        else: hi = mid
+    t = (lo + hi) / 2
+    return t if x >= 0 else math.pi - t
+
+
+def pg_rows():
+    feats = [PG_WELL[0], PG_WELL[1], PG_CREW_DOOR[0], PG_CREW_DOOR[1], PG_CREW_WIN[0], PG_CREW_WIN[1], PG_ROOF_WIN[0], PG_ROOF_WIN[1],
+             PG_CABIN_DOOR[0], PG_CABIN_DOOR[1], PG_CABIN_WIN[0], PG_CABIN_WIN[1], PG_REAR_WIN[0], PG_REAR_WIN[1], 2.70]
+    base = [-4.35 + 0.004 * i * i for i in range(12)]                 # dense at the nose
+    z = base[-1]
+    while z < PG_END: base.append(z); z += 0.06
+    base.append(PG_END)
+    keep = [z for z in base if min(abs(z - f) for f in feats) > 0.02 or z in (-4.35, PG_END)]
+    return sorted(set([round(z, 4) for z in keep + feats if -4.35 <= z <= PG_END]))
+
+
+def pg_ring(H, z):
+    """Angles round a section: 6 across the belly, one on every feature height each side, five across each half
+    of the roof through the overhead window edges, and the top centre line."""
+    seq = [-math.pi / 2 + 1e-4] + [H.th_at_y(z, y, 1) for y in sorted([pg_map(z, y) for y in PG_FEAT_Y] + [pg_ws_feat(z)])]
+    k = lerp(PG_W(z) / PG_CAB_W, 1.0, pg_exact(z))
+    seq += [pg_th_at_x(H, z, x * k) for x in PG_ROOF_X]
+    for i in range(1, len(seq)): seq[i] = max(seq[i], seq[i - 1] + 1e-5)
+    seq = [min(s, math.pi / 2 - 2e-4 * (len(seq) - i)) for i, s in enumerate(seq)]
+    right = [lerp(-math.pi / 2, seq[1], j / 6) for j in range(6)] + seq[1:]
+    left = [math.pi - a for a in reversed(right[1:])]
+    return right + [math.pi / 2] + left
+
+
+def pg_paint(x, y, z):
+    """Material of the skin at a point (outer surface)."""
+    ax = abs(x)
+    if -3.5 < z < PG_CREW_DOOR[0] and y > pg_ws_low(z): return "glass"                       # windscreen
+    if PG_ROOF_WIN[0] < z < PG_ROOF_WIN[1] and PG_ROOF_WIN[2] < ax < PG_ROOF_WIN[3] and y > 2.0: return "visor"
+    if in_rect(z, y, PG_CREW_WIN) or in_rect(z, y, PG_CABIN_WIN) or in_rect(z, y, PG_REAR_WIN): return "glass"
+    if PG_WELL[0] < z < PG_WELL[1] and ax < PG_WELL[2] and y < 0.58: return "pg_well"
+    if z < 2.7 and y < pg_map(z, PG_BAND): return "stripe"                         # the band, nose to boom
+    return "paint"
+
+
+def pg_region(x, y, z):
+    side = "r" if x > 0 else "l"
+    if abs(x) < 0.3: return "body"
+    if in_rect(z, y, PG_CREW_DOOR): return "door_crew_" + side
+    if in_rect(z, y, PG_CABIN_DOOR): return "door_cabin_" + side
+    return "body"
+
+
+def pg_outline(m, part, H, side, r, off, rad, mat, name, n=6):
+    """A tube laid round a rectangle (z0, z1, y0, y1) on one side of the hull."""
+    z0, z1, y0, y1 = r
+    pts = [(z0, y0), (z1, y0), (z1, y1), (z0, y1), (z0, y0)]
+    path = []
+    for k in range(4):
+        (za, ya), (zb, yb) = pts[k], pts[k + 1]
+        for t in range(n): z, y = lerp(za, zb, t / n), lerp(ya, yb, t / n); path.append(H.point(z, H.th_at_y(z, y, side), off))
+    path.append(path[0])
+    tube(m, part, name, path, rad, mat, 6, caps=False, steps=1)
+
+
+def pg_skin(m, H):
+    """The fuselage and boom in one loft: outer skin (minus the door openings), the cabin lining inside it, jambs
+    round the door openings, and the bulkheads that close the cockpit and cabin."""
+    rows = pg_rows()
+    rings = [pg_ring(H, z) for z in rows]
+    nv = len(rings[0])
+    outer = [[H.P(z, a, 1.0) for a in ang] for z, ang in zip(rows, rings)]
+    inner = [[H.P(z, a, 0.965) for a in ang] for z, ang in zip(rows, rings)]
+    body_q, lin_q = {}, {}
+    for i in range(len(rows) - 1):
+        for j in range(nv):
+            j2 = (j + 1) % nv
+            ps = [outer[i][j], outer[i + 1][j], outer[i + 1][j2], outer[i][j2]]
+            c = mul(add(add(ps[0], ps[1]), add(ps[2], ps[3])), 0.25)
+            reg = pg_region(*c); mat = pg_paint(*c)
+            body_q[(i, j, j2)] = mat if reg == "body" else None
+            lin = None
+            if reg == "body" and mat not in ("glass", "visor") and -3.32 < c[2] < 1.25:
+                lin = "cab_floor" if c[1] < PG_FLOOR + 0.02 else ("lining_dk" if c[1] < 1.25 else "lining")
+            lin_q[(i, j, j2)] = lin
+    centre = lambda c: (0.0, H.yc(c[2]), c[2])
+    nj_grid(m.new("Fuselage skin", "body"), outer, body_q, centre=centre)
+    nj_grid(m.new("Cabin lining", "interior", ao=True), inner, lin_q, inward=True, centre=centre)
+    cap_fan(m.new("Boom end", "body"), outer[-1], (0, 0, 1), "paint")
+    for side in (1, -1):
+        for r in (PG_CREW_DOOR, PG_CABIN_DOOR): nj_jamb(m, H, side, r)
+    # the nose bulkhead stops below the glareshield so the windscreen stays clear; the cabin's rear bulkhead
+    ring = [H.P(-3.30, th, 0.96) for th in [-math.pi / 2 + j / 48 * 2 * math.pi for j in range(48)]]
+    low = [p for p in ring if p[1] <= 1.46]
+    cap_fan(m.new("Nose bulkhead", "interior"), low, (0, 0, 1), "lining_dk")
+    cap_fan(m.new("Rear bulkhead", "interior"), [H.P(1.25, j / 64 * 2 * math.pi, 0.96) for j in range(64)], (0, 0, -1), "lining")
+
+
+def pg_door(m, H, part, side, r, wins, handle_z):
+    """A door panel cut to its opening (a hair smaller), skin outside and lining inside, with its windows."""
+    e = 0.012
+    z0, z1, y0, y1 = r[0] + e, r[1] - e, r[2] + e, r[3] - e
+    zs = sorted(set([z0, z1] + [z for z in pg_rows() if z0 + 0.01 < z < z1 - 0.01] + [w[k] for w in wins for k in (0, 1)]))
+    ys = sorted(set([y0, y1] + [y for y in PG_FEAT_Y if y0 + 0.01 < y < y1 - 0.01] + [w[k] for w in wins for k in (2, 3)]))
+    def grid(inset): return [[H.P(z, H.th_at_y(z, y, side), inset) for y in ys] for z in zs]
+    out, inn = grid(1.0), grid(0.965)
+    qo, qi = {}, {}
+    for i in range(len(zs) - 1):
+        for j in range(len(ys) - 1):
+            zc, yc = (zs[i] + zs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2
+            mat = pg_paint(side * 1.0, yc, zc)
+            qo[(i, j, j + 1)] = mat
+            qi[(i, j, j + 1)] = None if mat == "glass" else ("lining_dk" if yc < 1.25 else "lining")
+    centre = lambda c: (0.0, H.yc(c[2]), c[2])
+    nj_grid(m.new("Door skin", part), out, qo, centre=centre)
+    nj_grid(m.new("Door lining", part), inn, qi, inward=True, centre=centre)
+    o = m.new("Door edge", part)
+    loop = [(i, 0) for i in range(len(zs))] + [(len(zs) - 1, j) for j in range(1, len(ys))] + [(i, len(ys) - 1) for i in range(len(zs) - 2, -1, -1)] + [(0, j) for j in range(len(ys) - 2, 0, -1)]
+    mid = H.P((z0 + z1) / 2, H.th_at_y((z0 + z1) / 2, (y0 + y1) / 2, side), 0.98)
+    for k in range(len(loop)):
+        (ia, ja), (ib, jb) = loop[k], loop[(k + 1) % len(loop)]
+        a0, b0, a1, b1 = out[ia][ja], out[ib][jb], inn[ia][ja], inn[ib][jb]
+        cc = mul(add(a0, b1), 0.5)
+        oriented_quad(o, (o.vert(a0), o.vert(b0), o.vert(b1), o.vert(a1)), sub(cc, mid), "seal")
+    for w in wins: pg_outline(m, part, H, side, w, 0.008, 0.012, "seal", "Window seal")
+    hp = H.point(handle_z, H.th_at_y(handle_z, 1.25, side), 0.02)
+    box(m, part, "Door handle", hp, (0.03, 0.03, 0.16), "chrome", bevel=0.008)
+
+
+def pg_tail(m):
+    """The tail: the fan housing (duct, stators, hub) blending into the boom, the tall swept fin above it, the
+    tailplane with its end plates, and the bumper under the housing."""
+    P = "body"; zc, yc = PG_FAN
+    RI = 0.565
+    ctrl = [(0, 0.72), (25, 0.84), (50, 0.95), (75, 1.00), (100, 1.00), (130, 0.88), (160, 0.84), (195, 0.80), (230, 0.71), (270, 0.73), (315, 0.70), (360, 0.72)]
+    radius = pchip([c[0] for c in ctrl], [c[1] for c in ctrl])
+    N = 56
+    def out(a, k=1.0): r = radius(math.degrees(a) % 360) * k; return (zc + math.cos(a) * r, yc + math.sin(a) * r)
+    def inn(a): return (zc + math.cos(a) * RI, yc + math.sin(a) * RI)
+    T = 0.225
+    def th(z, y): return T * (1 - 0.45 * smooth(0.72, 1.02, math.hypot(z - zc, y - yc)))
+    def hp(y): return "paint"
+    o = m.new("Fan housing", P, smooth=True, sharp=60.0)
+    for side in (1, -1):
+        for j in range(N):
+            a, b = j / N * 2 * math.pi, (j + 1) / N * 2 * math.pi
+            zo, yo = out(a, 0.94); zo2, yo2 = out(b, 0.94); zi, yi = inn(a); zi2, yi2 = inn(b)
+            quad = [(side * th(zi, yi), yi, zi), (side * th(zo, yo), yo, zo), (side * th(zo2, yo2), yo2, zo2), (side * th(zi2, yi2), yi2, zi2)]
+            oriented_quad(o, [o.vert(q) for q in quad], (side, 0, 0), hp((yi + yo) / 2))
+    for j in range(N):
+        a, b = j / N * 2 * math.pi, (j + 1) / N * 2 * math.pi
+        rows = []
+        for (k, t) in ((0.94, 1), (0.985, 0.6), (1.0, 0.0), (0.985, -0.6), (0.94, -1)):
+            za, ya = out(a, k); zb, yb = out(b, k)
+            rows.append(((t * th(za, ya), ya, za), (t * th(zb, yb), yb, zb)))
+        for q in range(4):
+            mz, my = out((a + b) / 2, 1.0)
+            oriented_quad(o, [o.vert(rows[q][0]), o.vert(rows[q + 1][0]), o.vert(rows[q + 1][1]), o.vert(rows[q][1])], (0, my - yc, mz - zc), hp(my))
+    o = m.new("Duct", P)
+    for j in range(N):
+        a, b = j / N * 2 * math.pi, (j + 1) / N * 2 * math.pi
+        za, ya = inn(a); zb, yb = inn(b)
+        oriented_quad(o, [o.vert((T, ya, za)), o.vert((T, yb, zb)), o.vert((-T, yb, zb)), o.vert((-T, ya, za))], (0, yc - (ya + yb) / 2, zc - (za + zb) / 2), "darkmetal")
+    # stators on the outlet side, behind the fan: with the main rotor turning clockwise the fan blows to the
+    # right (pushing the tail left), so the vanes and the gearbox fairing are seen from the right
+    for k in range(10):
+        a = k / 10 * 2 * math.pi + 0.2
+        d = (0, math.sin(a), math.cos(a))
+        box(m, P, "Stator", (0.11, yc + d[1] * 0.34, zc + d[2] * 0.34), (0.03, 0.04, 0.40), "fins", axes=((1, 0, 0), (0, math.cos(a), -math.sin(a)), d))
+    cyl(m, P, "Fan hub fairing", (0.17, yc, zc), (-0.02, yc, zc), 0.15, 0.17, "fins", 20)
+    ellipsoid(m, P, "Hub cap", (0.17, yc, zc), (0.06, 0.15, 0.15), "fins", 16, 8)
+    # fin: swept, rising from the top of the housing
+    wing(m, P, "Fin", (0, 2.05, 6.15), (0, 3.95, 7.30), 1.51, 0.50, 0.12, (0, 0, 1), (1, 0, 0), lambda c: "paint", 8, 20)
+    ellipsoid(m, P, "Fin tip", (0, 3.95, 7.55), (0.03, 0.03, 0.25), "paint", 14, 8)
+    # tailplane on the boom, with end plates standing above and below each tip
+    for s in (-1, 1):
+        wing(m, P, "Tailplane", (s * 0.15, 1.84, 5.22), (s * 1.30, 1.865, 5.36), 0.60, 0.46, 0.12, (0, 0, 1), (0, 1, 0), lambda c: "paint", 8, 20)
+        wing(m, P, "End plate", (s * 1.315, 1.26, 5.26), (s * 1.335, 2.16, 5.50), 0.56, 0.36, 0.09, (0, 0, 1), (1, 0, 0), lambda c: "paint", 6, 18)
+    tube(m, P, "Tail bumper", [(0, 0.97, 6.74), (0, 0.87, 6.88), (0, 0.86, 7.04), (0, 0.95, 7.18)], 0.026, "darkmetal", 8)
+
+
+def pg_exterior(m, H):
+    P = "body"
+    pg_skin(m, H)
+    # ---- windscreen: centre post, sills, the arch over the crew doors; overhead window frames
+    tube(m, P, "Windscreen centre post", [H.point(z, math.pi / 2, 0.006) for z in (-3.47, -3.25, -3.0, -2.8, -2.62)], 0.024, "frame", 6, steps=2)
+    for side in (1, -1):
+        tube(m, P, "Windscreen sill", [H.point(z, H.th_at_y(z, pg_ws_low(z), side), 0.006) for z in [-3.47 + 0.0775 * i for i in range(12)]], 0.02, "frame", 6, steps=1)
+        z0, z1, x0, x1 = PG_ROOF_WIN
+        def rp(z, x, side=side): return H.point(z, pg_th_at_x(H, z, side * x), 0.006)
+        frame = [rp(z, x0) for z in [lerp(z0, z1, t / 6) for t in range(7)]] + [rp(z1, x) for x in [lerp(x0, x1, t / 5) for t in range(1, 6)]]
+        frame += [rp(z, x1) for z in [lerp(z1, z0, t / 6) for t in range(1, 7)]] + [rp(z0, x) for x in [lerp(x1, x0, t / 5) for t in range(1, 6)]]
+        tube(m, P, "Overhead window frame", frame, 0.014, "frame", 6, caps=False, steps=1)
+        pg_outline(m, P, H, side, PG_REAR_WIN, 0.006, 0.012, "seal", "Window seal")
+        tube(m, P, "Wiper",[H.point(-3.38, H.th_at_y(-3.38, 1.6, side), 0.012), H.point(-3.12, H.th_at_y(-3.12, 1.78, side), 0.012)], 0.006, "darkmetal", 6, steps=1)
+        # sliding door rails above and below the cabin doors, running back past the rear window
+        for y in (2.11, 0.885):
+            tube(m, P, "Door rail", [H.point(z, H.th_at_y(z, y, side), 0.02) for z in [-1.52 + 0.15 * i for i in range(20)]], 0.016, "rail", 6, steps=1)
+        # steps under the crew doors
+        box(m, P, "Crew step", (side * 0.93, 0.56, -2.15), (0.24, 0.025, 0.15), "frame", bevel=0.006)
+        for dz in (-0.05, 0.05):
+            tube(m, P, "Step strut", [(side * 0.80, 0.62, -2.15 + dz), (side * 0.95, 0.565, -2.15 + dz)], 0.012, "metal", 6, steps=2)
+    t0 = H.th_at_y(PG_CREW_DOOR[0], pg_ws_low(PG_CREW_DOOR[0]), 1)
+    tube(m, P, "Windscreen arch", [H.point(PG_CREW_DOOR[0], lerp(t0, math.pi - t0, t / 14), 0.006) for t in range(15)], 0.024, "frame", 6, steps=1)
+    pg_outline(m, P, H, 1, PG_BAGGAGE, 0.002, 0.004, "seam", "Baggage door seam", 8)
+    box(m, P, "Baggage door handle", H.on_side(1.52, 1.15, 1, 0.012), (0.025, 0.12, 0.03), "chrome", bevel=0.006)
+    cyl(m, P, "Fuel filler", H.on_side(1.18, 1.62, 1, -0.004), H.on_side(1.18, 1.62, 1, 0.006), 0.05, 0.05, "metal", 16)
+    # ---- engine deck: two engines side by side under one cowling, faired from the gearbox back into the boom
+    cowl = [(-1.58, 2.22, 0.04, 0.02, 0.02, 2.0), (-1.30, 2.29, 0.40, 0.11, 0.07, 2.4), (-0.80, 2.33, 0.47, 0.15, 0.11, 2.6),
+            (0.40, 2.35, 0.49, 0.17, 0.13, 2.8), (1.00, 2.40, 0.58, 0.25, 0.18, 3.0), (1.55, 2.43, 0.62, 0.29, 0.21, 3.0),
+            (2.20, 2.34, 0.48, 0.21, 0.19, 2.7), (2.80, 2.22, 0.32, 0.11, 0.13, 2.4), (3.35, 2.10, 0.08, 0.02, 0.03, 2.0)]
+    Hc = Hull(cowl)
+    o = m.new("Engine cowling", P)
+    def cowl_paint(c, n, u, v):
+        x, y, z = c
+        if abs(x) > 0.36 and 1.08 < z < 1.52 and 2.45 < y < 2.68: return "intake" if int((z - 1.08) / 0.045) % 2 == 0 else "darkmetal"   # intake screens behind the dome
+        if near(z, -0.85, 0.012) or near(z, 1.05, 0.012) or near(z, 2.0, 0.012): return "seam"
+        if abs(x) < 0.015 and y > 2.6: return "seam"
+        return "paint"
+    surface(o, 60, 44, lambda u, v: Hc.P(lerp(-1.58, 3.35, u), v * 2 * math.pi), cowl_paint)
+    for side in (1, -1):
+        ex = [(side * 0.40, 2.50, 1.62), (side * 0.52, 2.55, 1.92), (side * 0.60, 2.58, 2.10)]
+        tube(m, P, "Exhaust", ex, lambda t: 0.095 + 0.025 * t, "exhaust", 14, caps=False)
+        ring_band(m, P, "Exhaust lip", ex[-1], norm(sub(ex[-1], ex[-2])), 0.115, 0.13, 0.02, "darkmetal", 16)
+    dome = [(-0.90, 2.46, 0.05, 0.03, 0.03, 2.0), (-0.70, 2.56, 0.44, 0.24, 0.16, 2.3), (-0.35, 2.64, 0.62, 0.40, 0.27, 2.5),
+            (0.15, 2.66, 0.64, 0.44, 0.30, 2.5), (0.62, 2.63, 0.58, 0.36, 0.28, 2.4), (1.00, 2.56, 0.36, 0.20, 0.18, 2.2), (1.20, 2.50, 0.05, 0.03, 0.03, 2.0)]
+    Hd = Hull(dome)
+    surface(m.new("Gearbox dome", P), 40, 56, lambda u, v: Hd.P(lerp(-0.90, 1.20, u), v * 2 * math.pi), lambda c, n, u, v: "accent")
+    cyl(m, P, "Mast", (0, 3.0, 0.0), (0, 3.30, 0.0), 0.09, 0.085, "metal", 20)
+    cyl(m, P, "Swashplate (fixed)", (0, 3.09, 0.0), (0, 3.13, 0.0), 0.25, 0.25, "darkmetal", 32)
+    for a in (0.6, 2.7, 4.8):
+        d = (math.cos(a), 0, math.sin(a))
+        tube(m, P, "Servo rod", [add((0, 3.04, 0), mul(d, 0.24)), add((0, 3.09, 0), mul(d, 0.22))], 0.013, "metal", 8)
+    # ---- sponsons over the main wheels, with the wheel wells underneath
+    for side in (1, -1):
+        Hs = Hull([(z, yc, w, ht, hb, ne, side * xc) for (z, yc, w, ht, hb, ne, xc) in PG_SPONSON])
+        def sp_paint(c, n, u, v):
+            x, y, z = c
+            if y < 0.53 and abs(z - 0.38) < 0.29 and abs(abs(x) - 0.99) < 0.11: return "pg_well"
+            return "stripe"
+        surface(m.new("Sponson", P), 40, 48, lambda u, v, Hs=Hs: Hs.P(lerp(PG_SPONSON[0][0], PG_SPONSON[-1][0], u), v * 2 * math.pi), sp_paint)
+    pg_tail(m)
+    # ---- lights, aerials, probes
+    ellipsoid(m, P, "Beacon (fin)", (0, 3.99, 7.58), (0.05, 0.04, 0.05), "beacon", 14, 8)
+    ellipsoid(m, P, "Beacon (belly)", (0, 0.47, -0.6), (0.06, 0.04, 0.06), "beacon", 14, 8)
+    for s, col in ((-1, "navred"), (1, "navgreen")):
+        ellipsoid(m, P, "Nav light", (s * 1.37, 1.86, 5.60), (0.02, 0.035, 0.05), col, 12, 6)
+    ellipsoid(m, P, "Tail light", (0, 2.58, 7.62), (0.025, 0.03, 0.03), "lens", 12, 6)
+    cyl(m, P, "Landing light", (0, 0.58, -3.66), (0, 0.53, -3.75), 0.09, 0.085, "frame", 20)
+    cyl(m, P, "Landing light lens", (0, 0.53, -3.75), (0, 0.525, -3.76), 0.08, 0.075, "lens", 20)
+    for sx in (1, -1):   # pitot probes on the nose ahead of the windscreen
+        tube(m, P, "Pitot", [(sx * 0.24, 1.36, -3.72), (sx * 0.25, 1.42, -3.92), (sx * 0.25, 1.43, -4.08)], 0.011, "chrome", 8)
+    box(m, P, "Boom aerial", (0, 2.16, 4.3), (0.012, 0.18, 0.16), "frame", bevel=0.004)
+    box(m, P, "Belly aerial", (0.25, 0.44, -0.9), (0.012, 0.12, 0.12), "frame", bevel=0.004)
+    box(m, P, "Radio altimeter aerials", (0, 1.61, 3.3), (0.16, 0.012, 0.12), "frame", bevel=0.003)
+    skin_details(m, P, H, roof_z=(-1.80,), steps=[(0.95, 1.55), (1.25, 1.95)], ports=[(-3.55, 1.12)],
+                 wicks=[(0.45, 1.15, 5.80, 5.80, 1.86)], whip=None)
+
+
+def mirror_x(objs):
+    """Mirror objects left to right (keeping their faces outward): used to turn the rotor the other way."""
+    for o in objs:
+        o.v = [(-x, y, z) for (x, y, z) in o.v]
+        o.f = [tuple(reversed(f)) for f in o.f]
+
+
+def pg_rotor(m):
+    """Four composite blades on the star-shaped hub: the star's arms carry each blade's sleeve on a spherical
+    thrust bearing, with an elastomer frequency adapter between sleeve and arm. Built for an anticlockwise rotor,
+    then mirrored: this one turns clockwise seen from above."""
+    start = len(m.objs)
+    for i in range(4): blade(m, i * math.pi / 2, R=5.97, rootR=0.95, chord=0.385, thick=0.11, twist_deg=-10, root_frac=0.92, fittings=False)
+    for i in range(4):
+        a = i * math.pi / 2; d = (math.sin(a), 0, math.cos(a)); lead = norm(cross((0, 1, 0), d)); ax = (lead, (0, 1, 0), d)
+        box(m, "blades", "Star arm", mul(d, 0.25), (0.20, 0.045, 0.42), "darkmetal", axes=ax, bevel=0.012)
+        cyl(m, "blades", "Spherical thrust bearing", add(mul(d, 0.33), (0, -0.07, 0)), add(mul(d, 0.33), (0, 0.07, 0)), 0.075, 0.075, "metal", 16, bevel=0.006)
+        box(m, "blades", "Blade sleeve", mul(d, 0.66), (0.20, 0.13, 0.66), "blade", axes=ax, bevel=0.02)
+        tube(m, "blades", "Frequency adapter", [add(mul(d, 0.42), mul(lead, 0.13)), add(mul(d, 0.78), mul(lead, 0.10))], 0.035, "darkmetal", 10)
+        horn = add(mul(d, 0.42), mul(lead, -0.16))
+        box(m, "blades", "Pitch horn", horn, (0.05, 0.03, 0.08), "metal", axes=ax, bevel=0.004)
+        tube(m, "blades", "Pitch link", [add(horn, (0, -0.02, 0)), add(mul(d, 0.30), add(mul(lead, -0.16), (0, -0.24, 0)))], 0.013, "chrome", 8)
+    cyl(m, "blades", "Hub centre", (0, -0.08, 0), (0, 0.06, 0), 0.17, 0.17, "darkmetal", 24, bevel=0.01)
+    ellipsoid(m, "blades", "Hub cap", (0, 0.07, 0), (0.15, 0.06, 0.15), "metal", 20, 8)
+    cyl(m, "blades", "Swashplate (rotating)", (0, -0.26, 0), (0, -0.24, 0), 0.24, 0.24, "metal", 32)
+    tube(m, "blades", "Scissor link", [(0, -0.24, 0.12), (0, -0.16, 0.17), (0, -0.08, 0.10)], 0.012, "darkmetal", 8)
+    mirror_x(m.objs[start:])
+
+
+def pg_interior(m):
+    """Cockpit and cabin common to every fit (part "interior"): the panel of four large displays round the
+    engine display, glareshield, pedestal and overhead panel, the two pilots' seats and the two crew seats
+    facing back behind them, the cabin floor with its tie-down rails."""
+    I = "interior"; F0 = PG_FLOOR
+    box(m, I, "Cabin floor", (0, F0 - 0.01, -0.775), (1.72, 0.02, 3.95), "cab_floor")
+    box(m, I, "Footwell", (0, F0 + 0.08, -2.97), (1.5, 0.16, 0.56), "pg_trim", bevel=0.02)       # over the nose wheel bay
+    for x in (-0.55, -0.18, 0.18, 0.55): box(m, I, "Tie-down rail", (x, F0 + 0.004, -0.4), (0.04, 0.01, 2.6), "rail")
+    pz = -3.08
+    box(m, I, "Instrument panel", (0, 1.25, pz), (1.50, 0.46, 0.12), "panel", bevel=0.015)
+    box(m, I, "Glareshield", (0, 1.50, pz + 0.05), (1.56, 0.05, 0.32), "glareshield", bevel=0.015)
+    F = Face(m, I, (0, 1.25, pz + 0.061), (1, 0, 0), (0, 1, 0), (0, 0, 1))
+    for x in (-0.615, -0.355, 0.355, 0.615):
+        F.screen(x, -0.01, 0.19, 0.24, "mfd")
+        for k in range(4):
+            for bx in (-0.122, 0.122): F.button(x + bx, -0.10 + k * 0.06, "btn_w", 0.016, 0.016)
+    F.screen(0, 0.0, 0.15, 0.25, "mfd")                                                     # engine display
+    gauge(m, I, F, -0.16, 0.085, 0.036, "attitude", kind="attitude")                        # standby instruments
+    gauge(m, I, F, 0.16, 0.085, 0.036, "airspeed", marks=21, major=5, arcs=((0.15, 0.75, "arc_g"), (0.75, 0.88, "arc_y"), (0.88, 0.91, "arc_r")))
+    for i, lm in enumerate(("lamp_a", "lamp_g", "lamp_r", "lamp_a")): F.lamp(-0.19 + 0.025 * i, -0.06, lm); F.lamp(0.115 + 0.025 * i, -0.06, lm)
+    box(m, I, "Pedestal", (0, 0.99, -2.55), (0.24, 0.56, 0.86), "panel", bevel=0.015)
+    Fp = Face(m, I, (0, 1.271, -2.55), (1, 0, 0), (0, 0, -1), (0, 1, 0))
+    Fp.screen(0, 0.30, 0.14, 0.045, "screen_g"); Fp.screen(0, 0.22, 0.14, 0.045, "screen_g")
+    for i in range(3):
+        for j in range(2): Fp.knob(-0.07 + i * 0.07, 0.08 - j * 0.08, 0.013)
+    for i in range(4): Fp.button(-0.075 + i * 0.05, -0.12, "btn_w", 0.03, 0.02)
+    for i in range(4): Fp.toggle(-0.075 + i * 0.05, -0.25)
+    box(m, I, "Overhead panel", (0, 2.13, -1.62), (0.50, 0.07, 0.36), "panel", bevel=0.012)
+    Fo = Face(m, I, (0, 2.094, -1.62), (1, 0, 0), (0, 0, -1), (0, -1, 0))
+    for i in range(7):
+        for j in range(3): Fo.toggle(-0.2 + i * 0.066, -0.11 + j * 0.11)
+    for sx in (-1, 1):
+        nj_seat(m, I, sx * 0.45, -2.08, -1, y=F0, back=0.70)
+        cyl(m, I, "Collective housing", (sx * 0.45 - 0.28, F0, -1.92), (sx * 0.45 - 0.28, F0 + 0.12, -1.92), 0.06, 0.05, "panel", 12)
+        nj_seat(m, I, sx * 0.45, -1.30, 1, mat="seat_ns", y=F0, back=0.78)
+        box(m, I, "Roof rail", (sx * 0.40, 2.17, -0.3), (0.04, 0.03, 2.6), "rail")
+        box(m, I, "Cabin light", (sx * 0.22, 2.19, -0.2), (0.08, 0.02, 0.5), "lamp_w")
+        box(m, I, "Grab handle", (sx * 0.80, 1.98, -0.5), (0.03, 0.03, 0.3), "darkmetal", bevel=0.008)
+    cyl(m, I, "Fire extinguisher", (0.6, F0 + 0.35, 1.18), (0.6, F0 + 0.75, 1.18), 0.05, 0.05, "red", 16)
+    cyl(m, I, "Extinguisher head", (0.6, F0 + 0.75, 1.18), (0.6, F0 + 0.8, 1.18), 0.022, 0.02, "metal", 12)
+
+
+def pg_wall_seat(m, part, sd, z):
+    """A crashworthy troop seat folded down from the cabin wall, facing in: tube frame and webbing."""
+    F0 = PG_FLOOR; xi, xo = sd * 0.48, sd * 0.88
+    box(m, part, "Troop seat", ((xi + xo) / 2, F0 + 0.45, z), (0.40, 0.04, 0.44), "webbing", bevel=0.01)
+    box(m, part, "Troop seat back", (sd * 0.87, F0 + 0.86, z), (0.03, 0.72, 0.42), "webbing", bevel=0.01)
+    for dz in (-0.21, 0.21):
+        tube(m, part, "Seat frame", [(xo, F0 + 0.45, z + dz), (xi, F0 + 0.45, z + dz), (xi, F0, z + dz)], 0.014, "seatframe", 6, steps=2)
+        tube(m, part, "Seat frame", [(xo, F0 + 0.47, z + dz), (xo, F0 + 1.24, z + dz)], 0.014, "seatframe", 6, steps=1)
+
+
+def pg_fit_seats(m):
+    """Passenger and troop fit: a bench of four against the rear bulkhead and a seat on each wall."""
+    E = "fit_seats"
+    for x in (-0.63, -0.21, 0.21, 0.63): nj_seat(m, E, x, 0.86, -1, mat="seat_ns", y=PG_FLOOR, width=0.40, back=0.85)
+    for sd in (1, -1): pg_wall_seat(m, E, sd, 0.22)
+
+
+def pg_fit_hems(m):
+    """Medical fit: stretcher down the left of the cabin, equipment wall on the right."""
+    E = "fit_hems"; F0 = PG_FLOOR
+    box(m, E, "Stretcher platform", (-0.32, F0 + 0.17, -0.10), (0.62, 0.34, 1.9), "cabinet", bevel=0.015)
+    box(m, E, "Stretcher", (-0.32, F0 + 0.40, -0.10), (0.56, 0.08, 1.85), "metal", bevel=0.01)
+    box(m, E, "Mattress", (-0.32, F0 + 0.48, -0.07), (0.52, 0.08, 1.75), "mattress", bevel=0.03, segs=3)
+    box(m, E, "Sheet", (-0.32, F0 + 0.525, 0.12), (0.53, 0.012, 1.2), "sheet")
+    box(m, E, "Pillow", (-0.32, F0 + 0.56, -0.82), (0.42, 0.08, 0.28), "sheet", bevel=0.03, segs=3)
+    for sx in (-1, 1): tube(m, E, "Stretcher rail", [(-0.32 + sx * 0.28, F0 + 0.58, -0.9), (-0.32 + sx * 0.28, F0 + 0.58, 0.7)], 0.012, "chrome", 8)
+    box(m, E, "Equipment cabinet", (0.66, F0 + 0.55, 0.62), (0.30, 1.1, 0.75), "cabinet", bevel=0.012)
+    Fe = Face(m, E, (0.509, F0 + 0.82, 0.62), (0, 0, 1), (0, 1, 0), (-1, 0, 0))
+    Fe.obox((-0.14, 0.18, 0.001), (0.24, 0.18, 0.002), "mfd_map", "Patient monitor")
+    Fe.obox((0.17, 0.18, 0.001), (0.2, 0.18, 0.002), "mfd", "Ventilator display")
+    for i in range(4): Fe.button(-0.25 + i * 0.07, -0.02, "btn_w", 0.03, 0.02)
+    box(m, E, "Defibrillator", (0.6, F0 + 1.24, 0.82), (0.26, 0.22, 0.3), "defib", bevel=0.02)
+    for k in range(3):
+        cyl(m, E, "Oxygen bottle", (0.74, F0 + 0.05, 0.02 + k * 0.15), (0.74, F0 + 0.8, 0.02 + k * 0.15), 0.065, 0.065, "o2green", 16)
+        cyl(m, E, "Bottle valve", (0.74, F0 + 0.8, 0.02 + k * 0.15), (0.74, F0 + 0.88, 0.02 + k * 0.15), 0.028, 0.024, "chrome", 10)
+    box(m, E, "Response bag", (0.25, F0 + 0.17, 0.75), (0.32, 0.34, 0.45), "medbag_r", bevel=0.05, segs=3)
+    tube(m, E, "Drip pole", [(0.0, F0 + 0.6, -0.5), (0.0, 2.1, -0.5)], 0.012, "chrome", 8)
+    box(m, E, "Drip bag", (0.0, 1.92, -0.45), (0.1, 0.16, 0.03), "sheet", bevel=0.01)
+
+
+def pg_fit_police(m):
+    """Police fit: the tactical flight officer's console facing the right-hand crew seat, a hand controller for
+    the camera, and a camera monitor on an arm at the left-hand pilot's seat."""
+    E = "fit_police"; F0 = PG_FLOOR
+    box(m, E, "Observer console", (0.45, F0 + 0.52, -0.62), (0.56, 1.04, 0.26), "panel", bevel=0.015)
+    Fc = Face(m, E, (0.45, F0 + 0.80, -0.751), (-1, 0, 0), (0, 1, 0), (0, 0, -1))
+    Fc.obox((-0.13, 0.08, 0.001), (0.22, 0.17, 0.002), "mfd_cam", "Camera display")
+    Fc.obox((0.13, 0.08, 0.001), (0.22, 0.17, 0.002), "mfd_map", "Map display")
+    for i in range(6): Fc.button(-0.2 + i * 0.08, -0.07, "btn_w", 0.035, 0.02)
+    box(m, E, "Hand controller", (0.45, F0 + 0.62, -0.86), (0.22, 0.06, 0.2), "panel", bevel=0.02)
+    cyl(m, E, "Joystick", (0.45, F0 + 0.65, -0.86), (0.45, F0 + 0.78, -0.86), 0.02, 0.025, "grip", 10)
+    box(m, E, "Equipment rack", (-0.62, F0 + 0.45, 0.95), (0.4, 0.9, 0.5), "panel", bevel=0.012)
+    tube(m, E, "Monitor arm", [(-0.22, 1.50, -2.96), (-0.33, 1.62, -2.82)], 0.015, "darkmetal", 8)
+    box(m, E, "Cockpit monitor", (-0.36, 1.66, -2.78), (0.22, 0.16, 0.03), "panel", bevel=0.006)
+    box(m, E, "Cockpit monitor picture", (-0.36, 1.66, -2.764), (0.19, 0.13, 0.003), "mfd")
+
+
+def pg_kit(m, H):
+    E = "eq_flir"            # camera ball under the nose
+    cyl(m, E, "Turret mount", (0, 0.68, -3.92), (0, 0.54, -3.92), 0.11, 0.09, "darkmetal", 16)
+    ellipsoid(m, E, "Camera ball", (0, 0.38, -3.92), (0.18, 0.18, 0.18), "flirgrey", 20, 12)
+    box(m, E, "Camera window", (0, 0.39, -4.095), (0.15, 0.10, 0.02), "glass")
+    box(m, E, "Laser window", (0.08, 0.30, -4.07), (0.05, 0.05, 0.02), "glass")
+    S = "eq_searchlight"     # searchlight under the right side of the cockpit
+    box(m, S, "Searchlight mount", (0.62, 0.48, -2.2), (0.18, 0.10, 0.18), "darkmetal", bevel=0.01)
+    cyl(m, S, "Searchlight yoke", (0.62, 0.45, -2.2), (0.62, 0.36, -2.2), 0.03, 0.03, "darkmetal", 10)
+    cyl(m, S, "Searchlight body", (0.62, 0.28, -2.08), (0.62, 0.28, -2.38), 0.15, 0.15, "flirgrey", 20)
+    cyl(m, S, "Searchlight lens", (0.62, 0.28, -2.38), (0.62, 0.28, -2.40), 0.135, 0.135, "lens", 20)
+    Ho = "eq_hoist"          # rescue hoist over the right cabin door
+    box(m, Ho, "Hoist boom", (0.92, 2.30, -1.30), (0.62, 0.10, 0.12), "hoistyellow", bevel=0.02)
+    cyl(m, Ho, "Hoist", (1.22, 2.25, -1.12), (1.22, 2.25, -1.48), 0.12, 0.12, "hoistyellow", 18)
+    tube(m, Ho, "Hoist cable", [(1.22, 2.13, -1.30), (1.22, 1.85, -1.30)], 0.006, "darkmetal", 6)
+    box(m, Ho, "Hook", (1.22, 1.81, -1.30), (0.05, 0.08, 0.03), "darkmetal")
+    Fl = "eq_floats"         # emergency floats packed on the sponsons and either side of the nose
+    for sd in (1, -1):
+        cyl(m, Fl, "Float pack", (sd * 1.12, 0.62, -0.10), (sd * 1.12, 0.62, 1.20), 0.075, 0.075, "floatpack", 14)
+        cyl(m, Fl, "Float pack", H.on_side(-3.75, 0.70, sd, 0.03), H.on_side(-3.05, 0.64, sd, 0.03), 0.07, 0.07, "floatpack", 14)
+
+
+def pg_gear(m):
+    """Retractable tricycle wheels. Nose: twin wheels on a trailing oleo that folds back (about x) into the bay
+    under the footwell. Main: an oleo inboard of each wheel that pulls straight up into its sponson."""
+    gear = []
+    p = "gear_nose"; piv = (0.0, 0.50, -3.45)
+    cyl(m, p, "Nose oleo cylinder", (0, 0.52, -3.455), (0, 0.34, -3.405), 0.05, 0.05, "darkmetal", 14)
+    tube(m, p, "Nose oleo", [(0, 0.36, -3.41), (0, 0.27, -3.38), (0, 0.21, -3.345)], 0.034, "oleo", 12)
+    box(m, p, "Nose fork", (0, 0.20, -3.335), (0.13, 0.06, 0.08), "darkmetal", bevel=0.01)
+    cyl(m, p, "Nose axle", (-0.20, 0.17, -3.33), (0.20, 0.17, -3.33), 0.025, 0.025, "metal", 10)
+    tube(m, p, "Drag brace", [(0, 0.50, -3.12), (0, 0.38, -3.30), (0, 0.34, -3.40)], 0.02, "darkmetal", 8)
+    for sx in (-1, 1):
+        x0, x1 = sx * 0.075, sx * 0.185
+        cyl(m, p, "Nose tyre", (x0, 0.17, -3.33), (x1, 0.17, -3.33), 0.17, 0.17, "tyre", 24, bevel=0.03)
+        cyl(m, p, "Nose wheel hub", (x1, 0.17, -3.33), (x1 + sx * 0.006, 0.17, -3.33), 0.09, 0.08, "wheelhub", 18)
+    gear.append({"part": p, "kind": "hinge", "pivot": list(piv), "axis": [1, 0, 0], "up": -1.5708})
+    for side in (1, -1):
+        s = "r" if side > 0 else "l"; p = "gear_main_" + s
+        wx, ay, az, sx0 = side * 1.00, 0.24, 0.38, side * 0.88
+        cyl(m, p, "Main tyre", (wx - side * 0.075, ay, az), (wx + side * 0.075, ay, az), 0.24, 0.24, "tyre", 28, bevel=0.035)
+        cyl(m, p, "Main wheel hub", (wx + side * 0.075, ay, az), (wx + side * 0.082, ay, az), 0.13, 0.12, "wheelhub", 20)
+        cyl(m, p, "Axle", (sx0, ay, az), (wx, ay, az), 0.03, 0.03, "metal", 10)
+        cyl(m, p, "Main oleo", (sx0, ay, az), (sx0, 0.42, az), 0.04, 0.04, "oleo", 14)
+        cyl(m, p, "Main oleo cylinder", (sx0, 0.42, az), (sx0, 0.56, az), 0.055, 0.055, "darkmetal", 14)
+        tube(m, p, "Torque link", [(sx0, 0.30, az - 0.06), (sx0, 0.38, az - 0.11), (sx0, 0.47, az - 0.06)], 0.012, "darkmetal", 6)
+        gear.append({"part": p, "kind": "slide", "move": [0, 0.38, 0]})
+    return gear
+
+
+def pg_controls(m):
+    F0 = PG_FLOOR; ctl = []
+    for sx in (-1, 1):
+        tag = "l" if sx < 0 else "r"; x = sx * 0.45
+        p = "ctl_cyclic_" + tag; base = (x, F0 + 0.06, -2.48)
+        cyl(m, p, "Cyclic boot", base, (x, F0 + 0.12, -2.48), 0.07, 0.05, "rubber", 16)
+        tube(m, p, "Cyclic stick", [base, (x, F0 + 0.36, -2.51), (x, F0 + 0.60, -2.58)], 0.016, "darkmetal", 10)
+        cyl(m, p, "Cyclic grip", (x, F0 + 0.58, -2.58), (x, F0 + 0.74, -2.62), 0.028, 0.03, "grip", 16)
+        for i in range(3): cyl(m, p, "Grip switch", (x + (i - 1) * 0.015, F0 + 0.74, -2.62), (x + (i - 1) * 0.015, F0 + 0.755, -2.63), 0.006, 0.005, "red" if i == 1 else "chrome", 8)
+        ctl.append({"part": p, "kind": "cyclic", "pivot": base})
+        p = "ctl_collective_" + tag; px = x - 0.28; piv = (px, F0 + 0.12, -1.92); tip = (px, F0 + 0.32, -2.42)
+        tube(m, p, "Collective lever", [piv, (px, F0 + 0.2, -2.15), tip], 0.02, "darkmetal", 10)
+        box(m, p, "Collective head", (px, F0 + 0.35, -2.44), (0.06, 0.07, 0.1), "panel", bevel=0.008)
+        ctl.append({"part": p, "kind": "collective", "pivot": piv})
+        for kind, dx in (("pedalL", -0.12), ("pedalR", 0.12)):
+            p = "ctl_%s_%s" % (kind, tag); px = x + dx
+            tube(m, p, "Pedal arm", [(px, F0 + 0.16, -2.84), (px, F0 + 0.30, -2.90), (px, F0 + 0.40, -2.87)], 0.014, "metal", 8)
+            box(m, p, "Pedal", (px, F0 + 0.34, -2.89), (0.09, 0.16, 0.018), "seatframe", bevel=0.005)
+            ctl.append({"part": p, "kind": kind, "pivot": (px, F0 + 0.16, -2.87)})
+    return ctl
+
+
+PG_MARKS = [("mark_police", "POLICE", "mark_white"), ("mark_army", "ARMY", "mark_black"), ("mark_navy", "NAVY", "mark_black"), ("mark_rescue", "RESCUE", "mark_white")]
+
+
+def build_peregrine():
+    m = Model(); H = pg_hull()
+    pg_exterior(m, H); pg_rotor(m); pg_interior(m); pg_fit_seats(m); pg_fit_hems(m); pg_fit_police(m); pg_kit(m, H)
+    gear = pg_gear(m)
+    ctl = pg_controls(m)
+    doors = []
+    for side in (1, -1):
+        s = "r" if side > 0 else "l"
+        pg_door(m, H, "door_crew_" + s, side, PG_CREW_DOOR, [PG_CREW_WIN], -1.80)
+        piv = H.P(PG_CREW_DOOR[0], H.th_at_y(PG_CREW_DOOR[0], 1.4, side), 1.0)
+        doors.append({"part": "door_crew_" + s, "group": "crew_" + s, "kind": "hinge", "pivot": list(piv), "axis": [0, 1, 0], "open": 1.2 * side})
+        pg_door(m, H, "door_cabin_" + s, side, PG_CABIN_DOOR, [PG_CABIN_WIN], -1.30)
+        doors.append({"part": "door_cabin_" + s, "group": "cabin_" + s, "kind": "slide", "out": [side * 0.08, 0, 0], "move": [0, 0, PG_SLIDE]})
+    tube(m, "cockpit", "Windscreen centre post (inside)", [H.P(z, math.pi / 2, 0.96) for z in (-3.45, -3.1, -2.8, -2.62)], 0.02, "frame", 6, steps=2)
+    boom = [(z, H.yc(z), H.w(z), H.ht(z), H.hb(z), H.ne(z)) for z in [2.6 + 0.2 * i for i in range(14)]]
+    F0 = PG_FLOOR
+    meta = {
+        "format": "RCM1", "model": "Peregrine P3", "refRotorDiameter": 11.94, "generator": VERSION,
+        "points": {
+            "mastY": 3.40, "tailPos": [0.0, PG_FAN[1], PG_FAN[0]], "eye": [0.45, 1.86, -1.98], "fuel": [0.95, 1.62, 1.18],
+            "lights": {"navL": [-1.37, 1.86, 5.60], "navR": [1.37, 1.86, 5.60], "tail": [0, 2.58, 7.64], "beacon": [0, 4.01, 7.58],
+                       "strobes": [[0, 4.02, 7.62], [0, 0.45, -0.6]], "landing": {"pos": [0, 0.52, -3.77], "dir": [0, -0.3, -1]},
+                       "search": {"pos": [0.62, 0.28, -2.42], "dir": [0, -0.7, -0.7]}, "cabin": [0, 1.7, -0.3]},
+            "exhausts": [[-0.60, 2.58, 2.10, -0.4, 0.15, 1], [0.60, 2.58, 2.10, 0.4, 0.15, 1]],
+            "floorY": F0,
+            "seats": {"pilot": [0.45, F0 + 0.465, -2.08, "crew_r", -1], "crew": [-0.45, F0 + 0.465, -2.08, "crew_l", -1],
+                      "medic": [0.45, F0 + 0.465, -1.30, "cabin_r", 1], "winchman": [-0.45, F0 + 0.465, -1.30, "cabin_l", 1]},
+            "doorways": {"crew_r": [[0.45, -2.0], [1.5, -2.0]], "crew_l": [[-0.45, -2.0], [-1.5, -2.0]],
+                         "cabin_r": [[0.35, -0.8], [1.6, -0.8]], "cabin_l": [[-0.35, -0.8], [-1.6, -0.8]]},
+        },
+        "controls": [{"part": c["part"], "kind": c["kind"], "pivot": list(c["pivot"])} for c in ctl],
+        "tailRotor": {"r": 0.53, "blades": 10, "tip": [0.2, 0.21, 0.22], "col": [0.16, 0.17, 0.18]},
+        "equipment": {"medical": "fit_hems", "flir": "eq_flir", "searchlight": "eq_searchlight", "hoist": "eq_hoist", "floats": "eq_floats"},
+        "fits": {"seats": "fit_seats", "police": "fit_police"},
+        "interior": "interior",
+        "doors": doors,
+        "gear": gear,
+        "rotorClockwise": True,
+        "liveryTint": True,
+        "previewLivery": {1: (0.05, 0.08, 0.20), 2: (0.92, 0.92, 0.90), 3: (0.92, 0.92, 0.90)},
+        "texts": [{"part": part, "text": text, "z": 3.85, "y": H.yc(3.85), "height": 0.22, "mat": mat, "hull": boom} for part, text, mat in PG_MARKS],
+    }
+    build_tail_rotor(m, meta["tailRotor"])
+    return m, meta
+
 
 MODELS = {
     "kestrel": {"file": "kestrel_k2", "build": lambda: build_kestrel(), "shots": "kestrel"},
@@ -3180,6 +3770,7 @@ MODELS = {
     "vehicles": {"file": "vehicles", "build": lambda: build_vehicles(), "shots": "twin"},
     "trees": {"file": "trees", "build": lambda: build_trees(), "shots": "twin"},
     "nightjar": {"file": "nightjar_n4", "build": lambda: build_nightjar(), "shots": "nightjar"},
+    "peregrine": {"file": "peregrine_p3", "build": lambda: build_peregrine(), "shots": "peregrine"},
 }
 
 
@@ -3344,6 +3935,8 @@ def run_blender():
         t_model = time.time()
         model, meta = spec["build"]()
         log("geometry: %d objects built in %.1fs" % (len(model.objs), time.time() - t0))
+        LIVERY_PREVIEW.clear(); LIVERY_PREVIEW.update(LIVERY_PREVIEW_DEFAULT)      # the model's own paint for the previews
+        LIVERY_PREVIEW.update({int(k): tuple(v) for k, v in (meta.get("previewLivery") or {}).items()})
         sources = []
         for o in model.objs:
             keys = sorted(set(o.m)); kidx = {k: i for i, k in enumerate(keys)}
@@ -3417,6 +4010,41 @@ def run_blender():
                 me.update()
                 nob = bpy.data.objects.new("Registration (game)", me); nob["rc_part"] = "body"; nob["rc_ao"] = True
                 fin_part_colls["body"].objects.link(nob); finals["body"].append(nob)
+        # ---- lettering in parts of its own (one per paint scheme, which the game shows or hides): the same
+        # font, laid on the hull given (any section shape: the side is found at each letter's height)
+        for tx in meta.get("texts") or []:
+            Ht = Hull(tx["hull"])
+            for side in (1, -1):
+                cu = bpy.data.curves.new("Lettering", "FONT")
+                cu.body = tx["text"]; cu.size = tx["height"] / 0.72; cu.extrude = 0.0          # paint: the face alone
+                cu.align_x = "CENTER"; cu.align_y = "CENTER"
+                tob = bpy.data.objects.new("Lettering text", cu); scene.collection.objects.link(tob)
+                me = bpy.data.meshes.new_from_object(tob.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+                bpy.data.objects.remove(tob); bpy.data.curves.remove(cu)
+                # a letter's faces are flat: cut them into pieces under 5 cm so, bent round the boom, they follow it
+                # (a tall stroke left whole would sink a couple of centimetres into the skin at its middle)
+                bm = bmesh.new(); bm.from_mesh(me)
+                bmesh.ops.triangulate(bm, faces=bm.faces[:])
+                for _ in range(8):
+                    long = [e for e in bm.edges if e.calc_length() > 0.05]
+                    if not long: break
+                    bmesh.ops.subdivide_edges(bm, edges=long, cuts=1)
+                    bmesh.ops.triangulate(bm, faces=bm.faces[:])
+                bm.to_mesh(me); bm.free()
+                co = np.zeros(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+                z = tx["z"] - side * co[:, 0]
+                y = tx["y"] + co[:, 1]
+                surf = np.array([Ht.P(zz, Ht.th_at_y(zz, yy, 1))[0] for zz, yy in zip(z, y)])
+                x = side * (surf + 0.008 + co[:, 2])
+                me.vertices.foreach_set("co", np.stack([x, -z, y], axis=1).astype(np.float32).ravel())   # game -> Blender axes
+                me.materials.clear(); me.materials.append(mats[tx["mat"]])
+                me.polygons.foreach_set("material_index", [0] * len(me.polygons))
+                me.update()
+                nob = bpy.data.objects.new("Lettering (game)", me); nob["rc_part"] = tx["part"]; nob["rc_ao"] = False
+                pc = fin_part_colls.get(tx["part"])
+                if pc is None:
+                    pc = bpy.data.collections.new(tx["part"]); fin_coll.children.link(pc); fin_part_colls[tx["part"]] = pc
+                pc.objects.link(nob); finals.setdefault(tx["part"], []).append(nob)
         src_coll.hide_viewport = True; src_coll.hide_render = True
         try:
             bpy.context.view_layer.layer_collection.children[root.name].children[src_coll.name].exclude = True
@@ -3793,6 +4421,13 @@ def run_blender():
                 bpy.ops.object.mode_set(mode="OBJECT")
                 bpy.ops.object.select_all(action="DESELECT"); J.select_set(True); bpy.context.view_layer.objects.active = J
                 slots = [ms for ms in J.data.materials if ms is not None]
+                # livery tint: remember which faces are painted in which livery slot (they are split into
+                # materials of their own below, sharing the part's textures, for the game to tint)
+                poly_slot = None
+                if meta.get("liveryTint"):
+                    keys = [ms.get("rc_key", "paint") if ms is not None else "paint" for ms in J.data.materials]
+                    mi = np.zeros(len(J.data.polygons), dtype=np.int64); J.data.polygons.foreach_get("material_index", mi)
+                    poly_slot = np.array([MATS[k][4] for k in keys], dtype=np.int64)[mi]
 
                 def bake(kind, make, samples=1):
                     img = bpy.data.images.new("%s %s" % (part, kind), size, size, alpha=False, float_buffer=True)
@@ -3810,7 +4445,9 @@ def run_blender():
                     return px.reshape(-1, 4)
 
                 def base_of(mt, nt, em):
-                    c = mat_preview_rgb(mt.get("rc_key", "paint")); em.inputs["Color"].default_value = (c[0], c[1], c[2], 1)
+                    k = mt.get("rc_key", "paint")
+                    c = MATS[k][:3] if poly_slot is not None and MATS[k][4] else mat_preview_rgb(k)   # tinted: the shade alone
+                    em.inputs["Color"].default_value = (c[0], c[1], c[2], 1)
                 def mr_of(mt, nt, em):
                     k = mt.get("rc_key", "paint"); r, g, b, gloss, slot, emis = MATS[k]
                     met, rough, coat = GLTF_PBR.get(k, (0.0, max(0.15, min(0.95, 0.88 - 0.8 * gloss)), 0.0))
@@ -3930,7 +4567,13 @@ def run_blender():
                     nm = nt.nodes.new("ShaderNodeNormalMap"); nm.space = "TANGENT"; nm.uv_map = "UVMap"
                     nt.links.new(tn.outputs["Color"], nm.inputs["Color"]); nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
                 J.data.materials.clear(); J.data.materials.append(mt)
-                for p in J.data.polygons: p.material_index = 0
+                idx = np.zeros(len(J.data.polygons), dtype=np.int64)
+                if poly_slot is not None:
+                    for s in (1, 2, 3):
+                        if not (poly_slot == s).any(): continue
+                        ms = mt.copy(); ms.name = "%s livery%d" % (part, s)
+                        J.data.materials.append(ms); idx[poly_slot == s] = len(J.data.materials) - 1
+                J.data.polygons.foreach_set("material_index", idx)
                 # the shading is in the texture now: drop the per-vertex shading from this mesh
                 for name in ("AO", "Preview"):
                     a = J.data.color_attributes.get(name)
@@ -3967,7 +4610,12 @@ def run_blender():
                 for k in ("axis", "open", "out", "move"):
                     if k in d: props["rc_" + k] = d[k]
                 info[d["part"]] = (d.get("pivot"), props)
-            roles = {p: "equipment_" + k for k, p in (meta.get("equipment") or {}).items()}
+            for g in meta.get("gear", []):
+                props = {"rc_kind": "gear_" + g["kind"]}
+                for k in ("axis", "up", "move"):
+                    if k in g: props["rc_" + k] = g[k]
+                info[g["part"]] = (g.get("pivot"), props)
+            roles ={p: "equipment_" + k for k, p in (meta.get("equipment") or {}).items()}
             inner = meta.get("interior") or []
             for p in [inner] if isinstance(inner, str) else inner: roles[p] = "interior"
             if meta.get("cockpitOnly"): roles[meta["cockpitOnly"]] = "cockpit_only"

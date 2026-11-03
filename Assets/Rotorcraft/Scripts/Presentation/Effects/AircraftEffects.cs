@@ -16,6 +16,7 @@ namespace Rotorcraft.Presentation
             ["kestrel"] = new[] { (new Vector3(0.33f, 0.92f, 1.66f), new Vector3(0.05f, -0.25f, 1)) },
             ["northstar"] = new[] { (new Vector3(-0.86f, 3.02f, 2.85f), new Vector3(-0.5f, 0.05f, 0.85f)), (new Vector3(0.86f, 3.02f, 2.85f), new Vector3(0.5f, 0.05f, 0.85f)) },
             ["nightjar"] = new[] { (new Vector3(-0.56f, 2.5f, 2.05f), new Vector3(-0.3f, 0.1f, 1)), (new Vector3(0.56f, 2.5f, 2.05f), new Vector3(0.3f, 0.1f, 1)) },
+            ["peregrine"] = new[] { (new Vector3(-0.6f, 2.58f, 2.1f), new Vector3(-0.4f, 0.15f, 1)), (new Vector3(0.6f, 2.58f, 2.1f), new Vector3(0.4f, 0.15f, 1)) },
         };
 
         public HelicopterController heli;

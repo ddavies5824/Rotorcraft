@@ -150,7 +150,7 @@ namespace Rotorcraft.Presentation.UI
                 if (!pic) p.Add(Muted(dual ? $"Flown with an instructor or training captain until you hold {string.Join(", ", missing)}." : $"Training needs {string.Join(", ", (ac.trainingQualifications ?? new string[0]).Select(q => Qualifications.ById(q)?.abbrev ?? q).DefaultIfEmpty("nothing"))}; pilot-in-command needs {string.Join(", ", missing)}.", "small"));
                 grid.Add(p);
             }
-            return E("page", E("page-head", H1("Hangar"), Muted("Generic simulated types, not reproductions of real products.", "small")), grid);
+            return E("page", E("page-head", H1("Hangar"), Muted("Simulated types, not licensed reproductions of real products. The Peregrine is modelled on the AS365 N3 Dauphin.", "small")), grid);
         }
 
         /// <summary>A picture of the aircraft (rendered from the model at start-up), or nothing if none yet.</summary>
@@ -220,7 +220,7 @@ namespace Rotorcraft.Presentation.UI
             ["pedalRight"] = "Right pedal", ["cyclicFwd"] = "Cyclic forward", ["cyclicAft"] = "Cyclic back", ["cyclicLeft"] = "Cyclic left", ["cyclicRight"] = "Cyclic right", ["engine"] = "Engine start/stop",
             ["trim"] = "Trim cyclic", ["trimRelease"] = "Release trim", ["camera"] = "Camera", ["pause"] = "Pause", ["panel"] = "Instrument panel", ["map"] = "Map", ["apAlt"] = "Autopilot ALT (twins)",
             ["apHdg"] = "Autopilot HDG (twins)", ["apHover"] = "Autopilot hover hold (twins)", ["winch"] = "Winch lower / abort", ["transmit"] = "Radio transmit", ["flir"] = "FLIR camera", ["voice"] = "Voice command",
-            ["tablet"] = "Crew tablet (freeplay)", ["doors"] = "Cabin doors open/shut (on the ground)",
+            ["tablet"] = "Crew tablet (freeplay)", ["doors"] = "Cabin doors open/shut (on the ground)", ["gear"] = "Landing gear up/down (retractable wheels)",
         };
 
         static string PrettyKey(Key k)
@@ -370,7 +370,8 @@ namespace Rotorcraft.Presentation.UI
                     P("7. After landing: collective down, throttle idle (F), 15 seconds to cool, then engine off (E).")),
                 Panel(H3("Lights"), P("Open the switch panel (Sw, or K) for the anti-collision beacon, position lights (red left, green right, white tail), strobes, landing light and the governor. The beacon goes on before every engine start. At dusk and night the position lights are required, and the landing light should be on for every approach. Helipads are marked by green perimeter lights, training spots by yellow lights, the taxiway by blue edge lights, and obstacles by red lights.")),
                 Panel(H3("Reading the instruments"), P("The strip along the top shows indicated airspeed (kt), altitude above sea level (ft), vertical speed (ft/min), heading, rotor RPM (%), engine torque (%) and fuel (kg). Rotor RPM must stay in the green; torque above 100% is over the continuous limit. Open the full panel for analogue gauges, including an attitude indicator and a compass with a magenta bug pointing at your next target.")),
-                Panel(H3("Twins, rescue and offshore"), P("In the Northstar and Guardian the buttons under the nav box engage the autopilot: ALT holds altitude, HDG holds heading, HVR holds a hover over the ground (engage below 12 kt; small cyclic moves the hold point, the lever changes the height). Moving the lever or pedals firmly drops a mode. When a radio call is due a TRANSMIT button appears. On a rescue, fly the search area until the crew call \"contact\", come to a steady hover beside the casualty at 50 to 150 ft, follow the winch operator's calls, and press WINCH when it turns green. Hold the hover until both are aboard."))));
+                Panel(H3("Twins, rescue and offshore"), P("In the Northstar and Guardian the buttons under the nav box engage the autopilot: ALT holds altitude, HDG holds heading, HVR holds a hover over the ground (engage below 12 kt; small cyclic moves the hold point, the lever changes the height). Moving the lever or pedals firmly drops a mode. When a radio call is due a TRANSMIT button appears. On a rescue, fly the search area until the crew call \"contact\", come to a steady hover beside the casualty at 50 to 150 ft, follow the winch operator's calls, and press WINCH when it turns green. Hold the hover until both are aboard.")),
+                Panel(H3("The Peregrine"), P("Its rotor turns clockwise seen from above, so it takes right pedal as you lift, not left. Raise the wheels with Q once you are climbing away above about 60 kt and lower them before every approach: the switch panel shows GEAR DN or UP, and the crew call \"Gear!\" if you are low and slow with them up. A wheels-up landing damages the aircraft. On police jobs the camera (J) finds people by their heat; the searchlight (H) is for the last few hundred metres."))));
             page.Add(Row(Btn("Go to Ground school", "primary", () => app.Go("school"))));
             return page;
         }

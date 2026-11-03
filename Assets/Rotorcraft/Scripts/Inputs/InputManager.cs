@@ -36,7 +36,7 @@ namespace Rotorcraft.Inputs
         static readonly GameAction[] DirectKeyActions =
         {
             GameAction.ThrottleUp, GameAction.ThrottleDown, GameAction.Governor, GameAction.Beacon, GameAction.NavLights, GameAction.Strobe, GameAction.LandingLight, GameAction.Searchlight,
-            GameAction.Switches, GameAction.ApAlt, GameAction.ApHdg, GameAction.ApHover, GameAction.Winch, GameAction.Transmit, GameAction.Flir, GameAction.Voice, GameAction.Tablet, GameAction.Doors,
+            GameAction.Switches, GameAction.ApAlt, GameAction.ApHdg, GameAction.ApHover, GameAction.Winch, GameAction.Transmit, GameAction.Flir, GameAction.Voice, GameAction.Tablet, GameAction.Doors, GameAction.Gear,
         };
         static readonly Key[] LookKeys = { Key.I, Key.J, Key.K, Key.L };
 

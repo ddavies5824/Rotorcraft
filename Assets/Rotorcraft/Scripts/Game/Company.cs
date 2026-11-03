@@ -65,13 +65,13 @@ namespace Rotorcraft.Game
 
     public static class Companies
     {
-        public static readonly Dictionary<string, double> NEW_PRICE = new Dictionary<string, double> { ["kestrel"] = 285_000, ["northstar"] = 3_900_000, ["guardian"] = 5_200_000, ["nightjar"] = 2_600_000 };
+        public static readonly Dictionary<string, double> NEW_PRICE = new Dictionary<string, double> { ["kestrel"] = 285_000, ["northstar"] = 3_900_000, ["guardian"] = 5_200_000, ["nightjar"] = 2_600_000, ["peregrine"] = 3_400_000 };
         /// <summary>Wear per flight hour (condition 1 = fresh from overhaul).</summary>
-        static readonly Dictionary<string, double> WEAR_PER_HOUR = new Dictionary<string, double> { ["kestrel"] = 0.022, ["northstar"] = 0.016, ["guardian"] = 0.016, ["nightjar"] = 0.017 };
+        static readonly Dictionary<string, double> WEAR_PER_HOUR = new Dictionary<string, double> { ["kestrel"] = 0.022, ["northstar"] = 0.016, ["guardian"] = 0.016, ["nightjar"] = 0.017, ["peregrine"] = 0.017 };
         /// <summary>Per shift, per aircraft owned.</summary>
-        public static readonly Dictionary<string, double> INSURANCE = new Dictionary<string, double> { ["kestrel"] = 650, ["northstar"] = 4_200, ["guardian"] = 5_400, ["nightjar"] = 2_900 };
+        public static readonly Dictionary<string, double> INSURANCE = new Dictionary<string, double> { ["kestrel"] = 650, ["northstar"] = 4_200, ["guardian"] = 5_400, ["nightjar"] = 2_900, ["peregrine"] = 3_800 };
         /// <summary>Crew pay for a shift flown.</summary>
-        public static readonly Dictionary<string, double> CREW_PAY = new Dictionary<string, double> { ["kestrel"] = 280, ["northstar"] = 2_100, ["guardian"] = 2_600, ["nightjar"] = 1_500 };
+        public static readonly Dictionary<string, double> CREW_PAY = new Dictionary<string, double> { ["kestrel"] = 280, ["northstar"] = 2_100, ["guardian"] = 2_600, ["nightjar"] = 1_500, ["peregrine"] = 1_900 };
         public static readonly Dictionary<KitId, double> KIT_PRICE = new Dictionary<KitId, double> { [KitId.Medical] = 85_000, [KitId.Hoist] = 420_000, [KitId.Flir] = 165_000, [KitId.Searchlight] = 26_000, [KitId.Floats] = 38_000, [KitId.Cargo] = 12_000, [KitId.Seats] = 30_000, [KitId.AuxFuel] = 55_000 };
 
         public static readonly List<BaseDef> BASES = new List<BaseDef>

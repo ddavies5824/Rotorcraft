@@ -148,7 +148,8 @@ namespace Rotorcraft.Presentation
                 model = m.transform;
                 FindParts();
             }
-            rotorRpmAt100 = ac.engines > 1 ? (ac.rotorDiameter > 15 ? 265 : 330) : 530;
+            AircraftDress.Apply(model, ac);
+            rotorRpmAt100 = ac.engines > 1 ? (ac.rotorDiameter > 15 ? 265 : ac.rotorClockwise ? 350 : 330) : 530;
             tailRotorRatio = ac.engines > 1 ? 4.6f : 6f;
             GetComponent<RotorAudio>()?.Configure();
             GetComponent<AircraftLights>()?.Configure();
@@ -193,9 +194,9 @@ namespace Rotorcraft.Presentation
             ApplyPose();
             if (!Paused)
             {
-                // the rotor turns anticlockwise seen from above (the fuselage torques the other way)
+                // most rotors turn anticlockwise seen from above (the fuselage torques the other way); French-designed ones clockwise
                 var degrees = (float)(State.@out.rpm / 100) * rotorRpmAt100 * 6f * dt;
-                rotorAngle = (rotorAngle - degrees) % 360f;
+                rotorAngle = (rotorAngle + (Aircraft.rotorClockwise ? degrees : -degrees)) % 360f;
                 tailAngle = (tailAngle + degrees * tailRotorRatio) % 360f;
                 if (blades != null) blades.localRotation = Quaternion.Euler(0, rotorAngle, 0);
                 if (tailRotor != null) tailRotor.localRotation = Quaternion.Euler(tailAngle, 0, 0);   // spins about its own x axis

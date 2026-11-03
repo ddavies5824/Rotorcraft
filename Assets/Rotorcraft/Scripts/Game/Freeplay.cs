@@ -12,7 +12,7 @@ using static Rotorcraft.World.WorldMap;
 
 namespace Rotorcraft.Game
 {
-    public enum CalloutType { Rta, Medical, HillWalker, Climber, Swimmer, Liferaft, Vessel, Missing, Transfer, Offshore, Cargo, CrewChange, Police, Photo, LineCheck, Bloods }
+    public enum CalloutType { Rta, Medical, HillWalker, Climber, Swimmer, Liferaft, Vessel, Missing, Transfer, Offshore, Cargo, CrewChange, Police, Photo, LineCheck, Bloods, Troops }
     public enum PropRole { None, Patient, Cargo, Pax }
     public enum FreeplayPace { Off, Quiet, Normal, Busy }
 
@@ -478,6 +478,29 @@ namespace Rotorcraft.Game
                     } },
                 };
             } },
+            // ---- military troop lift (a twin with the seats in)
+            new Template { type = CalloutType.Troops, weight = 1, requires = new[] { KitId.Seats }, recommended = new KitId[0], needsTwin = true, make = c =>
+            {
+                var lzs = new[] { "glen_clearing", "craigmore_quarry", "moss_farm", "ardoch_mrt" }.Select(SiteById).ToArray();
+                var lz = lzs[Pick(c.R, lzs.Length)];
+                var h2 = SiteById("kin_h2");
+                var spare = Math.Max(0, c.ac.maxPayload - KitMass(c));
+                var pax = Math.Max(2, Math.Min(8, (int)Math.Floor(spare / 100)));
+                var props = Enumerable.Range(0, Math.Min(6, pax)).Select(i => Prop($"P:aircrew:stand:{1100 + i}", h2.x - 18 + i * 1.1, h2.z + 16 + (i % 2), 3.1, PropRole.Pax)).ToList();
+                return new Callout
+                {
+                    title = $"Army: patrol to {lz.name}", from = "Joint Helicopter Detachment", priority = 2, place = h2.name, x = h2.x, z = h2.z, destination = lz.name,
+                    details = new[] { $"A {pax}-man patrol and their kit are waiting at {h2.name} for an exercise at {lz.name}.", "Time on target matters: they expect you inside the slot. Low level is fine on the ranges, but mind the wires." },
+                    pay = 1800 + pax * 150, props = props,
+                    build = (job, tMin) => new JobBuild { objectives = new List<ObjectiveDef>
+                    {
+                        LandAt($"Land at {h2.name} for the patrol", "Loading", h2, 18, job, tMin + 15),
+                        LoadAt($"Patrol aboard ({pax})", "Loading", $"{pax} soldiers", pax * 100, 40, h2, job, true),
+                        LandAt($"Land at {lz.name}", "Insertion", lz, Math.Max(15, lz.radius * 1.5), job, tMin + 32),
+                        LoadAt("Patrol out", "Insertion", $"{pax} soldiers", pax * 100, 20, lz, job),
+                    } },
+                };
+            } },
             // ---- police search
             new Template { type = CalloutType.Police, weight = 2, requires = new KitId[0], recommended = new[] { KitId.Flir, KitId.Searchlight }, needsTwin = false, make = c =>
             {
@@ -712,7 +735,7 @@ namespace Rotorcraft.Game
                 var respondMin = FreeplayData.RespondFor(ctx, made.x, made.z);
                 var dist = Js.Hypot(made.x - @base.x, made.z - @base.z);
                 // an incident on the doorstep is no flight at all: those go to a road ambulance
-                if (dist < 1500 && !new[] { CalloutType.Transfer, CalloutType.Cargo, CalloutType.CrewChange, CalloutType.Bloods, CalloutType.Offshore }.Contains(tp.type)) continue;
+                if (dist < 1500 && !new[] { CalloutType.Transfer, CalloutType.Cargo, CalloutType.CrewChange, CalloutType.Bloods, CalloutType.Offshore, CalloutType.Troops }.Contains(tp.type)) continue;
                 var life = made.priority == 1 ? 6 * 60 : made.priority == 2 ? 10 * 60 : 16 * 60;
                 made.id = id; made.type = tp.type; made.requires = tp.requires; made.recommended = tp.recommended.Where(k => Loadout.CanFit(ac, k)).ToArray(); made.needsTwin = tp.needsTwin;
                 made.createdAt = t; made.expiresAt = t + life; made.respondMin = respondMin; made.pay = Js.Round((made.pay + dist / 1000 * 70) / 10) * 10;

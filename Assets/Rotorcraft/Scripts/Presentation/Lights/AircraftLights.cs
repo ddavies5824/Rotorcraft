@@ -40,6 +40,12 @@ namespace Rotorcraft.Presentation
                 strobes = new[] { new Vector3(0, 3.1f, 6.9f), new Vector3(0, 0.56f, -0.4f) }, landing = new Vector3(0, 0.64f, -3.26f), landingDir = new Vector3(0, -0.3f, -1),
                 search = new Vector3(0.72f, 0.38f, -2.46f), searchDir = new Vector3(0, -0.7f, -0.7f), cabin = new Vector3(0, 1.6f, -0.2f),
             },
+            ["peregrine"] = new Mounts
+            {
+                navL = new Vector3(-1.37f, 1.86f, 5.6f), navR = new Vector3(1.37f, 1.86f, 5.6f), tail = new Vector3(0, 2.58f, 7.64f), beacon = new Vector3(0, 4.01f, 7.58f),
+                strobes = new[] { new Vector3(0, 4.02f, 7.62f), new Vector3(0, 0.45f, -0.6f) }, landing = new Vector3(0, 0.52f, -3.77f), landingDir = new Vector3(0, -0.3f, -1),
+                search = new Vector3(0.62f, 0.28f, -2.42f), searchDir = new Vector3(0, -0.7f, -0.7f), cabin = new Vector3(0, 1.7f, -0.3f),
+            },
         };
 
         public HelicopterController heli;

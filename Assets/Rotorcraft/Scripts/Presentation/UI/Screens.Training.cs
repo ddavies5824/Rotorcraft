@@ -16,8 +16,9 @@ namespace Rotorcraft.Presentation.UI
         static readonly (string title, Pathway[] paths)[] SCHOOL_GROUPS =
         {
             ("Private pilot · Kestrel K2", new[] { Pathway.Ppl, Pathway.None }), ("Commercial pilot · Kestrel K2", new[] { Pathway.Cpl }), ("Night rating", new[] { Pathway.Night }),
-            ("Multi-engine type ratings", new[] { Pathway.Ns175, Pathway.S9 }), ("Instrument rating · Northstar 175", new[] { Pathway.Ir }),
+            ("Multi-engine type ratings", new[] { Pathway.Ns175, Pathway.S9, Pathway.P3 }), ("Instrument rating · Northstar 175", new[] { Pathway.Ir }),
             ("Rescue training · Guardian S9", new[] { Pathway.Winch, Pathway.Sar }), ("Offshore checks · Northstar 175", new[] { Pathway.Offshore }),
+            ("Police air support · Peregrine P3", new[] { Pathway.Police }), ("Military tasking · Peregrine P3", new[] { Pathway.Military }),
         };
 
         // -------------------------------------------------------------------------------- ground school
@@ -202,6 +203,7 @@ namespace Rotorcraft.Presentation.UI
             else groups = new List<(string, List<MissionDef>)>
             {
                 ("Search and rescue", list.Where(m => m.category == MissionCategory.Sar).ToList()), ("Offshore", list.Where(m => m.category == MissionCategory.Offshore).ToList()),
+                ("Police", list.Where(m => m.category == MissionCategory.Police).ToList()), ("Military", list.Where(m => m.category == MissionCategory.Military).ToList()),
                 ("Air ambulance", list.Where(m => m.category == MissionCategory.Medical).ToList()), ("Utility", list.Where(m => m.category == MissionCategory.Utility).ToList()),
                 ("Private flying", list.Where(m => m.category == MissionCategory.Private).ToList()),
             };

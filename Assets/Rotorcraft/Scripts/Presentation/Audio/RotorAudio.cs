@@ -39,7 +39,7 @@ namespace Rotorcraft.Presentation
         {
             if (heli == null || heli.Aircraft == null || synth == null) return;
             var ac = heli.Aircraft;
-            synth.turbine = ac.realWorldClass != null && ac.realWorldClass.ToLowerInvariant().Contains("turbine");
+            synth.turbine = ac.engines > 1 || (ac.realWorldClass != null && ac.realWorldClass.ToLowerInvariant().Contains("turbine"));   // every twin here is turbine-powered
             blades = ac.engines > 1 ? (ac.rotorDiameter > 15 ? 5 : 4) : 2;
             synth.bladePassHz = blades * heli.rotorRpmAt100 / 60f;
             synth.tailBuzzHz = 2 * heli.rotorRpmAt100 * heli.tailRotorRatio / 60f;

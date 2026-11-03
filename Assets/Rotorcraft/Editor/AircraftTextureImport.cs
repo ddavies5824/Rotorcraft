@@ -7,6 +7,8 @@ namespace Rotorcraft.EditorTools
 {
     public sealed class AircraftTextureImport : AssetPostprocessor
     {
+        public override uint GetVersion() => 2;   // bump to re-import every aircraft texture with new settings
+
         void OnPreprocessTexture()
         {
             if (!assetPath.Contains("/Models/Aircraft/") || !assetPath.EndsWith(".png")) return;
@@ -24,10 +26,12 @@ namespace Rotorcraft.EditorTools
             ti.textureCompression = metalRough || normal ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Compressed;
             ti.crunchedCompression = !metalRough && !normal;
             ti.compressionQuality = 70;
-            // the web build: data maps at 256 px (at browser resolution the joints barely show), all crunched
+            // the web build: data maps at 256 px (at browser resolution the joints barely show), all crunched; the
+            // small parts (role kit, rotor blades, tail rotor) at half that, as they cover few pixels on screen
+            var small = assetPath.Contains("_eq_") || assetPath.Contains("_blades_") || assetPath.Contains("_tail_rotor_");
             var web = ti.GetPlatformTextureSettings("WebGL");
             web.overridden = true;
-            web.maxTextureSize = metalRough || normal ? 256 : 512;
+            web.maxTextureSize = (metalRough || normal ? 256 : 512) / (small ? 2 : 1);
             web.format = TextureImporterFormat.Automatic;
             web.textureCompression = TextureImporterCompression.Compressed;
             web.crunchedCompression = true;

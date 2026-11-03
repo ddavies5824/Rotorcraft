@@ -24,14 +24,14 @@ namespace Rotorcraft.Game
 
         public static readonly List<KitItem> KIT = new List<KitItem>
         {
-            new KitItem { id = KitId.Medical, name = "Stretcher, medical kit and paramedic", @short = "Medical", description = "Stretcher fit, monitor, oxygen and a critical-care paramedic. Needed to carry a patient.", mass = M(("nightjar", 110), ("northstar", 170), ("guardian", 150)) },
-            new KitItem { id = KitId.Hoist, name = "Rescue hoist and winch crew", @short = "Hoist", description = "External rescue hoist with a winch operator and winchman. Needed to recover people from cliffs, the sea and ground you cannot land on.", mass = M(("nightjar", 190), ("northstar", 240), ("guardian", 0)) },
-            new KitItem { id = KitId.Flir, name = "Thermal camera (FLIR)", @short = "FLIR", description = "Nose-mounted thermal imager: finds people by their body heat, by day or night. Press J to view through it.", mass = M(("nightjar", 75), ("northstar", 45), ("guardian", 0)) },
-            new KitItem { id = KitId.Searchlight, name = "Searchlight", @short = "Light", description = "Steerable high-power searchlight for night landings and searches (H).", mass = M(("nightjar", 25), ("kestrel", 9), ("northstar", 30), ("guardian", 0)) },
-            new KitItem { id = KitId.Floats, name = "Emergency flotation", @short = "Floats", description = "Inflatable floats. Required for flights over the sea and to the offshore platforms.", mass = M(("nightjar", 45), ("kestrel", 16), ("northstar", 0), ("guardian", 0)) },
-            new KitItem { id = KitId.Cargo, name = "Freight rack and cargo restraint", @short = "Cargo", description = "Seats out, tie-down rails in. Needed for freight runs; carries up to the aircraft payload limit.", mass = M(("nightjar", 30), ("kestrel", 4), ("northstar", 60), ("guardian", 60)) },
-            new KitItem { id = KitId.Seats, name = "Passenger cabin", @short = "Seats", description = "Passenger seats, life jackets and the cabin attendant pack. Needed for crew changes.", mass = M(("nightjar", 40), ("northstar", 0), ("guardian", 90)) },
-            new KitItem { id = KitId.AuxFuel, name = "Auxiliary fuel tank", @short = "Aux fuel", description = "Extra cabin tank: more range for long offshore jobs, at the cost of weight.", mass = M(("nightjar", 55), ("northstar", 70), ("guardian", 70)) },
+            new KitItem { id = KitId.Medical, name = "Stretcher, medical kit and paramedic", @short = "Medical", description = "Stretcher fit, monitor, oxygen and a critical-care paramedic. Needed to carry a patient.", mass = M(("nightjar", 110), ("northstar", 170), ("guardian", 150), ("peregrine", 140)) },
+            new KitItem { id = KitId.Hoist, name = "Rescue hoist and winch crew", @short = "Hoist", description = "External rescue hoist with a winch operator and winchman. Needed to recover people from cliffs, the sea and ground you cannot land on.", mass = M(("nightjar", 190), ("northstar", 240), ("guardian", 0), ("peregrine", 200)) },
+            new KitItem { id = KitId.Flir, name = "Thermal camera (FLIR)", @short = "FLIR", description = "Nose-mounted thermal imager: finds people by their body heat, by day or night. Press J to view through it.", mass = M(("nightjar", 75), ("northstar", 45), ("guardian", 0), ("peregrine", 60)) },
+            new KitItem { id = KitId.Searchlight, name = "Searchlight", @short = "Light", description = "Steerable high-power searchlight for night landings and searches (H).", mass = M(("nightjar", 25), ("kestrel", 9), ("northstar", 30), ("guardian", 0), ("peregrine", 30)) },
+            new KitItem { id = KitId.Floats, name = "Emergency flotation", @short = "Floats", description = "Inflatable floats. Required for flights over the sea and to the offshore platforms.", mass = M(("nightjar", 45), ("kestrel", 16), ("northstar", 0), ("guardian", 0), ("peregrine", 60)) },
+            new KitItem { id = KitId.Cargo, name = "Freight rack and cargo restraint", @short = "Cargo", description = "Seats out, tie-down rails in. Needed for freight runs; carries up to the aircraft payload limit.", mass = M(("nightjar", 30), ("kestrel", 4), ("northstar", 60), ("guardian", 60), ("peregrine", 40)) },
+            new KitItem { id = KitId.Seats, name = "Passenger cabin", @short = "Seats", description = "Passenger seats, life jackets and the cabin attendant pack. Needed for crew changes.", mass = M(("nightjar", 40), ("northstar", 0), ("guardian", 90), ("peregrine", 60)) },
+            new KitItem { id = KitId.AuxFuel, name = "Auxiliary fuel tank", @short = "Aux fuel", description = "Extra cabin tank: more range for long offshore jobs, at the cost of weight.", mass = M(("nightjar", 55), ("northstar", 70), ("guardian", 70), ("peregrine", 70)) },
         };
 
         public static KitItem ById(KitId id) => KIT.First(k => k.id == id);
@@ -47,6 +47,7 @@ namespace Rotorcraft.Game
             if (ac.id == "kestrel") return new List<KitId> { KitId.Searchlight };
             if (ac.id == "guardian") return new List<KitId> { KitId.Hoist, KitId.Flir, KitId.Searchlight, KitId.Floats, KitId.Medical };
             if (ac.id == "nightjar") return new List<KitId> { KitId.Medical, KitId.Searchlight };
+            if (ac.id == "peregrine") return new List<KitId> { KitId.Flir, KitId.Searchlight };
             return new List<KitId> { KitId.Floats, KitId.Medical, KitId.Searchlight };
         }
 
@@ -69,6 +70,7 @@ namespace Rotorcraft.Game
             ac.equipment.hoist = Has(KitId.Hoist); ac.equipment.flir = Has(KitId.Flir); ac.equipment.searchlight = Has(KitId.Searchlight);
             ac.equipment.floats = Has(KitId.Floats); ac.equipment.medical = Has(KitId.Medical);
             ac.fuelCapacity = b.fuelCapacity + (Has(KitId.AuxFuel) ? AUX_FUEL_KG : 0);
+            ac.fitted = kit.Where(k => CanFit(b, k)).Select(k => k.ToString().ToLowerInvariant()).ToArray();
             return new FittedAircraft { ac = ac, kitKg = kitKg, problems = problems };
         }
 

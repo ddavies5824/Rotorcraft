@@ -23,6 +23,7 @@ namespace Rotorcraft.Presentation
             ["northstar"] = ((new Vector3(1.25f, 0, -2.7f), "crew_r"), (new Vector3(1.25f, 0, -1.7f), "cabin_r")),
             ["guardian"] = ((new Vector3(1.4f, 0, -3.0f), "crew_r"), (new Vector3(1.4f, 0, -0.55f), "cabin_r")),
             ["nightjar"] = ((new Vector3(1.05f, 0, -1.9f), "crew_r"), (new Vector3(1.05f, 0, -0.46f), "cabin_r")),
+            ["peregrine"] = ((new Vector3(1.15f, 0, -2.0f), "crew_r"), (new Vector3(1.2f, 0, -0.8f), "cabin_r")),
         };
 
         enum State { Aboard, Leaving, Out, There, Back, Boarding }

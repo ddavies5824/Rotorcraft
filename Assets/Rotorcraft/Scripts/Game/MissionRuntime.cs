@@ -144,7 +144,7 @@ namespace Rotorcraft.Game
         {
             if (m.category == MissionCategory.Freeplay) return "Ops";
             if (m.category == MissionCategory.Test) return "Examiner";
-            if (m.category == MissionCategory.Sar) return "Crew";
+            if (m.category == MissionCategory.Sar || m.category == MissionCategory.Police || m.category == MissionCategory.Military) return "Crew";
             if (m.category == MissionCategory.Offshore) return "Co-pilot";
             return m.dual ? "Instructor" : "Kinloch Tower";
         }
@@ -171,7 +171,7 @@ namespace Rotorcraft.Game
             objectives = def.objectives.Select(d => new ObjectiveRuntime(d)).ToList();
             if (!checklistComplete) proceduralErrors.Add("Pre-flight checklist not completed");
             var opening = def.category == MissionCategory.Freeplay ? $"Kinloch Ops: {def.summary}"
-                : def.category == MissionCategory.Sar ? $"{def.callsign ?? "Rescue 9-1-2"}, tasking: {def.summary}"
+                : def.category == MissionCategory.Sar || def.category == MissionCategory.Police || def.category == MissionCategory.Military ? $"{def.callsign ?? "Rescue 9-1-2"}, tasking: {def.summary}"
                 : def.dual || def.category == MissionCategory.Offshore ? $"{def.shortTitle}. {def.summary}" : $"Kinloch Tower: {def.shortTitle}, start-up approved when ready.";
             Say(0, announcer, opening, MessageKind.Info);
             Activate(0, 0, null);
@@ -194,7 +194,7 @@ namespace Rotorcraft.Game
         {
             if ((lastCaution.TryGetValue(key, out var last) ? last : -1e9) + every > t) return;
             lastCaution[key] = t;
-            Say(t, from ?? (def.dual || def.category == MissionCategory.Sar || def.category == MissionCategory.Offshore ? announcer : "Caution"), text, kind);
+            Say(t, from ?? (def.dual || def.category == MissionCategory.Sar || def.category == MissionCategory.Offshore || def.category == MissionCategory.Police || def.category == MissionCategory.Military ? announcer : "Caution"), text, kind);
         }
 
         // ------------------------------------------------------------------------------- weather
@@ -589,7 +589,7 @@ namespace Rotorcraft.Game
                 var aglFt = o.aglM * FT;
                 if (aglFt < 100 && o.vsFpm < -600 && o.gsKt < 30) { unstableSec += dt; Caution(t, "ros", "High rate of descent close to the ground! Check it with collective.", MessageKind.Warning, 6); }
                 var near = DistToNearestSite(s);
-                var lowWork = def.category == MissionCategory.Sar || def.category == MissionCategory.Offshore || freeplay;
+                var lowWork = def.category == MissionCategory.Sar || def.category == MissionCategory.Offshore || def.category == MissionCategory.Police || def.category == MissionCategory.Military || def.pathway == Pathway.Military || freeplay;
                 if (aglFt < 150 && o.iasKt > 45 && near > 600 && !lowWork) { lowLevelSec += dt; Caution(t, "low", "You are very low. Climb to a safe height.", MessageKind.Caution, 10); }
                 if (aglFt < 100 && o.iasKt > 60 && lowWork) { lowLevelSec += dt; Caution(t, "low", "Too low for that speed. Climb or slow down.", MessageKind.Caution, 10); }
                 // flying into cloud: only the instrument-equipped twins can legitimately continue
@@ -914,7 +914,8 @@ namespace Rotorcraft.Game
                             hintGiven = true;
                             var call = Regex.Replace(Rotorcraft.Sim.Search.ClockCall(s, tg.x + 120, tg.z - 80), @"^\d+ o'clock, ", "about ");
                             var brg = Js.Round(((Math.Atan2(tg.x - s.pos.x, -(tg.z - s.pos.z)) * 180 / Math.PI + 360) % 360));
-                            Say(t, "Coastguard", $"Update: a sighting places the casualty {call} from you, bearing {brg}.", MessageKind.Info);
+                            if (def.category == MissionCategory.Police || def.pathway == Pathway.Police) Say(t, "Police", $"Update: a caller reports someone {call} from you, bearing {brg}.", MessageKind.Info);
+                            else Say(t, "Coastguard", $"Update: a sighting places the casualty {call} from you, bearing {brg}.", MessageKind.Info);
                         }
                         break;
                     }
@@ -978,6 +979,11 @@ namespace Rotorcraft.Game
                         }
                         break;
                     }
+                case ObjectiveKind.Gear:
+                    a.progress = d.gearDown ? s.gearPos : 1 - s.gearPos;
+                    a.detail = s.gearPos >= 0.98 ? "Wheels down and locked" : s.gearPos <= 0.02 ? "Wheels up" : $"Wheels travelling {F0((d.gearDown ? s.gearPos : 1 - s.gearPos) * 100)}% · gear lever (Q)";
+                    if (d.gearDown ? s.gearPos >= 0.98 : s.gearPos <= 0.02 && !s.onGround) { a.score = 100; Complete(a, t, s, d.gearDown ? "Three greens" : "Gear up"); }
+                    break;
                 case ObjectiveKind.Ap:
                     {
                         var on = d.mode == APMode.Alt ? ap.alt : d.mode == APMode.Hdg ? ap.hdg : ap.hover;
@@ -1073,7 +1079,7 @@ namespace Rotorcraft.Game
             var emerg = objectives.Where(o => o.def.kind == ObjectiveKind.Autorotation || o.def.kind == ObjectiveKind.PowerRecovery || o.def.kind == ObjectiveKind.FailEngine || o.def.kind == ObjectiveKind.Failure).ToList();
             if (emerg.Count > 0) handling = handling * 0.5 + Avg(emerg.Select(o => (double)(o.score ?? 0))) * 0.5;
             scores[ScoreCategory.Handling] = Math.Max(0, R(handling));
-            scores[ScoreCategory.Procedures] = Math.Max(0, 100 - proceduralErrors.Count * 20 - objectives.Count(o => (o.def.kind == ObjectiveKind.Radio || o.def.kind == ObjectiveKind.Ap) && o.status != ObjectiveStatus.Complete) * 15);
+            scores[ScoreCategory.Procedures] = Math.Max(0, 100 - proceduralErrors.Count * 20 - objectives.Count(o => (o.def.kind == ObjectiveKind.Radio || o.def.kind == ObjectiveKind.Ap || o.def.kind == ObjectiveKind.Gear) && o.status != ObjectiveStatus.Complete) * 15);
             scores[ScoreCategory.Fuel] = Assessment.ScoreFuel(s.fuel, d.minFuelKg);
             var safety = 100 - unstableSec * 6 - lowLevelSec * 1.5 - hardLandings * 25 - s.damage * 60 - outOfRangeSec * 0.3 - imcSec * 1.5;
             if (crashed) safety = 0;

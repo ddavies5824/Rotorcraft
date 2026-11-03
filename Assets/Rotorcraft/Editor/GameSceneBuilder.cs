@@ -110,7 +110,7 @@ namespace Rotorcraft.EditorTools
             var doc = game.AddComponent<UIDocument>();
             doc.panelSettings = Panel();
             var lib = game.AddComponent<AircraftLibrary>();
-            lib.kestrel = Model("Aircraft/kestrel_k2.gltf"); lib.northstar = Model("Aircraft/northstar_175.gltf"); lib.guardian = Model("Aircraft/guardian_s9.gltf"); lib.nightjar = Model("Aircraft/nightjar_n4.gltf");
+            lib.kestrel = Model("Aircraft/kestrel_k2.gltf"); lib.northstar = Model("Aircraft/northstar_175.gltf"); lib.guardian = Model("Aircraft/guardian_s9.gltf"); lib.nightjar = Model("Aircraft/nightjar_n4.gltf"); lib.peregrine = Model("Aircraft/peregrine_p3.gltf");
             var actors = game.AddComponent<WorldActors>();
             actors.people = Model("people.glb"); actors.vehicles = Model("vehicles.glb");
             var flight = game.AddComponent<FlightSession>();

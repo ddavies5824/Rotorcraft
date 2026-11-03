@@ -26,6 +26,8 @@ namespace Rotorcraft.Game
             new EmployerDef { id = "highland", name = "Highland Utility Services", kind = "Utility operator", description = "Power-line patrols, survey and light-lift work across the glens. A first commercial job for new CPL holders.", requires = new[] { "cpl_h" }, payRate = 9 },
             new EmployerDef { id = "northern", name = "Northern Air Ambulance", kind = "Medical transport", description = "Inter-hospital transfers and scene responses in the Northstar. Twin-engine and instrument rated pilots only.", requires = new[] { "type_northstar", "ir_h" }, payRate = 12 },
             new EmployerDef { id = "pentland", name = "Pentland Offshore Aviation", kind = "Offshore transport", description = "Crew changes, freight and medevac to the North Sea platforms.", requires = new[] { "type_northstar", "auth_offshore" }, payRate = 12 },
+            new EmployerDef { id = "police", name = "Police Air Support Unit", kind = "Police aviation", description = "Air support for the police from Kinloch in the Peregrine: searches for missing people and suspects with the thermal camera and searchlight, by day and night, and moving officers fast.", requires = new[] { "type_peregrine", "auth_police" }, payRate = 12 },
+            new EmployerDef { id = "military", name = "Joint Helicopter Detachment", kind = "Military aviation (contract)", description = "Support flying for the armed forces on the Highland ranges in the Peregrine: troop insertions, casualty evacuation, low-level navigation and deck landings.", requires = new[] { "type_peregrine", "auth_military" }, payRate = 13 },
             new EmployerDef { id = "saltire", name = "Saltire Rescue", kind = "Search and rescue contractor", description = "Coastguard search and rescue from Kinloch: searches, winch rescues, mountain and night callouts.", requires = new[] { "type_guardian", "auth_sar" }, payRate = 13 },
         };
 
@@ -37,6 +39,8 @@ namespace Rotorcraft.Game
             if (!string.IsNullOrEmpty(m.employerId)) return m.employerId;
             if (m.category == MissionCategory.Sar || m.pathway == Pathway.Sar || m.pathway == Pathway.Winch || m.pathway == Pathway.S9) return "saltire";
             if (m.category == MissionCategory.Offshore || m.pathway == Pathway.Offshore) return "pentland";
+            if (m.category == MissionCategory.Police || m.pathway == Pathway.Police || m.pathway == Pathway.P3) return "police";
+            if (m.category == MissionCategory.Military || m.pathway == Pathway.Military) return "military";
             if (m.category == MissionCategory.Utility) return "highland";
             if (m.category == MissionCategory.Medical) return "northern";
             return "school";
@@ -108,7 +112,7 @@ namespace Rotorcraft.Game
         /// <summary>Share of later earnings that repays the training loan.</summary>
         public const double LOAN_REPAY_SHARE = 0.25;
 
-        static bool Operational(MissionCategory c) => c == MissionCategory.Sar || c == MissionCategory.Offshore || c == MissionCategory.Utility || c == MissionCategory.Medical;
+        static bool Operational(MissionCategory c) => c == MissionCategory.Sar || c == MissionCategory.Offshore || c == MissionCategory.Utility || c == MissionCategory.Medical || c == MissionCategory.Police || c == MissionCategory.Military;
 
         /// <summary>Contract fee offered for a mission at the given standing (0 for training and private flights).</summary>
         public static double OfferedPay(MissionDef m, double standingWithEmployer = 50)
@@ -173,7 +177,7 @@ namespace Rotorcraft.Game
         /// <summary>Validity in flight hours (game-scaled) for qualifications that need recurrent checks.</summary>
         public static readonly Dictionary<string, double> VALIDITY_HOURS = new Dictionary<string, double>
         {
-            ["type_northstar"] = 5, ["type_guardian"] = 5, ["ir_h"] = 6, ["auth_offshore"] = 4, ["auth_sar"] = 4, ["auth_winch"] = 4, ["tc_auth"] = 8,
+            ["type_northstar"] = 5, ["type_guardian"] = 5, ["type_peregrine"] = 5, ["auth_police"] = 4, ["auth_military"] = 4, ["ir_h"] = 6, ["auth_offshore"] = 4, ["auth_sar"] = 4, ["auth_winch"] = 4, ["tc_auth"] = 8,
         };
 
         /// <summary>Whether a held qualification is still valid at hoursNow. "Due" is the last hour before expiry.</summary>

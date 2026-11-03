@@ -61,9 +61,9 @@ namespace Rotorcraft.Presentation.UI
             var pips = E("rankpips" + (p.rankLevel >= 7 ? " l7" : ""));
             for (int i = 0; i < 8; i++) pips.Add(E("rankpip" + (i <= p.rankLevel ? " on" : "")));
             double H(string id) => p.acHours != null && p.acHours.TryGetValue(id, out var v) ? v : 0;
-            var maxAc = Math.Max(1, new[] { "kestrel", "northstar", "guardian", "nightjar" }.Max(H));
+            var maxAc = Math.Max(1, new[] { "kestrel", "northstar", "guardian", "nightjar", "peregrine" }.Max(H));
             var bars = E("stack tight");
-            foreach (var (n, id) in new[] { ("Kestrel K2", "kestrel"), ("Northstar 175", "northstar"), ("Guardian S9", "guardian"), ("Nightjar N4", "nightjar") })
+            foreach (var (n, id) in new[] { ("Kestrel K2", "kestrel"), ("Northstar 175", "northstar"), ("Guardian S9", "guardian"), ("Nightjar N4", "nightjar"), ("Peregrine P3", "peregrine") })
                 bars.Add(ScoreRow(n, H(id) / maxAc * 100, $"{H(id):F1} h", null));
             var quals = Row();
             foreach (var q in p.quals ?? new List<string>()) quals.Add(Chip(Qualifications.ById(q)?.abbrev ?? q, "ok"));

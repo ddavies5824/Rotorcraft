@@ -241,6 +241,11 @@ namespace Rotorcraft.Presentation
                 if (s.engineTemp > lim.caution && s.engine != EngineState.Off) ann.Add(($"{lim.label} {s.engineTemp:0}°", s.engineTemp <= lim.max));
                 if (s.engine == EngineState.Running && s.sys.throttle < 0.1 && !s.throttleIdle) ann.Add(("IDLE", true));
                 if (o.vrs > 0.3) ann.Add(("VORTEX RING", false));
+                if (ac.retractableGear)
+                {
+                    if (s.gearPos > 0.02 && s.gearPos < 0.98) ann.Add(("GEAR TRANSIT", true));
+                    else if (s.gearPos <= 0.02 && !s.onGround && o.aglM < 60 && o.iasKt < 60) ann.Add(("GEAR UP", false));
+                }
                 var key = string.Join("|", ann.Select(a => a.t + a.c));
                 if (annun.userData as string != key) { annun.userData = key; annun.Clear(); foreach (var (at, ac2) in ann) annun.Add(T(at, ac2 ? "ann c" : "ann")); }
                 // AGL aid / radar altimeter
@@ -456,6 +461,12 @@ namespace Rotorcraft.Presentation
                     var b = new Button(() => { FlightModel.CommandSwitch(s, ss); hudDirty = true; }).Cls("sw" + (on ? " on" : ""));
                     b.Add(E("sw-lamp")); b.Add(T(label)); b.Add(T(key, "sw-kbd"));
                     switches.Add(b);
+                }
+                if (ac.retractableGear)
+                {
+                    var gb = new Button(ToggleGear).Cls("sw" + (s.sys.gearDown ? " on" : ""));
+                    gb.Add(E("sw-lamp")); gb.Add(T(s.sys.gearDown ? "GEAR DN" : "GEAR UP")); gb.Add(T("Q", "sw-kbd"));
+                    switches.Add(gb);
                 }
                 switches.Add(T($"THR {s.sys.throttle * 100:0}% · {FlightModel.TempLimitsOf(ac).label} {s.engineTemp:0}° · OIL {s.@out.oilPress:0}%", "swinfo mono"));
             }

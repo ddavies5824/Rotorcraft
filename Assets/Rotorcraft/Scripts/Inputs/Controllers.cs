@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Rotorcraft.Inputs
 {
-    public enum GameAction { Engine, Trim, TrimRelease, Camera, Pause, Panel, Map, Switches, ThrottleUp, ThrottleDown, Governor, Beacon, NavLights, Strobe, LandingLight, Searchlight, ApAlt, ApHdg, ApHover, Winch, Transmit, Flir, Voice, Tablet, Doors }
+    public enum GameAction { Engine, Trim, TrimRelease, Camera, Pause, Panel, Map, Switches, ThrottleUp, ThrottleDown, Governor, Beacon, NavLights, Strobe, LandingLight, Searchlight, ApAlt, ApHdg, ApHover, Winch, Transmit, Flir, Voice, Tablet, Doors, Gear }
     /// <summary>LookX / LookY (cockpit head movement, e.g. a hat switch) are new in the Unity version.</summary>
     public enum AxisFunction { CyclicX, CyclicY, Collective, Pedals, Throttle, LookX, LookY }
     public enum ButtonFunction { Engine, ThrottleUp, ThrottleDown, Trim, TrimReset, Camera, Pause, Map, Panel, Switches, LandingLight, Beacon, NavLights, ApAlt, ApHdg, ApHover, Winch, Transmit, Voice, Tablet }

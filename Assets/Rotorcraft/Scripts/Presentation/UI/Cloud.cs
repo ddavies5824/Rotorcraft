@@ -532,7 +532,7 @@ namespace Rotorcraft.Presentation.UI
                 quals = Qualifications.ALL.Where(q => CareerManager.HasQual(c, q.id)).Select(q => q.id).ToList(), qualCount = Qualifications.ALL.Count(q => CareerManager.HasQual(c, q.id)),
                 bestStanding = Employers.ALL.Where(e => c.reputation.ContainsKey(e.id)).Select(e => CareerManager.StandingWith(c, e.id)).DefaultIfEmpty(0).Max(),
                 careerEarned = Math.Round(c.money.earned), fpShifts = fp?.shifts ?? 0, fpJobs = fp?.jobs ?? 0, fpEarned = Math.Round(fp?.earned ?? 0), fpBest = Math.Round(fp?.bestShift ?? 0),
-                acHours = new Dictionary<string, double> { ["kestrel"] = Hrs("kestrel"), ["northstar"] = Hrs("northstar"), ["guardian"] = Hrs("guardian"), ["nightjar"] = Hrs("nightjar") },
+                acHours = new Dictionary<string, double> { ["kestrel"] = Hrs("kestrel"), ["northstar"] = Hrs("northstar"), ["guardian"] = Hrs("guardian"), ["nightjar"] = Hrs("nightjar"), ["peregrine"] = Hrs("peregrine") },
                 startedAt = c.createdAt, updatedAt = CareerManager.Now(),
             };
         }
