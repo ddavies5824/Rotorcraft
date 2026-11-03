@@ -58,8 +58,12 @@ namespace Rotorcraft.Presentation
             }
             if (shake > 0.01f && !target.Paused)
             {
+                // a gentle vibration of the view direction, as in the browser game: a fifth of a degree at most and
+                // low frequencies only (one or two a second), so it never aliases against the frame rate
                 var t = Time.time;
-                transform.rotation *= Quaternion.Euler(Mathf.Sin(t * 37) * shake * 0.35f, Mathf.Sin(t * 29 + 1) * shake * 0.25f, Mathf.Sin(t * 43 + 2) * shake * 0.3f);
+                var a = Mathf.Min(1, shake) * 0.0035f * Mathf.Rad2Deg;
+                float n1 = Mathf.Sin(t * 7.3f) * 0.6f + Mathf.Sin(t * 11.9f + 1.3f) * 0.4f, n2 = Mathf.Sin(t * 8.7f + 2.1f) * 0.6f + Mathf.Sin(t * 13.1f) * 0.4f;
+                transform.rotation *= Quaternion.Euler(n2 * a, n1 * a * 0.7f, 0);
             }
         }
 

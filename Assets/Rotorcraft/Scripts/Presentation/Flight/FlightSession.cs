@@ -196,7 +196,9 @@ namespace Rotorcraft.Presentation
                 }
                 if (Runtime.weatherVersion != wxVer) { wxVer = Runtime.weatherVersion; SkyEnvironment.Current?.Apply(Setup.tod, Runtime.WeatherAt(s.t)); }
                 UpdateDoors(s);
-                cam.shake = s.onGround ? 0 : Mathf.Min(1, (float)(s.@out.etlShudder * 0.7 + s.@out.vrs * 0.8 + s.@out.bladeStall * 0.8));
+                // translational-lift shudder is felt less in a low hover in a breeze (in ground effect) than in a transition
+                var ige = Mathf.Clamp01((float)(s.@out.aglM / heli.Aircraft.rotorDiameter));
+                cam.shake = s.onGround ? 0 : Mathf.Min(1, (float)(s.@out.etlShudder * 0.7 * (0.4 + 0.6 * ige) + s.@out.vrs * 0.8 + s.@out.bladeStall * 0.8));
                 actors?.UpdateHoist(Runtime.hoist, s, heli.Aircraft);
             }
             else cam.shake = 0;
