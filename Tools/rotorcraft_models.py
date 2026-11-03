@@ -909,6 +909,15 @@ def build_exterior(m, H):
     tube(m, E, "Pitot tube", [(0, 2.04, -0.72), (0, 2.12, -0.74), (0, 2.13, -0.9)], 0.008, "chrome", 8)
     box(m, E, "Placard: no step", (0.57, 1.88, 0.9), (0.004, 0.04, 0.08), "yellow")
     box(m, E, "Placard: no step", (-0.57, 1.88, 0.9), (0.004, 0.04, 0.08), "yellow")
+    # GPS dome on the cowling, ELT whip on the boom, static ports and wicks on the boom and tail surfaces
+    c = Hc.point(1.15, math.pi / 2, 0.0)
+    ellipsoid(m, E, "GPS antenna", (c[0], c[1] + 0.01, c[2]), (0.06, 0.022, 0.085), "radarfair", 16, 6)
+    c = Hb.point(2.4, math.pi / 2 - 0.6, 0.0)
+    cyl(m, E, "ELT whip base", c, add(c, (0, 0.025, 0)), 0.018, 0.013, "darkmetal", 10)
+    tube(m, E, "ELT whip", [c, (c[0], c[1] + 0.2, c[2] + 0.08), (c[0], c[1] + 0.36, c[2] + 0.22)], 0.005, "darkmetal", 6)
+    skin_details(m, E, Hb, roof_z=(), steps=[], ports=[(1.62, 1.70)], wicks=[(0.06, 0.52, 4.68, 4.66, 1.65)], whip=None)
+    for y, z in ((2.4, 5.2), (2.15, 5.15)):
+        tube(m, E, "Static wick", [(0, y, z - 0.01), (0, y + 0.004, z + 0.14)], 0.004, "darkmetal", 6)
 
     # ---- skin detail: panel joints, rivet rows, cowling fasteners
     def cab_mat(p):
@@ -1108,7 +1117,7 @@ def skin_details(m, part, H, roof_z, steps, ports, wicks, whip):
         c = H.point(whip, math.pi / 2, 0.0)
         tube(m, part, "VHF whip", [(c[0] - 0.22, c[1] - 0.01, c[2]), (c[0] - 0.22, c[1] + 0.3, c[2] + 0.18), (c[0] - 0.22, c[1] + 0.52, c[2] + 0.42)], 0.006, "darkmetal", 6)
         cyl(m, part, "VHF whip base", (c[0] - 0.22, c[1] - 0.01, c[2]), (c[0] - 0.22, c[1] + 0.03, c[2]), 0.022, 0.016, "darkmetal", 10)
-    safe(vhf)
+    if whip is not None: safe(vhf)
     for sd in (1, -1):
         for (z, y) in ports:                 # static ports: little flush discs with a ring
             def port(z=z, y=y, sd=sd):
