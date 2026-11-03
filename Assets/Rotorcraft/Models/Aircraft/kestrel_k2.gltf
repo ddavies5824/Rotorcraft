@@ -4583,12 +4583,15 @@
 		},
 		{
 			"name":"body skin",
+			"normalTexture":{
+				"index":2
+			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":2
+					"index":3
 				},
 				"metallicRoughnessTexture":{
-					"index":3
+					"index":4
 				}
 			}
 		},
@@ -5348,12 +5351,15 @@
 		},
 		{
 			"name":"door_l skin",
+			"normalTexture":{
+				"index":5
+			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":4
+					"index":6
 				},
 				"metallicRoughnessTexture":{
-					"index":5
+					"index":7
 				}
 			}
 		},
@@ -5380,12 +5386,15 @@
 		},
 		{
 			"name":"door_r skin",
+			"normalTexture":{
+				"index":8
+			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":6
+					"index":9
 				},
 				"metallicRoughnessTexture":{
-					"index":7
+					"index":10
 				}
 			}
 		},
@@ -5414,10 +5423,10 @@
 			"name":"tail_rotor skin",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":8
+					"index":11
 				},
 				"metallicRoughnessTexture":{
-					"index":9
+					"index":12
 				}
 			}
 		}
@@ -11341,6 +11350,18 @@
 		{
 			"sampler":0,
 			"source":9
+		},
+		{
+			"sampler":0,
+			"source":10
+		},
+		{
+			"sampler":0,
+			"source":11
+		},
+		{
+			"sampler":0,
+			"source":12
 		}
 	],
 	"images":[
@@ -11356,6 +11377,11 @@
 		},
 		{
 			"mimeType":"image/png",
+			"name":"kestrel_k2_body_normal",
+			"uri":"kestrel_k2_textures/kestrel_k2_body_normal.png"
+		},
+		{
+			"mimeType":"image/png",
 			"name":"kestrel_k2_body_basecolor",
 			"uri":"kestrel_k2_textures/kestrel_k2_body_basecolor.png"
 		},
@@ -11366,6 +11392,11 @@
 		},
 		{
 			"mimeType":"image/png",
+			"name":"kestrel_k2_door_l_normal",
+			"uri":"kestrel_k2_textures/kestrel_k2_door_l_normal.png"
+		},
+		{
+			"mimeType":"image/png",
 			"name":"kestrel_k2_door_l_basecolor",
 			"uri":"kestrel_k2_textures/kestrel_k2_door_l_basecolor.png"
 		},
@@ -11373,6 +11404,11 @@
 			"mimeType":"image/png",
 			"name":"kestrel_k2_door_l_metalrough",
 			"uri":"kestrel_k2_textures/kestrel_k2_door_l_metalrough.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"kestrel_k2_door_r_normal",
+			"uri":"kestrel_k2_textures/kestrel_k2_door_r_normal.png"
 		},
 		{
 			"mimeType":"image/png",

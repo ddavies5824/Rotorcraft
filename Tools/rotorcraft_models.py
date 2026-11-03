@@ -1092,6 +1092,42 @@ def build_cockpit(m, H):
     tube(m, C, "Crosstube (view)", [(-0.95, 0.06, -0.85), (-0.9, 0.42, -0.85), (-0.62, 0.8, -0.85), (0, 0.88, -0.85), (0.62, 0.8, -0.85), (0.9, 0.42, -0.85), (0.95, 0.06, -0.85)], 0.04, "metal", 12)
 
 
+
+def skin_details(m, part, H, roof_z, steps, ports, wicks, whip):
+    """Small things every real airframe carries, laid on the hull H: GPS domes on the roof, a VHF whip, static
+    ports by the nose, kick-in steps up the side and static wicks on the tail surfaces. Positions in game axes."""
+    def safe(f):
+        try: f()
+        except Exception: pass
+    for i, z in enumerate(roof_z):          # GPS / satcom domes
+        def dome(z=z, i=i):
+            c = H.point(z, math.pi / 2, 0.0)
+            ellipsoid(m, part, "GPS antenna", (c[0] + (0.14 if i % 2 else -0.14), c[1] + 0.012, c[2]), (0.07, 0.025, 0.1), "radarfair", 16, 6)
+        safe(dome)
+    def vhf():
+        c = H.point(whip, math.pi / 2, 0.0)
+        tube(m, part, "VHF whip", [(c[0] - 0.22, c[1] - 0.01, c[2]), (c[0] - 0.22, c[1] + 0.3, c[2] + 0.18), (c[0] - 0.22, c[1] + 0.52, c[2] + 0.42)], 0.006, "darkmetal", 6)
+        cyl(m, part, "VHF whip base", (c[0] - 0.22, c[1] - 0.01, c[2]), (c[0] - 0.22, c[1] + 0.03, c[2]), 0.022, 0.016, "darkmetal", 10)
+    safe(vhf)
+    for sd in (1, -1):
+        for (z, y) in ports:                 # static ports: little flush discs with a ring
+            def port(z=z, y=y, sd=sd):
+                a = H.on_side(z, y, sd, 0.0); b = H.on_side(z, y, sd, 0.004)
+                cyl(m, part, "Static port", a, b, 0.022, 0.022, "metal", 14)
+                cyl(m, part, "Static port hole", b, H.on_side(z, y, sd, 0.0045), 0.008, 0.008, "intake", 8)
+            safe(port)
+        for (z, y) in steps:                 # kick-in steps: a dark recess with a lip
+            def step(z=z, y=y, sd=sd):
+                box(m, part, "Kick step", H.on_side(z, y, sd, 0.002), (0.02, 0.055, 0.16), "intake", bevel=0.004)
+                box(m, part, "Kick step lip", H.on_side(z, y + 0.03, sd, 0.006), (0.02, 0.008, 0.17), "metal", bevel=0.002)
+            safe(step)
+    for (x0, x1, z0, z1, y) in wicks:        # static wicks on the trailing edges
+        for k in range(3):
+            u = 0.3 + 0.3 * k
+            x = lerp(x0, x1, u); z = lerp(z0, z1, u)
+            for s in (1, -1):
+                tube(m, part, "Static wick", [(s * x, y, z - 0.01), (s * x, y + 0.004, z + 0.14)], 0.004, "darkmetal", 6)
+
 class Face:
     """Things laid on a plane: origin o, axes ex (right), ey (up), ez (out of the face)."""
     def __init__(self, m, part, o, ex, ey, ez): self.m, self.part, self.o, self.ex, self.ey, self.ez = m, part, o, ex, ey, ez
@@ -1462,6 +1498,16 @@ def build_twin(sar):
         b0 = H.point(z, math.pi / 2, 0.0); b0 = (x, b0[1] - 0.02, z)
         wing(m, E, "Aerial", b0, (x, b0[1] + h, z + 0.15), 0.22, 0.12, 0.1, (0, 0, 1), (1, 0, 0), lambda c: "darkmetal", 2, 10)
     wing(m, E, "Belly aerial", (0, 0.88, -0.8), (0, 0.62, -0.68), 0.2, 0.12, 0.1, (0, 0, 1), (1, 0, 0), lambda c: "darkmetal", 2, 10)
+    skin_details(m, E, H, roof_z=(-2.6, -2.2), steps=[(-1.25, 2.05), (-1.05, 2.4)], ports=[(-3.7, 1.55), (-3.4, 1.45)],
+                 wicks=[(0.5, 1.15, 7.18, 7.27, 2.53)], whip=0.6)
+    for sd in (1, -1):   # engine intake grilles: bars across each intake opening
+        for dy in (-0.1, -0.04, 0.02, 0.08):
+            tube(m, E, "Intake grille bar", [Hc.on_side(-0.85 + dz, 2.88 + dy, sd, 0.014) for dz in (-0.19, -0.06, 0.06, 0.19)], 0.006, "metal", 6, steps=2)
+    try:   # fuel filler on the right side, behind the cabin door
+        fp = H.on_side(0.95, 1.4, 1, 0.0); fq = H.on_side(0.95, 1.4, 1, 0.006)
+        cyl(m, E, "Fuel filler cap", fp, fq, 0.055, 0.055, "chrome", 18)
+        cyl(m, E, "Fuel filler ring", fq, H.on_side(0.95, 1.4, 1, 0.0065), 0.07, 0.07, "darkmetal", 18)
+    except Exception: pass
 
     # ---- kit the game fits per flight (each its own part)
     box(m, "eq_hoist", "Hoist mount", (1.02, 2.66, -1.4), (0.24, 0.32, 0.5), "metal", bevel=0.02)
@@ -2922,6 +2968,8 @@ def nj_exterior(m, H):
     box(m, P, "Belly aerial", (0.25, 0.6, 0.8), (0.012, 0.12, 0.12), "frame", bevel=0.004)
     tube(m, P, "Wire cutter (upper)", [(0, 2.13, -2.6), (0, 2.32, -2.7), (0, 2.42, -2.65)], 0.015, "darkmetal", 6)
     tube(m, P, "Wire cutter (lower)", [(0, 0.62, -2.9), (0, 0.45, -3.0), (0, 0.4, -2.85)], 0.015, "darkmetal", 6)
+    skin_details(m, P, H, roof_z=(-1.1, -0.7), steps=[(-0.9, 1.95)], ports=[(-2.75, 1.35)],
+                 wicks=[(0.35, 0.95, 5.55, 5.66, 2.02)], whip=0.3)
 
 
 def nj_rotor(m):
@@ -3760,6 +3808,11 @@ def run_blender():
                     em.inputs["Color"].default_value = (coat, rough, met, 1)
                 def pos_of(mt, nt, em):
                     g = nt.nodes.new("ShaderNodeNewGeometry"); nt.links.new(g.outputs["Position"], em.inputs["Color"]); return [g]
+                def nrm_of(mt, nt, em):
+                    g = nt.nodes.new("ShaderNodeNewGeometry"); nt.links.new(g.outputs["Normal"], em.inputs["Color"]); return [g]
+                def tan_of(mt, nt, em):
+                    g = nt.nodes.new("ShaderNodeTangent"); g.direction_type = "UV_MAP"; g.uv_map = "UVMap"
+                    nt.links.new(g.outputs["Tangent"], em.inputs["Color"]); return [g]
 
                 base = bake("base", base_of)[:, :3]
                 mr = bake("mr", mr_of)[:, :3]
@@ -3782,10 +3835,68 @@ def run_blender():
                 for e in ex_pts:
                     t = np.clip(e[1] - pos[:, 1], 0, None)                                        # downstream: Blender -y is aft
                     r = np.hypot(pos[:, 0] - e[0], pos[:, 2] - (e[2] - 0.12 * t))
-                    soot = np.maximum(soot, np.exp(-t / 2.2) * np.exp(-(r / (0.18 + 0.22 * t)) ** 2) * (t > 0.05))
-                col = col * (1 - 0.6 * soot)[:, None]
+                    soot = np.maximum(soot, np.exp(-t / 1.1) * np.exp(-(r / (0.12 + 0.1 * t)) ** 2) * (t > 0.05))   # a short, narrow plume
+                col = col * (1 - 0.45 * soot)[:, None]
                 rough = np.clip(rough + 0.18 * grime + 0.08 * (n1 - 0.5) + 0.25 * soot, 0.04, 1)
                 col = np.clip(col, 0, 1)
+
+                # ---- surface detail (skin parts only): panel joints at the frames and along the sides, rows of
+                # rivets beside them and a few inset access panels, as a height field in metres, turned into a
+                # tangent-space normal map (and the joints darkened a little in the colour)
+                normal_img = None
+                if part == "body" or part.startswith("door"):
+                    nw = bake("nrm", nrm_of)[:, :3]; tw = bake("tan", tan_of)[:, :3]
+                    nw = nw / np.maximum(np.linalg.norm(nw, axis=1), 1e-6)[:, None]
+                    tw = tw - nw * np.sum(tw * nw, axis=1)[:, None]; tw = tw / np.maximum(np.linalg.norm(tw, axis=1), 1e-6)[:, None]
+                    bw = np.cross(nw, tw)
+                    skin = painted > 0.5
+                    top = np.abs(nw[:, 2]) > 0.72                      # roof and belly: joints run fore and aft instead
+                    FR, ST, RIV = 0.56, 0.42, 0.045                     # frame pitch, stringer pitch, rivet pitch (m)
+
+                    def hcell(a, b, c):
+                        v = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791)
+                        v = (v ^ (v >> 13)) * 1274126177
+                        return ((v ^ (v >> 16)) & 0xFFFF) / 65535.0
+
+                    def height(q):
+                        x, y, z = q[:, 0], q[:, 1], q[:, 2]
+                        along = np.where(top, x, z)                     # the coordinate a frame joint runs along
+                        across = y                                       # frames are planes of constant y (fore-aft)
+                        def dist(v, pitch): return np.abs((v / pitch + 0.5) % 1.0 - 0.5) * pitch
+                        df = dist(across, FR); ds = dist(along, ST)
+                        h = -0.0010 * np.exp(-(df / 0.0034) ** 2) - 0.0008 * np.exp(-(ds / 0.0032) ** 2)
+                        # rivet rows 18 mm either side of each frame joint, and along the stringer joints
+                        dr = np.abs(df - 0.018)                            # df is a distance: both sides of the joint
+                        da = dist(along, RIV)
+                        h += 0.0005 * np.exp(-(dr ** 2 + da ** 2) / 0.0036 ** 2)
+                        drs = np.abs(ds - 0.016); dal = dist(across, RIV)
+                        h += 0.00045 * np.exp(-(drs ** 2 + dal ** 2) / 0.0034 ** 2)
+                        # access panels: some cells get an inset rectangle 6 cm inside the joints
+                        ci = np.floor(across / FR).astype(np.int64); cj = np.floor(along / ST).astype(np.int64)
+                        pick = hcell(ci, cj, (x > 0).astype(np.int64) + 7) < 0.16
+                        fx = (across / FR) % 1.0 * FR; fy = (along / ST) % 1.0 * ST
+                        inset = 0.06
+                        edge = np.minimum(np.minimum(np.abs(fx - inset), np.abs(FR - inset - fx)), np.minimum(np.abs(fy - inset), np.abs(ST - inset - fy)))
+                        inside = (fx > inset - 0.003) & (fx < FR - inset + 0.003) & (fy > inset - 0.003) & (fy < ST - inset + 0.003)
+                        h += np.where(pick & inside, -0.0008 * np.exp(-(edge / 0.003) ** 2), 0.0)
+                        # fasteners at the access panel corners and along its edges
+                        cx = np.minimum(np.abs(fx - inset - 0.012), np.abs(FR - inset - 0.012 - fx)); cy = dist(fy - inset, 0.09)
+                        h += np.where(pick & inside, 0.0003 * np.exp(-(cx ** 2 + cy ** 2) / 0.003 ** 2), 0.0)
+                        return np.where(skin, h, 0.0)
+
+                    e = 0.0011
+                    h0 = height(pos)
+                    dht = (height(pos + tw * e) - height(pos - tw * e)) / (2 * e)
+                    dhb = (height(pos + bw * e) - height(pos - bw * e)) / (2 * e)
+                    nts = np.stack([-dht, -dhb, np.ones(len(pos))], axis=1)
+                    nts = nts / np.linalg.norm(nts, axis=1)[:, None]
+                    nts[~covered] = (0, 0, 1)
+                    col = col * (1 - np.clip(-h0 / 0.0008, 0, 1) * 0.4)[:, None]       # dirt in the joints shows them from a distance
+                    rough = np.clip(rough + np.clip(-h0 / 0.0008, 0, 1) * 0.2, 0.04, 1)
+                    normal_img = bpy.data.images.new(part + " normal", size, size, alpha=False)
+                    normal_img.colorspace_settings.name = "Non-Color"
+                    normal_img.pixels.foreach_set(np.concatenate([nts * 0.5 + 0.5, np.ones((len(nts), 1))], axis=1).astype(np.float32).ravel())
+                    normal_img.filepath_raw = os.path.join(tex_dir, "%s_%s_normal.png" % (spec["file"], part)); normal_img.file_format = "PNG"; normal_img.save()
 
                 img_c = bpy.data.images.new(part + " base colour", size, size, alpha=False)
                 img_c.colorspace_settings.name = "sRGB"
@@ -3805,6 +3916,10 @@ def run_blender():
                 nt.links.new(tc.outputs["Color"], bsdf.inputs["Base Color"])
                 nt.links.new(tm.outputs["Color"], sep.inputs["Color"])
                 nt.links.new(sep.outputs["Green"], bsdf.inputs["Roughness"]); nt.links.new(sep.outputs["Blue"], bsdf.inputs["Metallic"])
+                if normal_img is not None:
+                    tn = nt.nodes.new("ShaderNodeTexImage"); tn.image = normal_img
+                    nm = nt.nodes.new("ShaderNodeNormalMap"); nm.space = "TANGENT"; nm.uv_map = "UVMap"
+                    nt.links.new(tn.outputs["Color"], nm.inputs["Color"]); nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
                 J.data.materials.clear(); J.data.materials.append(mt)
                 for p in J.data.polygons: p.material_index = 0
                 # the shading is in the texture now: drop the per-vertex shading from this mesh
