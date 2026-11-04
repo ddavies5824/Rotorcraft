@@ -501,6 +501,46 @@ def carve_door(m, side, z0, z1, ylo, yhi, door_part, src_parts=("body", "cockpit
     return door_part
 
 
+def chin_frame(m, part, o, test, r=0.014, mat="frame"):
+    """A frame round the chin windows: a tube along the outer edge of the glass faces of skin o that pass test(centre)."""
+    uses = {}
+    for f, k in zip(o.f, o.m):
+        if k != "glass": continue
+        c = mul(add(add(o.v[f[0]], o.v[f[1]]), add(o.v[f[2]], o.v[f[-1]])), 0.25)
+        if not test(c): continue
+        for i in range(len(f)):
+            e = tuple(sorted((f[i], f[(i + 1) % len(f)])))
+            uses[e] = uses.get(e, 0) + 1
+    links = {}
+    for (a, b), n in uses.items():
+        if n == 1: links.setdefault(a, []).append(b); links.setdefault(b, []).append(a)
+    while links:
+        start = next(iter(links)); run = [start]; at = start
+        while links.get(at):
+            nxt = links[at].pop(); links[nxt].remove(at); run.append(nxt); at = nxt
+        for k in [k for k, v in links.items() if not v]: del links[k]
+        pts = []
+        for i in run:
+            if not pts or length(sub(o.v[i], pts[-1])) > 1e-4: pts.append(o.v[i])
+        if len(pts) > 2: tube(m, part, "Chin window frame", pts, r, mat, 6, caps=False, steps=1)
+
+
+def deck(m, part, name, H, z0, z1, y, mat, n=14, inset=0.97, t=0.02):
+    """A floor panel cut to the hull's width at this height, so it stops at the skin and shows through no glass."""
+    o = m.new(name, part)
+    top, bot = [], []
+    for i in range(n + 1):
+        z = lerp(z0, z1, i / n)
+        hw = abs(H.P(z, H.th_at_y(z, y, 1), inset)[0])
+        top.append((o.vert((-hw, y, z)), o.vert((hw, y, z))))
+        bot.append((o.vert((-hw, y - t, z)), o.vert((hw, y - t, z))))
+    for i in range(n):
+        oriented_quad(o, (top[i][0], top[i][1], top[i + 1][1], top[i + 1][0]), (0, 1, 0), mat)
+        oriented_quad(o, (bot[i][0], bot[i][1], bot[i + 1][1], bot[i + 1][0]), (0, -1, 0), mat)
+    oriented_quad(o, (top[0][0], top[0][1], bot[0][1], bot[0][0]), (0, 0, -1), mat)
+    return o
+
+
 def cabin_lining(m, H, part, z0, z1, floor_y, mat="trim_ns", inset=0.97, n=40):
     """Inside of a cabin: the hull section turned inward, a floor, and a bulkhead at each end."""
     o = m.new("Cabin lining", part)
@@ -560,6 +600,10 @@ def waist(z): return 1.31 + 0.08 * clamp01((-z - 0.9) / 0.5) - 0.02
 def near(a, b, w): return abs(a - b) < w
 
 DOOR_FWD, DOOR_AFT = -0.16, 0.42
+CHIN_FWD, CHIN_AFT, CHIN_KEEL = -1.40, -0.82, 2                                    # chin windows: nose to just ahead of the cyclics, belly quads kept each side of the centre line
+
+
+def kestrel_chin(x, y, z): return CHIN_FWD < z < CHIN_AFT and abs(x) > 0.14 and (z < -1.0 or y < waist(z) - 0.13)
 
 
 def cabin_paint(p, n=None):
@@ -569,7 +613,7 @@ def cabin_paint(p, n=None):
     if y > w and z < 0.36:
         if y > 1.98 and z > -0.3: return "paint"                                   # roof panel
         return "glass"
-    if z < -1.0 and y > 1.0 and abs(x) > 0.12: return "glass"                      # chin windows
+    if (z < -1.0 and y > 1.0 and abs(x) > 0.12) or kestrel_chin(x, y, z): return "glass"   # chin windows
     if door_edge and abs(x) > 0.35 and y > 0.9: return "seam"                      # door shut lines
     if near(y, 0.98, 0.012) and z > DOOR_FWD and z < DOOR_AFT and abs(x) > 0.3: return "seam"   # door bottom
     if w - 0.13 < y < w - 0.03: return "stripe"                                     # cheatline
@@ -707,7 +751,7 @@ SKIN_SEGS = (8, 6, 2, 3, 9, 6)          # vertices per side in each band: belly,
 def cabin_rows(H, n=84):
     """Stations along the cabin, denser at both ends, with a row exactly on every paint line across it."""
     base = [lerp(H.z0, H.z1, 0.55 * (0.5 - 0.5 * math.cos(math.pi * i / n)) + 0.45 * i / n) for i in range(n + 1)]
-    feats = [CHIN_Z, ROOF_Z, DOOR_FWD - 0.02, DOOR_FWD + 0.02, DOOR_AFT - 0.02, DOOR_AFT + 0.02, GLASS_END_Z]
+    feats = [CHIN_FWD, CHIN_AFT, CHIN_Z, ROOF_Z, DOOR_FWD - 0.02, DOOR_FWD + 0.02, DOOR_AFT - 0.02, DOOR_AFT + 0.02, GLASS_END_Z]
     keep = [z for i, z in enumerate(base) if i in (0, n) or min(abs(z - f) for f in feats) > 0.012]
     return sorted(set(keep + feats))
 
@@ -726,7 +770,8 @@ def cabin_ring(H, z):
     return angles, bands
 
 
-def skin_paint(band, z):
+def skin_paint(band, z, k=0):
+    if CHIN_FWD < z < CHIN_AFT and band < 2 and k >= CHIN_KEEL: return "glass"      # chin windows, either side of the keel
     if band == 0: return "belly"
     door = near(z, DOOR_FWD, 0.021) or near(z, DOOR_AFT, 0.021)
     if z < CHIN_Z: return "glass"                                               # glazed nose and chin windows
@@ -751,13 +796,14 @@ def build_cabin_skin(m, H, part):
             zc = 0.5 * (rows[i] + rows[i + 1]); centre = (0.0, H.yc(zc), zc)
             for j in range(nv):
                 j2 = (j + 1) % nv
-                mat = skin_paint(ring_bands[i][j], zc)
+                mat = skin_paint(ring_bands[i][j], zc, min(j, nv - 1 - j))
                 if (mat == "glass") != want_glass: continue
                 ps = [rings[i][j], rings[i + 1][j], rings[i + 1][j2], rings[i][j2]]
                 fn = add(cross(sub(ps[1], ps[0]), sub(ps[2], ps[0])), cross(sub(ps[2], ps[0]), sub(ps[3], ps[0])))
                 if length(fn) < 1e-12: continue                                 # bands of zero width near the nose
                 c = mul(add(add(ps[0], ps[1]), add(ps[2], ps[3])), 0.25)
                 oriented_quad(o, (vid(i, j), vid(i + 1, j), vid(i + 1, j2), vid(i, j2)), sub(c, centre), mat)
+    chin_frame(m, part, glass, lambda c: CHIN_FWD < c[2] < CHIN_AFT and c[1] < waist(c[2]) - 0.13, 0.012)
 
 
 def build_exterior(m, H):
@@ -891,9 +937,11 @@ def build_exterior(m, H):
         for z in (-0.85, 0.62):
             ring_band(m, E, "Skid saddle", (x, 0.06, z), (0, 0, 1), 0.04, 0.052, 0.08, "darkmetal", 20)
     for z in (-0.85, 0.62):
-        tube(m, E, "Crosstube", [(-0.95, 0.06, z), (-0.9, 0.42, z), (-0.62, 0.8, z), (0, 0.9, z), (0.62, 0.8, z), (0.9, 0.42, z), (0.95, 0.06, z)], 0.04, "metal", 14)
+        front = z < 0                                                               # the front one runs under the belly, clear of the chin windows
+        a, b = (0.66, 0.74) if front else (0.8, 0.9)
+        tube(m, E, "Crosstube", [(-0.95, 0.06, z), (-0.9, 0.42, z), (-0.62, a, z), (0, b, z), (0.62, a, z), (0.9, 0.42, z), (0.95, 0.06, z)], 0.04, "metal", 14)
         for x in (-0.42, 0.42):
-            box(m, E, "Crosstube fitting", (x, 0.86, z), (0.1, 0.07, 0.12), "darkmetal", bevel=0.01)
+            box(m, E, "Crosstube fitting", (x, 0.79 if front else 0.86, z), (0.1, 0.2 if front else 0.07, 0.12), "darkmetal", bevel=0.01)
     for x in (-0.72, 0.72):
         box(m, E, "Step", (x, 0.58, -0.85), (0.16, 0.02, 0.1), "frame", bevel=0.004)
 
@@ -1032,11 +1080,14 @@ def build_cockpit(m, H):
     o = m.new("Cabin lining", C)
     def keep(p):
         x, y, z = p
-        if y < waist(z) - 0.02 and not (z < -1.0 and y > 1.0 and abs(x) > 0.12): return "floor" if y < 0.95 and z > -0.9 else "trim"   # one colour where the chin glass shows it
+        if y < waist(z) - 0.02 and not (z < -1.0 and y > 1.0 and abs(x) > 0.12) and not kestrel_chin(x, y, z): return "floor" if y < 0.95 and z > -0.9 else "trim"   # one colour where the chin glass shows it
         if y > 1.98 and z > -0.3: return "trim"
         return None
     surface(o, 72, 56, lambda u, v: H.P(lerp(-1.42, 0.34, u), v * 2 * math.pi, 0.985), lambda c, n, u, v: keep(c), inward=True)
-    box(m, C, "Floor", (0, 0.86, -0.55), (1.15, 0.02, 1.6), "floor")
+    # the floor stops at the chin windows; a keel runs on to the nose and a beam carries the pedals
+    deck(m, C, "Floor", H, CHIN_AFT, 0.25, 0.87, "floor")
+    box(m, C, "Floor keel", (0, 0.86, (CHIN_AFT - 1.35) / 2), (0.36, 0.02, CHIN_AFT + 1.35), "floor")
+    box(m, C, "Pedal beam", (0, 0.92, -0.98), (0.88, 0.04, 0.05), "floor", bevel=0.006)
     # rear bulkhead
     o = m.new("Rear bulkhead", C)
     ring = [H.P(0.32, j / 64 * 2 * math.pi, 0.985) for j in range(64)]
@@ -1101,7 +1152,7 @@ def build_cockpit(m, H):
     # outside parts visible from the seat: skids and the front crosstube
     for x in (-0.95, 0.95):
         tube(m, C, "Skid (view)", [(x, 0.34, -2.0), (x, 0.16, -1.86), (x, 0.06, -1.6), (x, 0.05, -0.6), (x, 0.05, 0.9)], 0.042, "metal", 12)
-    tube(m, C, "Crosstube (view)", [(-0.95, 0.06, -0.85), (-0.9, 0.42, -0.85), (-0.62, 0.8, -0.85), (0, 0.88, -0.85), (0.62, 0.8, -0.85), (0.9, 0.42, -0.85), (0.95, 0.06, -0.85)], 0.04, "metal", 12)
+    tube(m, C, "Crosstube (view)", [(-0.95, 0.06, -0.85), (-0.9, 0.42, -0.85), (-0.62, 0.66, -0.85), (0, 0.74, -0.85), (0.62, 0.66, -0.85), (0.9, 0.42, -0.85), (0.95, 0.06, -0.85)], 0.04, "metal", 12)
 
 
 
@@ -1200,7 +1251,7 @@ def build_controls(m):
         ctl.append({"part": p, "kind": "collective", "pivot": piv})
         for kind, dx in (("pedalL", -0.1), ("pedalR", 0.1)):
             p = "ctl_%s_%s" % (kind, tag); px = sx * 0.3 + dx
-            tube(m, p, "Pedal arm", [(px, 0.88, -0.98), (px, 0.97, -1.02), (px, 1.04, -0.99)], 0.012, "metal", 8)
+            tube(m, p, "Pedal arm", [(px, 0.92, -0.98), (px, 0.97, -1.02), (px, 1.04, -0.99)], 0.012, "metal", 8)
             box(m, p, "Pedal", (px, 1.0, -1.0), (0.07, 0.12, 0.015), "seatframe", bevel=0.004)
             for i in range(3): box(m, p, "Pedal tread", (px, 0.96 + i * 0.04, -1.009), (0.06, 0.008, 0.004), "rubber")
             ctl.append({"part": p, "kind": kind, "pivot": (px, 0.9, -1.0)})
@@ -1253,7 +1304,8 @@ TWIN_FUS = [
 ]
 WS_Z0, WS_Z1 = -4.5, -3.15                      # windscreen
 CD_Z0, CD_Z1 = -3.12, -2.33                     # cockpit door windows
-CHIN_Z0, CHIN_Z1 = -4.6, -3.75                  # chin windows (SAR)
+CHIN_Z0, CHIN_Z1 = -4.6, -3.28                  # chin windows: the sides of the lower nose, back to just ahead of the cyclics
+CHIN_BELLY_Z0 = -4.45                           # ... and the floor under the pilots' feet, either side of the keel
 TWIN_CREW_DOOR = (-3.2, -2.22)                  # hinged cockpit doors
 def twin_cabin_door(sar): return (-1.25, 0.15) if sar else (-2.05, -1.35)
 def ws_low(z): return 1.62 - (z + 3.2) * 0.12
@@ -1272,9 +1324,10 @@ def feature_rows(z0, z1, n, feats, ends_dense=True):
     return sorted(set(keep + [f for f in feats if z0 < f < z1]))
 
 
-def feature_loft(m, part, name, H, rows, y_funcs, segs, paint, pt=None, inward=False, **opts):
+def feature_loft(m, part, name, H, rows, y_funcs, segs, paint, pt=None, inward=False, paint_k=False, **opts):
     """Loft whose rings have vertices exactly on given height lines on both sides (y_funcs, low to high), and
-    rows exactly at given stations, so paint edges and glazing follow smooth lines. paint(band, z, side) -> key or None.
+    rows exactly at given stations, so paint edges and glazing follow smooth lines. paint(band, z, side) -> key or None;
+    with paint_k, paint(band, z, side, k) where k counts quads round from the bottom centre line.
     segs: vertices per side in each band (len(y_funcs) + 1 bands)."""
     o = m.new(name, part, **opts)
     pt = pt or (lambda z, a: H.P(z, a))
@@ -1296,7 +1349,7 @@ def feature_loft(m, part, name, H, rows, y_funcs, segs, paint, pt=None, inward=F
         zc = 0.5 * (rows[i] + rows[i + 1]); centre = (H.xc(zc), H.yc(zc), zc)
         for j in range(nv):
             j2 = (j + 1) % nv; band, side = bands[j]
-            mat = paint(band, zc, side)
+            mat = paint(band, zc, side, min(j, nv - 1 - j)) if paint_k else paint(band, zc, side)
             if mat is None: continue
             ps = [rings[i][j], rings[i + 1][j], rings[i + 1][j2], rings[i][j2]]
             fn = add(cross(sub(ps[1], ps[0]), sub(ps[2], ps[0])), cross(sub(ps[2], ps[0]), sub(ps[3], ps[0])))
@@ -1375,15 +1428,17 @@ def build_twin(sar):
         if sar and 5.2 < z < 5.9: return "stripe"
         if z > 6.3: return "accent"
         return body_c
-    def chin_top(z): return 1.35 if (sar and CHIN_Z0 < z < CHIN_Z1) else 1.07
+    def chin_top(z): return 1.35 if CHIN_Z0 < z < CHIN_Z1 else 1.07
     # ---- fuselage, nose to tail, with glazing on exact lines
     rows = feature_rows(H.z0, H.z1, 110, [WS_Z0, WS_Z1, CD_Z0, CD_Z1, -4.45, CHIN_Z0, CHIN_Z1, 2.4, 5.2, 5.9, 6.3] + list(TWIN_CREW_DOOR) + list(twin_cabin_door(sar)))
-    def hull_paint(band, z, side):
+    def hull_paint(band, z, side, k):
+        if band == 0 and CHIN_BELLY_Z0 < z < CHIN_Z1 and k >= 1: return "glass"
         if band == 0: return "radome" if (sar and z < -4.45) else (belly if z < 2.4 else body_at(z))
-        if band == 1: return "glass" if (sar and CHIN_Z0 < z < CHIN_Z1) else body_at(z)
+        if band == 1: return "glass" if CHIN_Z0 < z < CHIN_Z1 else body_at(z)
         if band == 3 and (in_ws(z) or in_cd(z)): return "glass"
         return body_at(z)
-    feature_loft(m, E, "Fuselage", H, rows, [lambda z: 1.07, chin_top, glaze_y1, glaze_y2], (8, 3, 7, 8, 7), hull_paint)
+    skin = feature_loft(m, E, "Fuselage", H, rows, [lambda z: 1.07, chin_top, glaze_y1, glaze_y2], (8, 3, 7, 8, 7), hull_paint, paint_k=True)
+    chin_frame(m, E, skin, lambda c: c[2] < CHIN_Z1 and c[1] < 1.4, 0.018)
 
     # ---- windscreen and door frames
     fo = 0.006
@@ -1621,16 +1676,19 @@ def build_twin_cabin(m, H, sar):
 def build_twin_cockpit(m, H, sar):
     C = "cockpit"
     trim = "trim_sar" if sar else "trim_ns"
-    def chin_in(z): return 1.35 if (sar and CHIN_Z0 < z < CHIN_Z1) else 0.98
+    def chin_in(z): return 1.35 if CHIN_Z0 < z < CHIN_Z1 else 0.98
     rows = feature_rows(-4.62, -2.05, 64, [CHIN_Z0, WS_Z0, CHIN_Z1, WS_Z1, CD_Z0, CD_Z1] + list(TWIN_CREW_DOOR), ends_dense=False)
-    def lining_paint(band, z, side):
-        if band == 0: return "floor"
-        if band == 1: return None if (sar and CHIN_Z0 < z < CHIN_Z1) else trim
+    def lining_paint(band, z, side, k):
+        if band == 0: return None if (CHIN_BELLY_Z0 < z < CHIN_Z1 and k >= 1) else "floor"
+        if band == 1: return None if CHIN_Z0 < z < CHIN_Z1 else trim
         if band == 3 and (in_ws(z) or in_cd(z)): return None
         return trim
     feature_loft(m, C, "Cockpit lining", H, rows, [lambda z: 0.98, chin_in, glaze_y1, glaze_y2], (6, 3, 6, 8, 7), lining_paint,
-                 pt=lambda z, a: H.P(z, a, 0.985), inward=True)
-    box(m, C, "Floor", (0, 0.93, -3.2), (1.9, 0.02, 2.4), "floor")
+                 pt=lambda z, a: H.P(z, a, 0.985), inward=True, paint_k=True)
+    # the floor stops at the chin windows; a keel runs on to the nose and a beam carries the pedals
+    deck(m, C, "Floor", H, CHIN_Z1, -2.0, 0.94, "floor")
+    box(m, C, "Floor keel", (0, 0.93, (CHIN_Z1 - 4.4) / 2), (0.6, 0.02, CHIN_Z1 + 4.4), "floor")
+    box(m, C, "Pedal beam", (0, 0.95, -3.5), (1.3, 0.04, 0.05), "floor", bevel=0.006)
     o = m.new("Rear bulkhead", C)
     cap_fan(o, [H.P(-2.06, j / 96 * 2 * math.pi, 0.985) for j in range(96)], (0, 0, -1), trim)
     box(m, C, "Door to the cabin", (0, 1.6, -2.075), (0.62, 1.3, 0.03), "panel2", bevel=0.006)
@@ -1651,9 +1709,6 @@ def build_twin_cockpit(m, H, sar):
             tube(m, C, "Door post", [side_pt(z, lerp(glaze_y1(z), glaze_y2(z), t / 8), sd) for t in range(9)], fr, "frame2", 8, steps=2)
         for y in (glaze_y1(CD_Z0), glaze_y2(CD_Z0)):
             tube(m, C, "Door window frame", [side_pt(lerp(CD_Z0, CD_Z1, t / 8), y, sd) for t in range(9)], fr, "frame2", 8, steps=2)
-        if sar:
-            for y in (0.98, 1.35):
-                tube(m, C, "Chin window frame", [side_pt(lerp(CHIN_Z0, CHIN_Z1, t / 8), y, sd) for t in range(9)], 0.025, "frame2", 8, steps=2)
     # ---- instrument panel and glareshield
     pz = -3.75
     box(m, C, "Instrument panel", (0, 1.58, pz - 0.1), (1.86, 0.62, 0.16), "panel2", bevel=0.015)
@@ -2630,7 +2685,7 @@ NJ_CHK = (0.92, 1.05, 1.18)
 NJ_CREW_DOOR, NJ_CREW_WIN = (-2.45, -1.32, 0.80, 2.04), (-2.38, -1.40, 1.38, 1.92)
 NJ_CABIN_DOOR, NJ_CABIN_WIN = (-1.22, 0.30, 0.70, 2.04), (-1.12, 0.20, 1.28, 1.85)
 NJ_REAR_WIN = (0.55, 1.40, 1.28, 1.85)
-NJ_CHIN = (-3.55, -2.75, 0.80, 1.18)
+NJ_CHIN = (-3.55, -2.50, 1.18)                  # chin windows: z0, z1 (just ahead of the cyclics) and the top edge, down over the floor under the pilots' feet
 NJ_SLIDE = 1.48                 # how far the cabin doors slide back
 NJ_FLOOR = 0.74
 
@@ -2666,7 +2721,6 @@ def nj_paint(x, y, z):
     """Material of the skin at a point (outer surface)."""
     if y < NJ_BELLY: return "nj_belly"
     if z < -2.55 and y > NJ_WS: return "glass"                                    # windscreen
-    if in_rect(z, y, NJ_CHIN) and abs(x) > 0.2: return "glass"                    # chin windows
     if in_rect(z, y, NJ_CREW_WIN) or in_rect(z, y, NJ_CABIN_WIN) or in_rect(z, y, NJ_REAR_WIN): return "glass"
     if NJ_CHK[0] < y < NJ_CHK[2] and -2.45 < z < NJ_REAR:                        # check band
         cell = int(math.floor((z + 2.45) / 0.28)); row = 1 if y > NJ_CHK[1] else 0
@@ -2716,6 +2770,7 @@ def nj_skin(m, H):
             ps = [outer[i][j], outer[i + 1][j], outer[i + 1][j2], outer[i][j2]]
             c = mul(add(add(ps[0], ps[1]), add(ps[2], ps[3])), 0.25)
             reg = nj_region(*c); mat = nj_paint(*c)
+            if NJ_CHIN[0] < c[2] < NJ_CHIN[1] and c[1] < NJ_CHIN[2] and min(j, nv - 1 - j) >= 1: mat = "glass"   # chin windows, either side of the keel
             body_q[(i, j, j2)] = mat if reg == "body" else None
             # lining: not behind glass (so you see out), not in the door openings (the doors carry their own),
             # floor below the floor line, dark lower walls, light upper walls and roof
@@ -2724,10 +2779,14 @@ def nj_skin(m, H):
                 lin = "cab_floor" if c[1] < NJ_FLOOR + 0.02 else ("lining_dk" if c[1] < 1.25 else "lining")
             lin_q[(i, j, j2)] = lin
     centre = lambda c: (0.0, H.yc(c[2]), c[2])
-    nj_grid(m.new("Fuselage skin", "body"), outer, body_q, centre=centre)
+    skin = m.new("Fuselage skin", "body")
+    nj_grid(skin, outer, body_q, centre=centre)
+    chin_frame(m, "body", skin, lambda c: NJ_CHIN[0] < c[2] < NJ_CHIN[1] and c[1] < NJ_CHIN[2] + 0.02, 0.014)
     nj_grid(m.new("Cabin lining", "interior", ao=True), inner, lin_q, inward=True, centre=centre)
-    # floor panel
-    box(m, "interior", "Cabin floor", (0, NJ_FLOOR - 0.01, -0.85), (1.5, 0.02, 5.4), "cab_floor")
+    # the floor stops at the chin windows; a keel runs on to the nose and a beam carries the pedals
+    deck(m, "interior", "Cabin floor", H, NJ_CHIN[1], 1.85, NJ_FLOOR, "cab_floor")
+    box(m, "interior", "Floor keel", (0, NJ_FLOOR - 0.01, (NJ_CHIN[1] - 3.35) / 2), (0.4, 0.02, NJ_CHIN[1] + 3.35), "cab_floor")
+    box(m, "interior", "Pedal beam", (0, NJ_FLOOR, -2.92), (1.16, 0.04, 0.05), "cab_floor", bevel=0.006)
     # jambs round the four side openings
     for side in (1, -1):
         for r in (NJ_CREW_DOOR, NJ_CABIN_DOOR):
@@ -2906,8 +2965,8 @@ def nj_exterior(m, H):
         if side > 0:
             tR = H.th_at_y(-2.56, NJ_WS, 1)
             tube(m, P, "Windscreen arch", [H.point(-2.56, lerp(tR, math.pi - tR, t / 12), 0.006) for t in range(13)], 0.022, "frame", 6, steps=1)
-        # chin window seals and fixed rear window seal
-        for (z0, z1, y0, y1) in (NJ_CHIN, NJ_REAR_WIN):
+        # fixed rear window seal
+        for (z0, z1, y0, y1) in (NJ_REAR_WIN,):
             pts = [(z0, y0), (z1, y0), (z1, y1), (z0, y1), (z0, y0)]
             seal = []
             for k in range(4):
@@ -3223,6 +3282,7 @@ PG_REAR_WIN = (0.10, 0.82, 1.32, 1.92)
 PG_BAGGAGE = (0.98, 1.62, 0.86, 1.42)          # baggage hold door (right side), drawn as a seam
 PG_ROOF_WIN = (-2.58, -1.95, 0.10, 0.62)       # overhead windows: z0, z1 and |x| from the centre line
 PG_WELL = (-3.42, -2.92, 0.16)                 # nose wheel bay: z0, z1, half-width
+PG_CHIN = (-3.30, -2.62, 1.00)                 # chin windows: z0, z1 (the crew doors) and the top edge (cabin height), down over the floor under the pilots' feet
 PG_BAND = 0.84                                 # top of the band along the lower fuselage (cabin height)
 PG_BELLY = 0.60
 PG_FLOOR = 0.70
@@ -3265,7 +3325,7 @@ def pg_th_at_x(H, z, x):
 
 
 def pg_rows():
-    feats = [PG_WELL[0], PG_WELL[1], PG_CREW_DOOR[0], PG_CREW_DOOR[1], PG_CREW_WIN[0], PG_CREW_WIN[1], PG_ROOF_WIN[0], PG_ROOF_WIN[1],
+    feats = [PG_CHIN[0], PG_WELL[0], PG_WELL[1], PG_CREW_DOOR[0], PG_CREW_DOOR[1], PG_CREW_WIN[0], PG_CREW_WIN[1], PG_ROOF_WIN[0], PG_ROOF_WIN[1],
              PG_CABIN_DOOR[0], PG_CABIN_DOOR[1], PG_CABIN_WIN[0], PG_CABIN_WIN[1], PG_REAR_WIN[0], PG_REAR_WIN[1], 2.70]
     base = [-4.35 + 0.004 * i * i for i in range(12)]                 # dense at the nose
     z = base[-1]
@@ -3334,13 +3394,16 @@ def pg_skin(m, H):
             ps = [outer[i][j], outer[i + 1][j], outer[i + 1][j2], outer[i][j2]]
             c = mul(add(add(ps[0], ps[1]), add(ps[2], ps[3])), 0.25)
             reg = pg_region(*c); mat = pg_paint(*c)
+            if PG_CHIN[0] < c[2] < PG_CHIN[1] and c[1] < pg_map(c[2], PG_CHIN[2]) and min(j, nv - 1 - j) >= 1: mat = "glass"   # chin windows, either side of the keel
             body_q[(i, j, j2)] = mat if reg == "body" else None
             lin = None
             if reg == "body" and mat not in ("glass", "visor") and -3.32 < c[2] < 1.25:
-                lin = "cab_floor" if c[1] < PG_FLOOR + 0.02 else ("lining_dk" if c[1] < 1.25 else "lining")
+                lin = "cab_floor" if c[1] < PG_FLOOR + 0.02 else ("lining_dk" if c[1] < pg_map(c[2], 1.25) else "lining")   # the colour line follows the rows of the skin
             lin_q[(i, j, j2)] = lin
     centre = lambda c: (0.0, H.yc(c[2]), c[2])
-    nj_grid(m.new("Fuselage skin", "body"), outer, body_q, centre=centre)
+    skin = m.new("Fuselage skin", "body")
+    nj_grid(skin, outer, body_q, centre=centre)
+    chin_frame(m, "body", skin, lambda c: PG_CHIN[0] < c[2] < PG_CHIN[1] and c[1] < pg_map(c[2], PG_CHIN[2]) + 0.02, 0.014)
     nj_grid(m.new("Cabin lining", "interior", ao=True), inner, lin_q, inward=True, centre=centre)
     cap_fan(m.new("Boom end", "body"), outer[-1], (0, 0, 1), "paint")
     for side in (1, -1):
@@ -3547,8 +3610,9 @@ def pg_interior(m):
     engine display, glareshield, pedestal and overhead panel, the two pilots' seats and the two crew seats
     facing back behind them, the cabin floor with its tie-down rails."""
     I = "interior"; F0 = PG_FLOOR
-    box(m, I, "Cabin floor", (0, F0 - 0.01, -0.775), (1.72, 0.02, 3.95), "cab_floor")
-    box(m, I, "Footwell", (0, F0 + 0.08, -2.97), (1.5, 0.16, 0.56), "pg_trim", bevel=0.02)       # over the nose wheel bay
+    box(m, I, "Cabin floor", (0, F0 - 0.01, (PG_CHIN[1] + 1.2) / 2), (1.72, 0.02, 1.2 - PG_CHIN[1]), "cab_floor")
+    box(m, I, "Footwell", (0, F0 + 0.08, (PG_CHIN[1] - 3.25) / 2), (0.36, 0.16, PG_CHIN[1] + 3.25), "pg_trim", bevel=0.02)       # over the nose wheel bay, between the chin windows
+    box(m, I, "Pedal beam", (0, F0 + 0.16, -2.84), (1.26, 0.05, 0.05), "pg_trim", bevel=0.006)
     for x in (-0.55, -0.18, 0.18, 0.55): box(m, I, "Tie-down rail", (x, F0 + 0.004, -0.4), (0.04, 0.01, 2.6), "rail")
     pz = -3.08
     box(m, I, "Instrument panel", (0, 1.25, pz), (1.50, 0.46, 0.12), "panel", bevel=0.015)

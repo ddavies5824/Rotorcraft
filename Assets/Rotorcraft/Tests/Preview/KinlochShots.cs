@@ -94,6 +94,78 @@ namespace Rotorcraft.Preview.Tests
             Object.Destroy(tex); rt.Release();
         }
 
+        /// <summary>
+        /// Each aircraft hovering over the Kinloch pad, seen at a Quest eye's field of view from the pilot's seat (down
+        /// past the panel, steeply down, and down towards the pilot's own side) and from outside, below the nose.
+        /// </summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator SeatViews()
+        {
+            LogAssert.ignoreFailingMessages = true;
+#if UNITY_EDITOR
+            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode("Assets/Rotorcraft/Scenes/Kinloch.unity", new LoadSceneParameters(LoadSceneMode.Single));
+            yield return null;
+            yield return new WaitForSeconds(1);
+            var cam = Camera.main;
+            cam.GetComponent<ChaseCamera>().enabled = false;
+            foreach (var hud in Object.FindObjectsByType<FlightHud>(FindObjectsSortMode.None)) hud.enabled = false;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            cam.nearClipPlane = 0.03f;
+            cam.fieldOfView = 90;
+            Directory.CreateDirectory("Logs");
+            var tag = System.Environment.GetEnvironmentVariable("RC_SHOT_TAG") ?? "seat";
+            var pad = S("kin_h1");
+            var at = SimToUnity.Position(new Vec3(pad.x, WorldMap.SiteElevation(pad) + 7, pad.z));
+            const int Cell = 800;
+            foreach (var (id, file) in new[] { ("kestrel", "kestrel_k2"), ("northstar", "northstar_175"), ("guardian", "guardian_s9"), ("nightjar", "nightjar_n4"), ("peregrine", "peregrine_p3") })
+            {
+                var holder = new GameObject(id);
+                holder.transform.SetPositionAndRotation(at, Quaternion.identity);
+                var model = Object.Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Rotorcraft/Models/Aircraft/{file}.gltf"), holder.transform);
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.Euler(0, 180, 0);   // as HelicopterController does: the nose along +Z
+                AircraftDress.Apply(model.transform, Aircraft.Get(id));
+                Transform eye = null;
+                foreach (var t in model.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name == "cockpit_only") t.gameObject.SetActive(true);
+                    if (t.name == "eye") eye = t;
+                }
+                Assert.That(eye != null, id + " has an eye");
+                var sheet = new Texture2D(Cell * 2, Cell * 2, TextureFormat.RGB24, false);
+                var side = eye.position.x >= at.x ? 1 : -1;
+                var views = new (Vector3 from, Quaternion look)[]
+                {
+                    (eye.position, Quaternion.Euler(45, 0, 0)),
+                    (eye.position, Quaternion.Euler(68, 0, 0)),
+                    (eye.position, Quaternion.Euler(55, side * 40, 0)),
+                    (at + new Vector3(-2.5f, -3.4f, eye.position.z - at.z + 4.5f), Quaternion.LookRotation(eye.position + Vector3.down * 1.1f - (at + new Vector3(-2.5f, -3.4f, eye.position.z - at.z + 4.5f)))),
+                };
+                for (int v = 0; v < views.Length; v++)
+                {
+                    cam.transform.SetPositionAndRotation(views[v].from, views[v].look);
+                    for (int i = 0; i < 4; i++) yield return null;
+                    var rt = new RenderTexture(Cell, Cell, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+                    var req = new RenderPipeline.StandardRequest { destination = rt };
+                    if (RenderPipeline.SupportsRenderRequest(cam, req)) RenderPipeline.SubmitRenderRequest(cam, req);
+                    else { cam.targetTexture = rt; cam.Render(); cam.targetTexture = null; }
+                    var prev = RenderTexture.active; RenderTexture.active = rt;
+                    sheet.ReadPixels(new Rect(0, 0, Cell, Cell), (v % 2) * Cell, (1 - v / 2) * Cell);
+                    RenderTexture.active = prev;
+                    rt.Release();
+                }
+                sheet.Apply();
+                File.WriteAllBytes($"Logs/{tag}-{id}.png", sheet.EncodeToPNG());
+                Object.Destroy(sheet);
+                Object.Destroy(holder);
+                yield return null;
+            }
+            Assert.Pass("pictures written to Logs/");
+#else
+            yield return null;
+#endif
+        }
+
         /// <summary>The real attitude gauge drawn at a left bank, level and a right bank, and read back: sky on the side the aircraft banks away from.</summary>
         [UnityTest]
         public IEnumerator AttitudeIndicator()
