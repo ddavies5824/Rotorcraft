@@ -16,8 +16,16 @@ Shader "Rotorcraft/Sea"
 
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-        struct AttributesD { float3 positionOS : POSITION; };
-        float4 vertD(AttributesD i) : SV_POSITION { return TransformObjectToHClip(i.positionOS); }
+        struct AttributesD { float3 positionOS : POSITION; UNITY_VERTEX_INPUT_INSTANCE_ID };
+        struct VaryingsD { float4 positionCS : SV_POSITION; UNITY_VERTEX_OUTPUT_STEREO };
+        VaryingsD vertD(AttributesD i)
+        {
+            VaryingsD o = (VaryingsD)0;
+            UNITY_SETUP_INSTANCE_ID(i);
+            UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+            o.positionCS = TransformObjectToHClip(i.positionOS);
+            return o;
+        }
         ENDHLSL
 
         Pass
@@ -45,12 +53,14 @@ Shader "Rotorcraft/Sea"
             float4 _SeaColor, _DeepColor;
             float4 _SkyGlow;            // the evening or night sky near the horizon (set with the time of day)
 
-            struct Attributes { float3 positionOS : POSITION; };
-            struct Varyings { float4 positionCS : SV_POSITION; float3 w : TEXCOORD0; float fog : TEXCOORD1; };
+            struct Attributes { float3 positionOS : POSITION; UNITY_VERTEX_INPUT_INSTANCE_ID };
+            struct Varyings { float4 positionCS : SV_POSITION; float3 w : TEXCOORD0; float fog : TEXCOORD1; UNITY_VERTEX_OUTPUT_STEREO };
 
             Varyings vert(Attributes i)
             {
-                Varyings o;
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(i);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 o.w = TransformObjectToWorld(i.positionOS);
                 o.positionCS = TransformWorldToHClip(o.w);
                 o.fog = ComputeFogFactor(o.positionCS.z);
@@ -59,6 +69,7 @@ Shader "Rotorcraft/Sea"
 
             half4 frag(Varyings i) : SV_Target
             {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
                 float3 w = i.w;
                 float3 toEye = _WorldSpaceCameraPos - w;
                 float d = length(toEye);
@@ -134,7 +145,7 @@ Shader "Rotorcraft/Sea"
             HLSLPROGRAM
             #pragma vertex vertD
             #pragma fragment fragD
-            half4 fragD() : SV_Target { return 0; }
+            half4 fragD(VaryingsD i) : SV_Target { return 0; }
             ENDHLSL
         }
 
@@ -147,7 +158,7 @@ Shader "Rotorcraft/Sea"
             HLSLPROGRAM
             #pragma vertex vertD
             #pragma fragment fragD
-            half4 fragD() : SV_Target { return 0; }
+            half4 fragD(VaryingsD i) : SV_Target { return 0; }
             ENDHLSL
         }
 
@@ -159,7 +170,7 @@ Shader "Rotorcraft/Sea"
             HLSLPROGRAM
             #pragma vertex vertD
             #pragma fragment fragD
-            half4 fragD() : SV_Target { return half4(0, 1, 0, 0); }
+            half4 fragD(VaryingsD i) : SV_Target { return half4(0, 1, 0, 0); }
             ENDHLSL
         }
     }

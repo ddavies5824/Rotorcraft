@@ -34,7 +34,7 @@ namespace Rotorcraft.Presentation
         public float shake;
 
         Camera cam;
-        Vector3 velocity;
+        Vector3 velocity, viewPos;
         Vector2 hat;
         float lastClick, menuT;
         Vector3? lastMouse;
@@ -49,14 +49,14 @@ namespace Rotorcraft.Presentation
         {
             if (target == null) return;
             if (menuBackdrop) { Backdrop(Time.unscaledDeltaTime); return; }
-            MouseInput();
+            if (!Vr.On) MouseInput();
             switch (target.Camera)
             {
                 case CameraMode.Cockpit when target.Eye != null: Cockpit(); break;
                 case CameraMode.Orbit: Orbit(); break;
                 default: Chase(Time.deltaTime); break;
             }
-            if (shake > 0.01f && !target.Paused)
+            if (shake > 0.01f && !target.Paused && !Vr.On)   // a shaking view in a headset only makes people ill
             {
                 // a gentle vibration of the view direction, as in the browser game: a fifth of a degree at most and
                 // low frequencies only (one or two a second), so it never aliases against the frame rate
@@ -98,40 +98,52 @@ namespace Rotorcraft.Presentation
         public static System.Func<Vector2, bool> PointerOverUi;
         static bool OverUi(Vector2 screenPos) => PointerOverUi != null && PointerOverUi(screenPos);
 
+        /// <summary>Lens and clipping. A headset's lens is its own, and it objects to being told otherwise.</summary>
+        void Lens(float fov, float near)
+        {
+            if (!Vr.On) cam.fieldOfView = fov;
+            cam.nearClipPlane = near;
+        }
+
+        /// <summary>Put the view here: the camera itself, or in VR the seat the head moves about in. Level keeps a headset's horizon level.</summary>
+        void Place(Vector3 pos, Quaternion rot, bool level = true)
+        {
+            viewPos = pos;
+            if (Vr.On) Vr.Driver.Place(pos, rot, level);
+            else transform.SetPositionAndRotation(pos, rot);
+        }
+
         float ModelScale => target.Aircraft != null ? (float)(target.Aircraft.rotorDiameter / 7.7) : 1;
 
         void Chase(float dt)
         {
-            cam.fieldOfView = chaseFov;
-            cam.nearClipPlane = 0.3f;
+            Lens(chaseFov, 0.3f);
             var t = target.transform;
             var k = Mathf.Max(1, ModelScale * 0.85f);
             var fwd = Vector3.ProjectOnPlane(t.forward, Vector3.up);
             if (fwd.sqrMagnitude < 1e-4f) fwd = Vector3.ProjectOnPlane(t.up, Vector3.up);
             fwd.Normalize();
             var want = t.position - fwd * distance * k + Vector3.up * height * k;
-            transform.position = dt <= 0 ? want : Vector3.SmoothDamp(transform.position, want, ref velocity, lag);
-            transform.rotation = Quaternion.LookRotation(t.position + Vector3.up * lookHeight * k - transform.position, Vector3.up);
+            var at = dt <= 0 ? want : Vector3.SmoothDamp(viewPos, want, ref velocity, lag);
+            Place(at, Quaternion.LookRotation(t.position + Vector3.up * lookHeight * k - at, Vector3.up));
         }
 
         void Cockpit()
         {
-            cam.fieldOfView = cockpitFov;
-            cam.nearClipPlane = 0.03f;
+            Lens(cockpitFov, 0.03f);
+            velocity = Vector3.zero;
+            if (Vr.On) { Place(target.Eye.position, target.transform.rotation, false); return; }   // the head does the looking
             var l = target.Input.Look;
             hat = Vector2.Lerp(hat, new Vector2((float)l.x, (float)l.y), 1 - Mathf.Exp(-8f * Time.deltaTime));
             var yaw = scriptedLookYaw ?? lookYaw + hat.x * lookRange.x;
             var pitch = lookPitch + hat.y * lookRange.y;
             var t = target.transform;
-            transform.position = target.Eye.position;
-            transform.rotation = t.rotation * Quaternion.Euler(-pitch, yaw, 0);
-            velocity = Vector3.zero;
+            Place(target.Eye.position, t.rotation * Quaternion.Euler(-pitch, yaw, 0));
         }
 
         void Orbit()
         {
-            cam.fieldOfView = orbitFov;
-            cam.nearClipPlane = 0.1f;
+            Lens(orbitFov, 0.1f);
             var t = target.transform;
             var centre = t.position + Vector3.up * 1.4f * ModelScale;
             var rot = Quaternion.Euler(orbitPitch, t.eulerAngles.y + orbitYaw, 0);
@@ -139,8 +151,7 @@ namespace Rotorcraft.Presentation
             // never below the ground
             var g = WorldGroundY(pos);
             if (pos.y < g + 0.5f) pos.y = g + 0.5f;
-            transform.position = pos;
-            transform.rotation = Quaternion.LookRotation(centre - pos, Vector3.up);
+            Place(pos, Quaternion.LookRotation(centre - pos, Vector3.up));
             velocity = Vector3.zero;
         }
 
@@ -153,13 +164,19 @@ namespace Rotorcraft.Presentation
         void Backdrop(float dt)
         {
             menuT += dt;
-            cam.fieldOfView = 50;
-            cam.nearClipPlane = 0.3f;
+            Lens(50, 0.3f);
+            if (Vr.On)
+            {
+                // a circling view behind a menu is uncomfortable in a headset: stand still on the heliport, facing the hangar
+                var stand = SimToUnity.Position(new Vec3(-40, WorldGroundY(SimToUnity.Position(new Vec3(-40, 0, 45))) + 1.7, 45));
+                var hangar = SimToUnity.Position(new Vec3(55, stand.y, -70));
+                Place(stand, Quaternion.LookRotation(hangar - stand, Vector3.up));
+                return;
+            }
             var c = SimToUnity.Position(new Vec3(-150, WorldGroundY(SimToUnity.Position(new Vec3(-150, 0, -60))) + 10, -60));
             var a = menuT * 0.03f;
             var pos = c + new Vector3(Mathf.Sin(a) * 520, 140 + Mathf.Sin(menuT * 0.07f) * 30, Mathf.Cos(a) * 520);
-            transform.position = pos;
-            transform.rotation = Quaternion.LookRotation(c - pos + Vector3.up * 40, Vector3.up);
+            Place(pos, Quaternion.LookRotation(c - pos + Vector3.up * 40, Vector3.up));
         }
 
         /// <summary>Jump straight to the chase position (for scene setup and resets).</summary>

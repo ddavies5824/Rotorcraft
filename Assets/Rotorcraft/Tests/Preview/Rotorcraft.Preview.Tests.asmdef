@@ -4,6 +4,7 @@
     "references": [
         "Rotorcraft.Game",
         "Rotorcraft.Presentation",
+        "Rotorcraft.VR",
         "Rotorcraft.Sim",
         "Rotorcraft.World",
         "Unity.RenderPipelines.Core.Runtime",

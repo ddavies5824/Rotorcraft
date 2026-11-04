@@ -21,8 +21,19 @@ Shader "Rotorcraft/Veil"
 
             float4 _VeilColor;
 
-            float4 vert(float3 positionOS : POSITION) : SV_POSITION { return TransformObjectToHClip(positionOS); }
-            half4 frag() : SV_Target { return _VeilColor; }
+            struct Attributes { float3 positionOS : POSITION; UNITY_VERTEX_INPUT_INSTANCE_ID };
+            struct Varyings { float4 positionCS : SV_POSITION; UNITY_VERTEX_OUTPUT_STEREO };
+
+            Varyings vert(Attributes i)
+            {
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(i);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+                o.positionCS = TransformObjectToHClip(i.positionOS);
+                return o;
+            }
+
+            half4 frag(Varyings i) : SV_Target { return _VeilColor; }
             ENDHLSL
         }
     }

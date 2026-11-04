@@ -351,9 +351,17 @@ namespace Rotorcraft.Presentation
                 var el = kv.Value;
                 var done = Pre?.Item(kv.Key)?.done ?? true;
                 if (!outside || done || hudRoot.panel == null) { el.Show(false); continue; }
-                var sp = camera.WorldToScreenPoint(WalkPoint(kv.Key));
-                if (sp.z < 0) { el.Show(false); continue; }
-                var pp = RuntimePanelUtils.ScreenToPanel(hudRoot.panel, new Vector2(sp.x, Screen.height - sp.y));
+                Vector2 pp;
+                if (Vr.On)
+                {
+                    if (!Vr.Driver.PanelPoint(WalkPoint(kv.Key), out pp)) { el.Show(false); continue; }
+                }
+                else
+                {
+                    var sp = camera.WorldToScreenPoint(WalkPoint(kv.Key));
+                    if (sp.z < 0) { el.Show(false); continue; }
+                    pp = RuntimePanelUtils.ScreenToPanel(hudRoot.panel, new Vector2(sp.x, Screen.height - sp.y));
+                }
                 el.Show(true);
                 el.style.left = pp.x - 15; el.style.top = pp.y - 15;
                 el.EnableInClassList("busy", preFocus?.id == kv.Key);

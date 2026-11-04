@@ -1,0 +1,25 @@
+{
+    "name": "Rotorcraft.VR",
+    "rootNamespace": "Rotorcraft.VR",
+    "references": [
+        "Rotorcraft.Sim",
+        "Rotorcraft.World",
+        "Rotorcraft.Game",
+        "Rotorcraft.Inputs",
+        "Rotorcraft.Presentation",
+        "Unity.InputSystem",
+        "Unity.XR.Management"
+    ],
+    "includePlatforms": [
+        "Editor",
+        "WindowsStandalone64"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

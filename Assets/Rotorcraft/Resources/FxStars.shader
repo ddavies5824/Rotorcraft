@@ -24,12 +24,14 @@ Shader "Rotorcraft/Stars"
             float _RcStars;
             float3 _RcMoonDir;
 
-            struct Attributes { float3 dir : POSITION; float2 corner : TEXCOORD0; float4 info : TEXCOORD1; };  // info: size (px), brightness, twinkle phase, moon
-            struct Varyings { float4 positionCS : SV_POSITION; float2 q : TEXCOORD0; float3 col : TEXCOORD1; float moon : TEXCOORD2; };
+            struct Attributes { float3 dir : POSITION; float2 corner : TEXCOORD0; float4 info : TEXCOORD1; UNITY_VERTEX_INPUT_INSTANCE_ID };  // info: size (px), brightness, twinkle phase, moon
+            struct Varyings { float4 positionCS : SV_POSITION; float2 q : TEXCOORD0; float3 col : TEXCOORD1; float moon : TEXCOORD2; UNITY_VERTEX_OUTPUT_STEREO };
 
             Varyings vert(Attributes i)
             {
-                Varyings o;
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(i);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 float moon = i.info.w;
                 float3 dir = moon > 0.5 ? normalize(_RcMoonDir) : i.dir;
                 float far = _ProjectionParams.z * 0.92;

@@ -29,12 +29,14 @@ Shader "Rotorcraft/Rain"
             float _RainNear;     // no drops nearer the eye than this (m)
             float _RainTime;
 
-            struct Attributes { float3 seed : POSITION; float2 end : TEXCOORD0; };   // end: x 0 head / 1 tail, y side -1 / 1
-            struct Varyings { float4 positionCS : SV_POSITION; float a : TEXCOORD0; float side : TEXCOORD1; };
+            struct Attributes { float3 seed : POSITION; float2 end : TEXCOORD0; UNITY_VERTEX_INPUT_INSTANCE_ID };   // end: x 0 head / 1 tail, y side -1 / 1
+            struct Varyings { float4 positionCS : SV_POSITION; float a : TEXCOORD0; float side : TEXCOORD1; UNITY_VERTEX_OUTPUT_STEREO };
 
             Varyings vert(Attributes i)
             {
-                Varyings o;
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(i);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 float3 cam = _WorldSpaceCameraPos;
                 float3 p = i.seed * _RainBox + _RainVel * _RainTime;
                 p = cam + (frac((p - cam) / _RainBox) - 0.5) * _RainBox;

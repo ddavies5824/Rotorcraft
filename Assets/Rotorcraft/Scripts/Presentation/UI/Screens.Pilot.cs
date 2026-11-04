@@ -15,6 +15,20 @@ namespace Rotorcraft.Presentation.UI
 {
     public static partial class Screens
     {
+        /// <summary>Start or leave VR, and what the controllers do. Keyboard, joystick and pedals keep working in VR.</summary>
+        static VisualElement VrPanel()
+        {
+            var d = Vr.Driver;
+            var panel = Panel(H3("Virtual reality"),
+                Muted(Vr.On
+                    ? "VR is on. Point at this screen with the right controller and pull the trigger to press things."
+                    : "Fly in a PC headset, such as a Quest over Link or Virtual Desktop. Connect the headset first. Your keyboard, joystick and pedals keep working in VR."),
+                Row(Btn(d.Starting ? "Starting…" : Vr.On ? "Leave VR" : "Start VR", "small", () => { if (Vr.On) d.End(); else d.Begin(); }, disabled: d.Starting)));
+            if (d.Problem != null) panel.Add(T(d.Problem));
+            panel.Add(Muted("Right stick: cyclic. Left stick: pedals across, collective up and down. A: set trim. B: release trim. X: show or hide the HUD. Y: tablet. Menu: pause. Click the right stick to recentre your view, the left stick to change camera."));
+            return panel;
+        }
+
         // ------------------------------------------------------------------------------- qualifications
         static VisualElement QualificationsView(GameApp app)
         {
@@ -247,6 +261,7 @@ namespace Rotorcraft.Presentation.UI
                     : s.assist == AssistMode.Standard ? "Attitude-command cyclic, but no drift damping. Collective changes make the nose swing until you correct with pedal."
                     : "Rate-command cyclic: the aircraft holds whatever attitude you leave it in and never levels itself. Full torque reaction needs constant pedal. Disc flap-back means forward cyclic is needed as speed builds.", "small"),
                 Check("Training aids: target markers and height readout", s.showTrainingAids, v => Change(n => n.showTrainingAids = v))));
+            if (Vr.Available) page.Add(VrPanel());
             var keys = new List<VisualElement[]>();
             foreach (var k in ControlSettings.DefaultKeys().Keys)
             {

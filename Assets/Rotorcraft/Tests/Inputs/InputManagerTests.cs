@@ -127,6 +127,42 @@ namespace Rotorcraft.Inputs.Tests
         }
 
         [Test]
+        public void VrSticksWorkAlongsideTheKeyboardAndAJoystick()
+        {
+            var src = new FakeSource();
+            var im = new InputManager(new ControlSettings { controller = Controllers.PresetGamepad() }, src);
+            src.Set("Pad", "rightStick/x", 0); src.Set("Pad", "rightStick/y", 0);
+
+            // the VR sticks fly the aircraft: cyclic, pedals and a rising lever
+            im.external = new ExternalSticks { cyclicX = 0.8, cyclicY = -0.6, pedals = 0.7, collective = 1 };
+            var c = im.Sample(0.016);
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            Assert.That(c.cyclicRoll > 0.2 && c.cyclicPitch < -0.1, $"cyclic follows the stick: {c.cyclicRoll}, {c.cyclicPitch}");
+            Assert.That(c.pedals > 0.2, $"pedals follow the stick: {c.pedals}");
+            Assert.That(im.CollectiveLever > 0.1, $"the lever rises: {im.CollectiveLever}");
+
+            // a joystick being moved takes over from them
+            src.Set("Pad", "rightStick/x", -0.9);
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            Assert.That(c.cyclicRoll < -0.2, $"the joystick wins while it is moving: {c.cyclicRoll}");
+            src.Set("Pad", "rightStick/x", 0);
+
+            // the sticks let go, so the keyboard still works, and the lever stays where it was left
+            im.external = default;
+            var lever = im.CollectiveLever;
+            src.keys.Add(new ControlSettings().KeyFor("cyclicLeft"));
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            Assert.That(c.cyclicRoll < -0.1, $"the keyboard moves the cyclic: {c.cyclicRoll}");
+            Assert.AreEqual(lever, im.CollectiveLever, 1e-9, "the lever holds its position");
+
+            // trim from a VR button goes through the normal action
+            var actions = new List<GameAction>();
+            im.ActionFired += actions.Add;
+            im.Fire(GameAction.Trim);
+            Assert.AreEqual(new[] { GameAction.Trim }, actions.ToArray());
+        }
+
+        [Test]
         public void KeyboardMovesTheLeverAndFiresActionsOncePerPress()
         {
             var src = new FakeSource();

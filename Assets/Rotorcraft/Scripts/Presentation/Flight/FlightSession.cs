@@ -146,10 +146,11 @@ namespace Rotorcraft.Presentation
                 animator.Hold("crew_r", true); animator.Hold("crew_l", true);
                 Runtime.Say(0, m.dual ? "Instructor" : "Crew", "Walk round first: click the fuel point, the rotor head, the tail rotor and the landing light. Then climb aboard for the cockpit checks.", MessageKind.Info);
             }
-            else heli.SetCamera(app.Settings.camera == CameraPref.Cockpit ? CameraMode.Cockpit : CameraMode.Chase);
+            else heli.SetCamera(Vr.On || app.Settings.camera == CameraPref.Cockpit ? CameraMode.Cockpit : CameraMode.Chase);
             cam.LookAhead(); cam.Snap();
+            if (Vr.On) Vr.Driver.Recentre();
             BuildHud();
-            showPanel = Pre == null && Screen.width >= 1100;
+            showPanel = Pre == null && Screen.width >= 1100 && !Vr.On;   // in VR the cockpit has the real instruments
             showMap = false; showSwitches = Pre != null; showTablet = false; hint = null;
             // let the first frames draw, then lift the loading screen (it stays at least long enough to read the tip)
             for (int i = 0; i < 4; i++) yield return null;

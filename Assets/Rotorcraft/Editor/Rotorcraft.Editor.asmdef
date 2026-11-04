@@ -7,7 +7,11 @@
         "Unity.RenderPipelines.Universal.Runtime",
         "Rotorcraft.Sim",
         "Rotorcraft.World",
-        "Rotorcraft.Presentation"
+        "Rotorcraft.Presentation",
+        "Unity.XR.Management",
+        "Unity.XR.Management.Editor",
+        "Unity.XR.OpenXR",
+        "Unity.XR.OpenXR.Editor"
     ],
     "includePlatforms": [
         "Editor"

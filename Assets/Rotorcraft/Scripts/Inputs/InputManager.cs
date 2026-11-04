@@ -13,8 +13,13 @@ namespace Rotorcraft.Inputs
 {
     public enum InputSourceKind { None, Keyboard, Controller }
 
+    /// <summary>Stick positions from a device outside the player's bindings (the VR controllers), each -1..1.</summary>
+    public struct ExternalSticks { public double cyclicX, cyclicY, pedals, collective; }
+
     public sealed class InputManager
     {
+        /// <summary>Set each frame by the device's owner. Merged like a controller, so any other input still works beside it; a bound controller that is moving takes priority.</summary>
+        public ExternalSticks external;
         ControlSettings settings;
         readonly IInputSource source;
         double collective;
@@ -54,6 +59,8 @@ namespace Rotorcraft.Inputs
             watchedKeys = new HashSet<Key>(s.keyBindings.Values) { Key.Escape };
         }
         void Emit(GameAction a) => ActionFired?.Invoke(a);
+        /// <summary>An action from a device outside the player's bindings.</summary>
+        public void Fire(GameAction a) { lastSource = InputSourceKind.Controller; Emit(a); }
 
         bool K(Key k) => k != Key.None && source.IsKeyDown(k);
         bool Shift => K(Key.LeftShift) || K(Key.RightShift);
@@ -157,6 +164,13 @@ namespace Rotorcraft.Inputs
                     padPrev[kv.Key] = down;
                 }
                 if (padCyc != null || Math.Abs(padPed) > 0.1 || Math.Abs(padCol) > 0.1) lastSource = InputSourceKind.Controller;
+            }
+            {
+                var ex = external;
+                var dz = Math.Max(0.02, s.deadzone);
+                if (padCyc == null && (Math.Abs(ex.cyclicX) > dz || Math.Abs(ex.cyclicY) > dz)) { padCyc = (ex.cyclicX, ex.cyclicY); lastSource = InputSourceKind.Controller; }
+                if (Math.Abs(padPed) <= 0.05 && Math.Abs(ex.pedals) > 0.05) { padPed = ex.pedals; lastSource = InputSourceKind.Controller; }
+                if (Math.Abs(padCol) <= 0.12 && Math.Abs(ex.collective) > 0.12) { padCol = ex.collective; lastSource = InputSourceKind.Controller; }
             }
             // ---- collective (positional) ----
             var colRate = Shift ? 0.12 : 0.38;

@@ -191,6 +191,7 @@ namespace Rotorcraft.EditorTools
             Keep("Universal Render Pipeline/Unlit", "Unlit cutout", "_ALPHATEST_ON");
             Keep("Rotorcraft/Light Points", "Light points");
             Keep("Rotorcraft/Mission Marker", "Mission marker");
+            Keep("Rotorcraft/VR Panel", "VR panel");
             // the terrain and the instanced trees are made at run time, so the build cannot see their instancing
             // variants in use: keep them all
             var tm = AssetDatabase.LoadAssetAtPath<Material>($"{SettingsDir}/Terrain.mat");
@@ -225,6 +226,7 @@ namespace Rotorcraft.EditorTools
         [MenuItem("Rotorcraft/Build for Windows")]
         public static void BuildWindows()
         {
+            VrSetup.Ensure();
             Common();
             PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
             PlayerSettings.defaultScreenWidth = 1920; PlayerSettings.defaultScreenHeight = 1080;
@@ -233,6 +235,7 @@ namespace Rotorcraft.EditorTools
             var out_ = Path.GetFullPath("../Builds/Windows/Rotorcraft.exe");
             var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = out_, target = BuildTarget.StandaloneWindows64, options = BuildOptions.None });
             Report(r, "Windows");
+            File.WriteAllText(Path.Combine(Path.GetDirectoryName(out_), "Start in VR.bat"), string.Join("\r\n", "@echo off", "start \"\" \"%~dp0Rotorcraft.exe\" -vr", ""));
         }
 
         [MenuItem("Rotorcraft/Build for the web")]

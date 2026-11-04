@@ -1,0 +1,370 @@
+// VR for the Windows game, through OpenXR, so a Quest over Link or Virtual Desktop and any other PC headset all work
+// the same way. The game runs on a normal screen until VR is started from Settings or with -vr on the command line.
+//
+// The main camera goes inside a rig. The rig is the player's seat, moved by ChaseCamera; the headset moves the camera
+// inside it. The flat UI (menus and flight HUD) is drawn into a texture shown on a panel fixed in front of the seat,
+// and the right controller's laser works it with the trigger.
+//
+// Controllers: right stick cyclic; left stick pedals (across) and collective (up and down); A set trim; B release
+// trim; X show or hide the HUD; Y tablet; menu button pause; click the right stick to recentre the view; click the
+// left stick to change camera. Keyboard, joystick, pedals and gamepad keep working alongside them.
+using System.Collections;
+using Rotorcraft.Inputs;
+using Rotorcraft.Presentation;
+using Rotorcraft.Presentation.UI;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.XR;
+using UnityEngine.UIElements;
+using UnityEngine.XR.Management;
+
+namespace Rotorcraft.VR
+{
+    public sealed class VrDriver : MonoBehaviour, IVrDriver
+    {
+        // The panel: wide enough to fill the middle of the view without turning the head for the HUD's edges.
+        const float PanelDistance = 2.2f, PanelWidth = 2.6f, PanelDrop = -0.1f;
+        const int TextureW = 2048, TextureH = 1152;
+        // The UI lays out as if on a screen this size, larger than usual: text must be readable on a headset's pixels.
+        static readonly Vector2Int PanelLayout = new Vector2Int(1280, 720);
+        const string NoHeadset = "No headset found. Check that Quest Link or Virtual Desktop is connected and is your active OpenXR runtime, then try again.";
+
+        public bool Running { get; private set; }
+        public bool Starting { get; private set; }
+        public string Problem { get; private set; }
+
+        Camera view;
+        Transform parentBefore;
+        Transform rig, panel;
+        MeshRenderer panelRenderer;
+        Material panelMaterial;
+        RenderTexture panelTexture;
+        PanelSettings panelSettings;
+        Vector2Int layoutBefore;
+        bool clearBefore;
+        Color clearColorBefore;
+        UIDocument document;
+        TrackedPoseDriver headDriver;
+        LineRenderer laser;
+        Transform dot;
+        Label stats;
+        FlightSession flight;
+
+        Vector3 headNeutral;
+        float recentreYaw;
+        float recentreAt;
+        bool hudVisible = true, pressing;
+        Vector2 lastPoint;
+        float fps = 72, statsAt;
+
+        InputAction rightStick, leftStick, buttonA, buttonB, buttonX, buttonY, menu, rightClick, leftClick, trigger, aimPosition, aimRotation;
+        InputAction[] all;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void Register()
+        {
+            var go = new GameObject("VR");
+            DontDestroyOnLoad(go);
+            Vr.Driver = go.AddComponent<VrDriver>();
+        }
+
+        void Start()
+        {
+            if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-vr") >= 0) Begin();
+        }
+
+        // ------------------------------------------------------------------------------------ start and stop
+        public void Begin()
+        {
+            if (Running || Starting) return;
+            Problem = null;
+            StartCoroutine(StartHeadset());
+        }
+
+        IEnumerator StartHeadset()
+        {
+            Starting = true;
+            Vr.RaiseChanged();
+            var manager = XRGeneralSettings.Instance != null ? XRGeneralSettings.Instance.Manager : null;
+            if (manager != null && manager.activeLoader == null) yield return manager.InitializeLoader();
+            Starting = false;
+            if (manager == null || manager.activeLoader == null)
+            {
+                Problem = NoHeadset;
+                Debug.Log($"VR: could not start ({(manager == null ? "no XR settings in this build" : "no OpenXR runtime or headset")})");
+                Vr.RaiseChanged();
+                yield break;
+            }
+            manager.StartSubsystems();
+            var app = GameApp.Instance;
+            Attach(app.flight.cam.GetComponent<Camera>(), app.document, app.flight);
+            Debug.Log($"VR: running with {manager.activeLoader.name}");
+            Vr.RaiseChanged();
+        }
+
+        public void End()
+        {
+            if (!Running) return;
+            Detach();
+            var manager = XRGeneralSettings.Instance != null ? XRGeneralSettings.Instance.Manager : null;
+            if (manager != null && manager.activeLoader != null)
+            {
+                manager.StopSubsystems();
+                manager.DeinitializeLoader();
+            }
+            Vr.RaiseChanged();
+        }
+
+        void OnDestroy() { if (Running) End(); }
+
+        // -------------------------------------------------------------------------------------- the seat
+        /// <summary>Everything but the headset itself: the rig, panel, laser and controls. Public so a test can look at the result without a headset.</summary>
+        public void Attach(Camera camera, UIDocument doc, FlightSession session)
+        {
+            view = camera;
+            document = doc;
+            flight = session;
+            rig = new GameObject("VR rig").transform;
+            rig.SetPositionAndRotation(camera.transform.position, Quaternion.Euler(0, camera.transform.eulerAngles.y, 0));
+            parentBefore = camera.transform.parent;
+            camera.transform.SetParent(rig, false);
+            camera.transform.localPosition = Vector3.zero;
+            camera.transform.localRotation = Quaternion.identity;
+            headNeutral = Vector3.zero;
+            recentreYaw = 0;
+            headDriver = camera.gameObject.AddComponent<TrackedPoseDriver>();
+            headDriver.trackingType = TrackedPoseDriver.TrackingType.RotationAndPosition;
+            headDriver.updateType = TrackedPoseDriver.UpdateType.UpdateAndBeforeRender;
+            headDriver.ignoreTrackingState = true;
+            headDriver.positionInput = new InputActionProperty(new InputAction("Head position", InputActionType.Value, "<XRHMD>/centerEyePosition", expectedControlType: "Vector3"));
+            headDriver.rotationInput = new InputActionProperty(new InputAction("Head rotation", InputActionType.Value, "<XRHMD>/centerEyeRotation", expectedControlType: "Quaternion"));
+            MakePanel();
+            MakeLaser();
+            MakeControls();
+            hudVisible = true;
+            pressing = false;
+            recentreAt = Time.unscaledTime + 1;   // once the headset has reported where it is
+            Running = true;
+        }
+
+        void Detach()
+        {
+            Running = false;
+            foreach (var a in all) { a.Disable(); a.Dispose(); }
+            all = null;
+            if (flight != null && flight.heli != null && flight.heli.Input != null) flight.heli.Input.external = default;
+            Destroy(headDriver);
+            view.transform.SetParent(parentBefore, true);
+            if (stats != null) { stats.RemoveFromHierarchy(); stats = null; }
+            panelSettings.SetScreenToPanelSpaceFunction(null);
+            panelSettings.targetTexture = null;
+            panelSettings.referenceResolution = layoutBefore;
+            panelSettings.clearColor = clearBefore;
+            panelSettings.colorClearValue = clearColorBefore;
+            panelTexture.Release();
+            Destroy(panelTexture);
+            Destroy(panelMaterial);
+            Destroy(rig.gameObject);
+        }
+
+        public void Recentre()
+        {
+            if (view == null) return;
+            var t = view.transform;
+            var ahead = Vector3.ProjectOnPlane(t.localRotation * Vector3.forward, Vector3.up);
+            recentreYaw = ahead.sqrMagnitude > 1e-4f ? -Quaternion.LookRotation(ahead).eulerAngles.y : 0;
+            headNeutral = t.localPosition;
+        }
+
+        public void Place(Vector3 eye, Quaternion look, bool level)
+        {
+            if (rig == null) return;
+            var facing = level ? Quaternion.Euler(0, look.eulerAngles.y, 0) : look;
+            var r = facing * Quaternion.Euler(0, recentreYaw, 0);
+            rig.SetPositionAndRotation(eye - r * headNeutral, r);
+            panel.SetPositionAndRotation(eye + facing * new Vector3(0, PanelDrop, PanelDistance), facing);
+        }
+
+        public bool PanelPoint(Vector3 world, out Vector2 at)
+        {
+            at = default;
+            var ui = document != null ? document.rootVisualElement?.panel : null;
+            if (ui == null || panel == null) return false;
+            var eye = view.transform.position;
+            var ray = new Ray(eye, world - eye);
+            if (!new Plane(panel.forward, panel.position).Raycast(ray, out var d)) return false;
+            return OnPanel(ui, ray.GetPoint(d), out at);
+        }
+
+        /// <summary>A point on the panel's plane in the panel's layout units, from its top left; false if it is off the edge.</summary>
+        bool OnPanel(IPanel ui, Vector3 point, out Vector2 at)
+        {
+            var local = panel.InverseTransformPoint(point);
+            var size = ui.visualTree.layout.size;
+            at = new Vector2((local.x + 0.5f) * size.x, (0.5f - local.y) * size.y);
+            return Mathf.Abs(local.x) <= 0.5f && Mathf.Abs(local.y) <= 0.5f;
+        }
+
+        // ------------------------------------------------------------------------------------- the UI panel
+        void MakePanel()
+        {
+            panelTexture = new RenderTexture(TextureW, TextureH, 24, RenderTextureFormat.ARGB32) { name = "VR panel", useMipMap = true, autoGenerateMips = true, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
+            panelTexture.Create();
+            panelSettings = document.panelSettings;
+            layoutBefore = panelSettings.referenceResolution;
+            clearBefore = panelSettings.clearColor;
+            clearColorBefore = panelSettings.colorClearValue;
+            panelSettings.targetTexture = panelTexture;
+            panelSettings.referenceResolution = PanelLayout;
+            panelSettings.clearColor = true;
+            panelSettings.colorClearValue = new Color(0, 0, 0, 0);
+            // the desktop mouse still works the panel, from the whole game window
+            panelSettings.SetScreenToPanelSpaceFunction(s => new Vector2(s.x / Screen.width * TextureW, (1 - s.y / Screen.height) * TextureH));
+
+            panelMaterial = new Material(Shader.Find("Rotorcraft/VR Panel")) { name = "VR panel", mainTexture = panelTexture };
+            var height = PanelWidth * TextureH / TextureW;
+            var mesh = new Mesh { name = "VR panel" };
+            mesh.vertices = new[] { new Vector3(-0.5f, -0.5f), new Vector3(0.5f, -0.5f), new Vector3(0.5f, 0.5f), new Vector3(-0.5f, 0.5f) };
+            mesh.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
+            mesh.triangles = new[] { 0, 2, 1, 0, 3, 2 };
+            mesh.RecalculateBounds();
+            var go = new GameObject("VR panel");
+            panel = go.transform;
+            panel.SetParent(rig, false);
+            panel.localPosition = new Vector3(0, PanelDrop, PanelDistance);
+            panel.localScale = new Vector3(PanelWidth, height, 1);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            panelRenderer = go.AddComponent<MeshRenderer>();
+            panelRenderer.sharedMaterial = panelMaterial;
+            panelRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            panelRenderer.receiveShadows = false;
+
+            if (GameApp.Instance != null && GameApp.Instance.Root != null)
+            {
+                stats = new Label("VR") { pickingMode = PickingMode.Ignore };
+                stats.style.position = Position.Absolute; stats.style.right = 8; stats.style.bottom = 4;
+                stats.style.fontSize = 12; stats.style.color = new Color(1, 1, 1, 0.7f);
+                GameApp.Instance.Root.Add(stats);
+            }
+        }
+
+        void MakeLaser()
+        {
+            var unlit = Shader.Find("Universal Render Pipeline/Unlit");
+            var beam = new Material(unlit) { name = "VR laser" };
+            beam.SetColor("_BaseColor", new Color(0.55f, 0.85f, 1f));
+            var go = new GameObject("VR laser");
+            go.transform.SetParent(rig, false);
+            laser = go.AddComponent<LineRenderer>();
+            laser.sharedMaterial = beam;
+            laser.positionCount = 2;
+            laser.useWorldSpace = true;
+            laser.startWidth = 0.004f; laser.endWidth = 0.002f;
+            laser.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            laser.receiveShadows = false;
+            laser.enabled = false;
+            var ball = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            ball.name = "VR laser dot";
+            Destroy(ball.GetComponent<Collider>());
+            ball.GetComponent<MeshRenderer>().sharedMaterial = beam;
+            ball.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            dot = ball.transform;
+            dot.SetParent(rig, false);
+            dot.localScale = Vector3.one * 0.016f;
+            ball.SetActive(false);
+        }
+
+        // ----------------------------------------------------------------------------------- the controllers
+        static InputAction Stick(string hand) => new InputAction(hand + " stick", InputActionType.Value, $"<XRController>{{{hand}Hand}}/thumbstick", expectedControlType: "Vector2");
+        static InputAction Button(string hand, string control) => new InputAction($"{hand} {control}", InputActionType.Button, $"<XRController>{{{hand}Hand}}/{control}");
+
+        void MakeControls()
+        {
+            rightStick = Stick("Right");
+            leftStick = Stick("Left");
+            buttonA = Button("Right", "primaryButton");
+            buttonB = Button("Right", "secondaryButton");
+            buttonX = Button("Left", "primaryButton");
+            buttonY = Button("Left", "secondaryButton");
+            menu = Button("Left", "menu");
+            rightClick = Button("Right", "thumbstickClicked");
+            leftClick = Button("Left", "thumbstickClicked");
+            trigger = Button("Right", "triggerPressed");
+            aimPosition = new InputAction("Aim position", InputActionType.Value, "<XRController>{RightHand}/pointerPosition", expectedControlType: "Vector3");
+            aimRotation = new InputAction("Aim rotation", InputActionType.Value, "<XRController>{RightHand}/pointerRotation", expectedControlType: "Quaternion");
+            all = new[] { rightStick, leftStick, buttonA, buttonB, buttonX, buttonY, menu, rightClick, leftClick, trigger, aimPosition, aimRotation };
+            foreach (var a in all) a.Enable();
+        }
+
+        void Update()
+        {
+            if (!Running || all == null) return;
+            if (recentreAt > 0 && Time.unscaledTime >= recentreAt) { recentreAt = 0; Recentre(); }
+            if (rightClick.WasPressedThisFrame()) Recentre();
+
+            var input = flight != null && flight.heli != null ? flight.heli.Input : null;
+            var inFlight = flight != null && flight.Active && input != null;
+            var flying = inFlight && !flight.Paused;
+            var right = rightStick.ReadValue<Vector2>();
+            var left = leftStick.ReadValue<Vector2>();
+            if (input != null) input.external = flying ? new ExternalSticks { cyclicX = right.x, cyclicY = right.y, pedals = left.x, collective = left.y } : default;
+            if (flying && !input.menuOpen)
+            {
+                if (buttonA.WasPressedThisFrame()) input.Fire(GameAction.Trim);
+                if (buttonB.WasPressedThisFrame()) input.Fire(GameAction.TrimRelease);
+                if (leftClick.WasPressedThisFrame()) input.Fire(GameAction.Camera);
+            }
+            if (inFlight)
+            {
+                if (buttonY.WasPressedThisFrame()) input.Fire(GameAction.Tablet);
+                if (menu.WasPressedThisFrame()) flight.TogglePause();
+                if (buttonX.WasPressedThisFrame()) hudVisible = !hudVisible;
+            }
+            // the panel is always there when something on it needs an answer
+            panelRenderer.enabled = hudVisible || !inFlight || flight.Paused || input.menuOpen;
+            UpdatePointer(flying ? 0 : right.y);
+            UpdateStats();
+        }
+
+        void UpdatePointer(float scroll)
+        {
+            var ui = document != null ? document.rootVisualElement?.panel : null;
+            var from = rig.TransformPoint(aimPosition.ReadValue<Vector3>());
+            var aim = aimRotation.ReadValue<Quaternion>();
+            var tracked = aim.x != 0 || aim.y != 0 || aim.z != 0 || aim.w != 0;   // all zero: the controller is asleep or out of sight
+            var ray = new Ray(from, rig.rotation * aim * Vector3.forward);
+            var on = false;
+            var hit = Vector3.zero;
+            if (tracked && ui != null && panelRenderer.enabled && new Plane(panel.forward, panel.position).Raycast(ray, out var d) && d > 0)
+            {
+                hit = ray.GetPoint(d);
+                if (OnPanel(ui, hit, out var point))
+                {
+                    on = true;
+                    lastPoint = point;
+                    PanelPointer.Move(ui, lastPoint);
+                    if (trigger.WasPressedThisFrame()) { PanelPointer.Down(ui, lastPoint); pressing = true; }
+                    if (Mathf.Abs(scroll) > 0.2f) PanelPointer.Scroll(ui, lastPoint, -scroll * Time.unscaledDeltaTime * 30);
+                }
+            }
+            if (pressing && trigger.WasReleasedThisFrame()) { pressing = false; if (ui != null) PanelPointer.Up(ui, lastPoint); }
+            laser.enabled = on;
+            dot.gameObject.SetActive(on);
+            if (on)
+            {
+                laser.SetPosition(0, from);
+                laser.SetPosition(1, hit);
+                dot.position = hit;
+            }
+        }
+
+        /// <summary>The frame rate in the corner of the panel, so a slow view can be told from a problem with the headset.</summary>
+        void UpdateStats()
+        {
+            fps = Mathf.Lerp(fps, 1 / Mathf.Max(Time.unscaledDeltaTime, 0.001f), 0.05f);
+            if (stats == null || Time.unscaledTime < statsAt) return;
+            statsAt = Time.unscaledTime + 0.5f;
+            stats.text = $"VR {fps:0} fps";
+        }
+    }
+}

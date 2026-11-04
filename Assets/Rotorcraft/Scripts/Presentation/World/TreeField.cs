@@ -93,7 +93,9 @@ namespace Rotorcraft.Presentation
         {
             var cam = Camera.main;
             if (cam == null || nearBuf == null) return;
-            GeometryUtility.CalculateFrustumPlanes(cam, planes);
+            // a headset's two eyes see more than the camera's own frustum says: cull with a wide one so no trees go missing at the edges
+            if (Vr.On) GeometryUtility.CalculateFrustumPlanes(Matrix4x4.Perspective(140, 1, cam.nearClipPlane, cam.farClipPlane) * cam.worldToCameraMatrix, planes);
+            else GeometryUtility.CalculateFrustumPlanes(cam, planes);
             for (int k = 0; k < kinds.Count; k++) { nearBuf[k].Clear(); farBuf[k].Clear(); }
             var eye = cam.transform.position;
             float near2 = nearDistance * nearDistance, far2 = farDistance * farDistance;

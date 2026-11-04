@@ -35,7 +35,7 @@ Shader "Rotorcraft/Particles"
             float4 _RcParticleLight;     // sky and sun light on the particles (rgb)
             float _RcLightExposure;
 
-            struct Attributes { float3 positionOS : POSITION; float4 color : COLOR; float4 uv : TEXCOORD0; };
+            struct Attributes { float3 positionOS : POSITION; float4 color : COLOR; float4 uv : TEXCOORD0; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
@@ -43,11 +43,14 @@ Shader "Rotorcraft/Particles"
                 float2 uv : TEXCOORD0;
                 float3 nuv : TEXCOORD1;      // noise coordinates (offset by where the puff is) and fade
                 float fog : TEXCOORD2;
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
             Varyings vert(Attributes i)
             {
-                Varyings o;
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(i);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 float3 w = TransformObjectToWorld(i.positionOS);
                 o.positionCS = TransformWorldToHClip(w);
                 o.color = i.color;

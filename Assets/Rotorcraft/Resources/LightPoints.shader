@@ -34,6 +34,7 @@ Shader "Rotorcraft/Light Points"
                 float4 color : COLOR;
                 float2 corner : TEXCOORD0;
                 float4 anim : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -42,11 +43,14 @@ Shader "Rotorcraft/Light Points"
                 float3 color : COLOR;
                 float2 q : TEXCOORD0;
                 float streak : TEXCOORD1;
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
             Varyings vert(Attributes i)
             {
-                Varyings o;
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(i);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 float3 p = TransformObjectToWorld(i.positionOS);
                 float3 toCam = _WorldSpaceCameraPos - p;
                 float d = length(toCam);

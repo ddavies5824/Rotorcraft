@@ -33,12 +33,14 @@ Shader "Rotorcraft/Clouds"
             float4 _CloudShade;      // colour of the base seen from below
             float _CloudBase, _CloudTop;
 
-            struct Attributes { float3 positionOS : POSITION; };
-            struct Varyings { float4 positionCS : SV_POSITION; float3 w : TEXCOORD0; float fog : TEXCOORD1; };
+            struct Attributes { float3 positionOS : POSITION; UNITY_VERTEX_INPUT_INSTANCE_ID };
+            struct Varyings { float4 positionCS : SV_POSITION; float3 w : TEXCOORD0; float fog : TEXCOORD1; UNITY_VERTEX_OUTPUT_STEREO };
 
             Varyings vert(Attributes i)
             {
-                Varyings o;
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(i);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 o.w = TransformObjectToWorld(i.positionOS);
                 o.positionCS = TransformWorldToHClip(o.w);
                 o.fog = ComputeFogFactor(o.positionCS.z);
@@ -47,6 +49,7 @@ Shader "Rotorcraft/Clouds"
 
             half4 frag(Varyings i) : SV_Target
             {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
                 // the sim's axes: x east, z south
                 float u = i.w.x / 3100 + _CloudDrift.x, v = -i.w.z / 3100 + _CloudDrift.y;
                 float c = SAMPLE_TEXTURE2D(_Noise, sampler_Noise, float2(u, v)).r * 0.55
