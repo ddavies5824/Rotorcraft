@@ -34,6 +34,15 @@ namespace Rotorcraft.Presentation.Tests
         }
 
         [Test]
+        public void TheAttitudeIndicatorsHorizonTiltsAgainstTheBank()
+        {
+            var right = Rotorcraft.Presentation.UI.InstrumentPanel.OnHorizonCard(Vector2.right, 20 * SimMath.DEG);
+            Assert.That(right.y < -0.3f, $"a right bank raises the right of the horizon (screen y runs down): {right}");
+            var left = Rotorcraft.Presentation.UI.InstrumentPanel.OnHorizonCard(Vector2.right, -20 * SimMath.DEG);
+            Assert.That(left.y > 0.3f, $"a left bank lowers the right of the horizon: {left}");
+        }
+
+        [Test]
         public void ARunningSimMovesTheAircraftTheWayItIsPointing()
         {
             var s = FlightModel.CreateState(new CreateOptions { headingDeg = 90, fuel = 10, engineRunning = true, airborne = new Airborne(50, 30) });

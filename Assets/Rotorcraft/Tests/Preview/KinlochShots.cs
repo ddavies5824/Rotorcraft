@@ -94,6 +94,58 @@ namespace Rotorcraft.Preview.Tests
             Object.Destroy(tex); rt.Release();
         }
 
+        /// <summary>The real attitude gauge drawn at a left bank, level and a right bank, and read back: sky on the side the aircraft banks away from.</summary>
+        [UnityTest]
+        public IEnumerator AttitudeIndicator()
+        {
+#if UNITY_EDITOR
+            const int Size = 400;
+            var rt = new RenderTexture(Size * 3, Size, 0, RenderTextureFormat.ARGB32);
+            rt.Create();
+            var ps = Object.Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<PanelSettings>("Assets/Rotorcraft/UI/Game Panel.asset"));
+            ps.scaleMode = PanelScaleMode.ConstantPixelSize; ps.scale = 1;
+            ps.targetTexture = rt;
+            var host = new GameObject("Gauges");
+            host.SetActive(false);
+            var doc = host.AddComponent<UIDocument>();
+            doc.panelSettings = ps;
+            host.SetActive(true);
+            yield return null;
+            var banks = new[] { -20.0, 0, 20.0 };
+            var ac = Aircraft.Get("kestrel");
+            for (int i = 0; i < banks.Length; i++)
+            {
+                var s = FlightModel.CreateState(new CreateOptions { headingDeg = 0, fuel = 10 });
+                s.phi = banks[i] * SimMath.DEG;
+                var gauge = new InstrumentPanel { layout = new[] { (InstrumentPanel.Gauges.Attitude, new Rect(0, 0, 1, 1)) } };
+                gauge.style.position = Position.Absolute; gauge.style.left = i * Size; gauge.style.top = 0; gauge.style.width = Size; gauge.style.height = Size; gauge.style.flexGrow = 0;
+                doc.rootVisualElement.Add(gauge);
+                gauge.Set(s, ac, null, null);
+            }
+            for (int i = 0; i < 5; i++) yield return null;
+            var prev = RenderTexture.active; RenderTexture.active = rt;
+            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); tex.Apply();
+            RenderTexture.active = prev;
+            Directory.CreateDirectory("Logs");
+            File.WriteAllBytes("Logs/attitude-left-level-right.png", tex.EncodeToPNG());
+
+            // a little above the middle of the dial, out towards each side (screen y runs down, texture rows run up)
+            bool IsSky(int gauge, float side)
+            {
+                var r = Size * 0.455f;
+                var c = tex.GetPixel(Mathf.RoundToInt((gauge + 0.5f) * Size + side * 0.6f * r), Mathf.RoundToInt(Size * 0.5f + 0.1f * r));
+                return c.b > c.r;
+            }
+            Assert.That(IsSky(0, 1) && !IsSky(0, -1), "left bank: the horizon's left side rises, so earth on the left and sky on the right");
+            Assert.That(IsSky(1, 1) && IsSky(1, -1), "level: sky on both sides just above the middle");
+            Assert.That(IsSky(2, -1) && !IsSky(2, 1), "right bank: the horizon's right side rises, so earth on the right and sky on the left");
+            Object.Destroy(tex); Object.Destroy(host); rt.Release();
+#else
+            yield return null;
+#endif
+        }
+
         /// <summary>
         /// The VR seat without a headset: the rig, the UI panel and the laser seen from where the head would be, and the
         /// laser pressing real UI: a button, a check row and a scroll view.

@@ -123,6 +123,16 @@ namespace Rotorcraft.Presentation.UI
                 }
         }
 
+        /// <summary>
+        /// Where a point on the attitude indicator's horizon card goes at this bank (phi positive is right wing down;
+        /// screen y runs down). The card turns the opposite way to the aircraft, so a right bank raises its right side.
+        /// </summary>
+        public static Vector2 OnHorizonCard(Vector2 v, double phi)
+        {
+            float cos = Mathf.Cos((float)-phi), sin = Mathf.Sin((float)-phi);
+            return new Vector2(v.x * cos - v.y * sin, v.x * sin + v.y * cos);
+        }
+
         void DrawGauge(MeshGenerationContext m, Gauges g, Vector2 c, float r)
         {
             var o = s.@out;
@@ -144,9 +154,9 @@ namespace Rotorcraft.Presentation.UI
             case Gauges.Attitude:
             {
                 Disc(p, c, r + 4, BEZEL);
-                var roll = (float)s.phi; var pitchPx = (float)(s.theta * SimMath.RAD) * (r / 30);
+                var pitchPx = (float)(s.theta * SimMath.RAD) * (r / 30);
                 // the horizon: a half-disc of sky above the tilted line, earth below (clipped to the face)
-                Vector2 Rot(Vector2 v) => c + new Vector2(v.x * Mathf.Cos(roll) - v.y * Mathf.Sin(roll), v.x * Mathf.Sin(roll) + v.y * Mathf.Cos(roll));
+                Vector2 Rot(Vector2 v) => c + OnHorizonCard(v, s.phi);
                 Disc(p, c, r, EARTH);
                 // sky: the part of the face above the line y = pitchPx (in the rolled frame)
                 var d = Mathf.Clamp(pitchPx, -r * 0.999f, r * 0.999f);
