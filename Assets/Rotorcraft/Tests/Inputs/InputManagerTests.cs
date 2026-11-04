@@ -1,7 +1,9 @@
 // Port of the InputManager parts of tests/controller.test.ts, driven by a scripted input source instead of
 // the browser Gamepad API, plus the T.Flight Stick X preset with the directions read off the real stick.
+using System;
 using System.Collections.Generic;
 using NUnit.Framework;
+using Rotorcraft.Sim;
 using UnityEngine.InputSystem;
 
 namespace Rotorcraft.Inputs.Tests
@@ -124,6 +126,54 @@ namespace Rotorcraft.Inputs.Tests
             im.ClearTrim(); im.SetTrimFromCurrent();
             Assert.That(im.Trimmed && !im.trimReleasing);
             Assert.AreEqual(Key.U, new ControlSettings().KeyFor("trimRelease"));
+        }
+
+        [Test]
+        public void TrimHoldsThePedalsWhereTheyWereUntilItIsReleased()
+        {
+            var src = new FakeSource();
+            var im = new InputManager(new ControlSettings { controller = Controllers.PresetGamepad() }, src);
+            src.Set("Pad", "leftStick/x", 0.6);
+            Controls c = default;
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            var held = c.pedals;
+            Assert.That(held > 0.2, $"the stick moves the pedals: {held}");
+
+            im.SetTrimFromCurrent();
+            src.Set("Pad", "leftStick/x", 0);
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            Assert.That(im.Trimmed && Math.Abs(c.pedals - held) < 0.01, $"let go, the pedals stay at the trim: {c.pedals} (trim {held})");
+
+            src.Set("Pad", "leftStick/x", -0.8);
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            Assert.That(c.pedals < held - 0.2, $"the stick still moves them from there: {c.pedals}");
+            src.Set("Pad", "leftStick/x", 0);
+
+            im.ClearTrim();
+            for (int i = 0; i < 120; i++) c = im.Sample(0.016);
+            Assert.That(!im.Trimmed && Math.Abs(c.pedals) < 0.01, $"released, they ease back to the middle: {c.pedals}");
+        }
+
+        [Test]
+        public void MovingTheLeverOnASharedThumbstickDoesNotTurnTheNose()
+        {
+            var im = new InputManager(new ControlSettings { controller = Controllers.PresetGamepad() }, new FakeSource());
+            Controls c = default;
+            im.external = new ExternalSticks { pedals = 0.35, collective = 0.9 };                 // pushing up, a little off straight
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            Assert.That(Math.Abs(c.pedals) < 0.01, $"no yaw from raising the lever: {c.pedals}");
+            var lever = im.CollectiveLever;
+            Assert.That(lever > 0.05, $"the lever rises: {lever}");
+
+            im.external = new ExternalSticks { pedals = 0.9, collective = 0.35 };                 // pushing across, a little off straight
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            Assert.That(c.pedals > 0.2, $"the pedals follow: {c.pedals}");
+            Assert.That(Math.Abs(im.CollectiveLever - lever) < 0.001, $"the lever stays put: {im.CollectiveLever} (was {lever})");
+
+            im.external = new ExternalSticks { pedals = 0.8, collective = 0.8 };                  // a real diagonal does both
+            var before = im.CollectiveLever;
+            for (int i = 0; i < 40; i++) c = im.Sample(0.016);
+            Assert.That(c.pedals > 0.2 && im.CollectiveLever > before, $"both move on a diagonal: {c.pedals}, {im.CollectiveLever}");
         }
 
         [Test]

@@ -230,7 +230,7 @@ namespace Rotorcraft.Presentation
                 case GameAction.Strobe: FlightModel.CommandSwitch(s, SwitchName.Strobe); break;
                 case GameAction.LandingLight: FlightModel.CommandSwitch(s, SwitchName.LandingLight); break;
                 case GameAction.Searchlight: if (Aircraft.equipment.searchlight) FlightModel.CommandSwitch(s, SwitchName.Searchlight); break;
-                case GameAction.Trim: Input.SetTrimFromCurrent(); Say("Cyclic trimmed."); break;
+                case GameAction.Trim: Input.SetTrimFromCurrent(); Say("Cyclic and pedals trimmed."); break;
                 case GameAction.TrimRelease: Input.ClearTrim(); Say("Trim released."); break;
                 case GameAction.Camera: CycleCamera(); break;
                 case GameAction.Pause: if (!managed) Paused = !Paused; break;

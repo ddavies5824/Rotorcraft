@@ -61,7 +61,7 @@ namespace Rotorcraft.Inputs
         };
         public static readonly IReadOnlyDictionary<ButtonFunction, string> ButtonLabels = new Dictionary<ButtonFunction, string>
         {
-            [ButtonFunction.Engine] = "Engine start / stop", [ButtonFunction.ThrottleUp] = "Throttle open", [ButtonFunction.ThrottleDown] = "Throttle idle", [ButtonFunction.Trim] = "Trim cyclic", [ButtonFunction.TrimReset] = "Release trim",
+            [ButtonFunction.Engine] = "Engine start / stop", [ButtonFunction.ThrottleUp] = "Throttle open", [ButtonFunction.ThrottleDown] = "Throttle idle", [ButtonFunction.Trim] = "Trim cyclic and pedals", [ButtonFunction.TrimReset] = "Release trim",
             [ButtonFunction.Camera] = "Camera", [ButtonFunction.Pause] = "Pause", [ButtonFunction.Map] = "Map", [ButtonFunction.Panel] = "Instrument panel", [ButtonFunction.Switches] = "Switch panel",
             [ButtonFunction.LandingLight] = "Landing light", [ButtonFunction.Beacon] = "Beacon", [ButtonFunction.NavLights] = "Position lights",
             [ButtonFunction.ApAlt] = "Autopilot ALT", [ButtonFunction.ApHdg] = "Autopilot HDG", [ButtonFunction.ApHover] = "Autopilot hover hold", [ButtonFunction.Winch] = "Winch (lower / abort)",

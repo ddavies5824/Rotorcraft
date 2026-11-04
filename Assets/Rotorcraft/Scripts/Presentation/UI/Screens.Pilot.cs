@@ -232,7 +232,7 @@ namespace Rotorcraft.Presentation.UI
             ["throttleUp"] = "Throttle open", ["throttleDown"] = "Throttle idle", ["governor"] = "Governor on/off", ["beacon"] = "Anti-collision beacon", ["navLights"] = "Position lights", ["strobe"] = "Strobes",
             ["landingLight"] = "Landing light", ["searchlight"] = "Searchlight", ["switches"] = "Switch panel", ["collectiveUp"] = "Collective up", ["collectiveDown"] = "Collective down", ["pedalLeft"] = "Left pedal",
             ["pedalRight"] = "Right pedal", ["cyclicFwd"] = "Cyclic forward", ["cyclicAft"] = "Cyclic back", ["cyclicLeft"] = "Cyclic left", ["cyclicRight"] = "Cyclic right", ["engine"] = "Engine start/stop",
-            ["trim"] = "Trim cyclic", ["trimRelease"] = "Release trim", ["camera"] = "Camera", ["pause"] = "Pause", ["panel"] = "Instrument panel", ["map"] = "Map", ["apAlt"] = "Autopilot ALT (twins)",
+            ["trim"] = "Trim cyclic and pedals", ["trimRelease"] = "Release trim", ["camera"] = "Camera", ["pause"] = "Pause", ["panel"] = "Instrument panel", ["map"] = "Map", ["apAlt"] = "Autopilot ALT (twins)",
             ["apHdg"] = "Autopilot HDG (twins)", ["apHover"] = "Autopilot hover hold (twins)", ["winch"] = "Winch lower / abort", ["transmit"] = "Radio transmit", ["flir"] = "FLIR camera", ["voice"] = "Voice command",
             ["tablet"] = "Crew tablet (freeplay)", ["doors"] = "Cabin doors open/shut (on the ground)", ["gear"] = "Landing gear up/down (retractable wheels)",
         };
@@ -257,9 +257,9 @@ namespace Rotorcraft.Presentation.UI
             page.Add(H1("Settings"));
             page.Add(Panel(H3("Handling"),
                 Seg(new[] { (AssistMode.Beginner, "Beginner"), (AssistMode.Standard, "Standard"), (AssistMode.Realistic, "Realistic") }, s.assist, v => Change(n => n.assist = v)),
-                Muted(s.assist == AssistMode.Beginner ? "Cyclic sets an attitude and the aircraft levels itself when released. Drift near the hover is gently damped and torque is compensated automatically. You still fly every control."
-                    : s.assist == AssistMode.Standard ? "Attitude-command cyclic, but no drift damping. Collective changes make the nose swing until you correct with pedal."
-                    : "Rate-command cyclic: the aircraft holds whatever attitude you leave it in and never levels itself. Full torque reaction needs constant pedal. Disc flap-back means forward cyclic is needed as speed builds.", "small"),
+                Muted(s.assist == AssistMode.Beginner ? "Cyclic sets an attitude and the aircraft levels itself when released. Drift near the hover is gently damped and torque is compensated automatically. The nose follows your turns and holds still at the hover, so the pedals are only needed to point it somewhere new."
+                    : s.assist == AssistMode.Standard ? "Attitude-command cyclic, but no drift damping. The nose follows your turns at speed, but in the hover collective changes make it swing until you correct with pedal."
+                    : "Rate-command cyclic: the aircraft holds whatever attitude you leave it in and never levels itself. Full torque reaction needs pedal in the hover (hold it and press Trim to keep it there) and the fin takes most of the load at speed. Disc flap-back means forward cyclic is needed as speed builds.", "small"),
                 Check("Training aids: target markers and height readout", s.showTrainingAids, v => Change(n => n.showTrainingAids = v))));
             if (Vr.Available) page.Add(VrPanel());
             var keys = new List<VisualElement[]>();
@@ -373,7 +373,7 @@ namespace Rotorcraft.Presentation.UI
             page.Add(H1("Controls & Flying"));
             page.Add(E("grid2",
                 Panel(H3("Keyboard"), Rows(("Collective up / down", "W / S (Shift = fine)"), ("Cyclic", "Arrow keys"), ("Pedals", "A / D"), ("Engine start / stop", "E"), ("Throttle open / idle", "R / F"),
-                    ("Beacon · Nav · Strobe · Landing light", "B · N · O · L"), ("Governor · Switch panel", "G · K"), ("Trim cyclic · release trim", "T · U"), ("Camera", "C"), ("Panel / Map", "I / M"),
+                    ("Beacon · Nav · Strobe · Landing light", "B · N · O · L"), ("Governor · Switch panel", "G · K"), ("Trim cyclic and pedals · release trim", "T · U"), ("Camera", "C"), ("Panel / Map", "I / M"),
                     ("Pause", "P or Esc"), ("Autopilot ALT · HDG · hover hold", "1 · 2 · 3"), ("Radio transmit · Winch · FLIR", "V · X · J"), ("Searchlight", "H"), ("Crew tablet (freeplay)", "Tab"),
                     ("Cabin doors (on the ground)", "Z"), ("Look around (cockpit view)", "Right mouse drag · hat switch")), Muted("All keys can be changed in Settings.", "small")),
                 Panel(H3("Joystick and gamepad"), Muted("Flight sticks, throttle quadrants, rudder pedals and gamepads all work. The Thrustmaster T.Flight Stick X is recognised automatically. Default gamepad layout:", "small"),

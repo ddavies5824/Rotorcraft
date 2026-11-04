@@ -505,13 +505,21 @@ namespace Rotorcraft.Sim
 
             // Yaw: pedals vs torque reaction and weathervane
             var torqueFrac = torque / 100;
+            // From about 15 kt forward (full by about 27 kt) the fin takes over: it carries most of the anti-torque load
+            // and the nose follows a banked turn with the pedals left alone.
+            var fin = Smoothstep(5, 14, vaF);
             double torqueYaw;
-            if (assist == AssistMode.Realistic) torqueYaw = ac.torqueYaw * (ac.hasAFCS ? 0.25 : 1) * (torqueFrac - 0.0);
-            else if (assist == AssistMode.Standard) torqueYaw = ac.torqueYaw * (torque - s.torqueSmoothed) / 100 * 1.5; // transients only
+            if (assist == AssistMode.Realistic) torqueYaw = ac.torqueYaw * (ac.hasAFCS ? 0.25 : 1) * torqueFrac * (1 - 0.85 * fin);
+            else if (assist == AssistMode.Standard) torqueYaw = ac.torqueYaw * (torque - s.torqueSmoothed) / 100 * 1.5 * (1 - 0.85 * fin); // transients only
             else torqueYaw = 0;
             torqueYaw *= rotorSign;
-            var rCmd = c.pedals * ac.yawRate * ctrlPower + torqueYaw * ctrlPower + ac.weathervane * vaR * (assist == AssistMode.Beginner ? 0.4 : 1) + turb.r * gustScale;
-            if (assist == AssistMode.Beginner && Math.Abs(c.pedals) < 0.05) rCmd -= s.r * 0.5; // heading hold-lite
+            // the turn rate of a level turn at this bank and speed (a light aircraft without AFCS in Realistic needs some pedal)
+            var followTurn = fin * (assist == AssistMode.Realistic && !ac.hasAFCS ? 0.7 : 1) * G * Math.Tan(Clamp(s.phi, -45 * DEG, 45 * DEG)) / Math.Max(vaF, 5);
+            // the nose swings into the relative wind; near the hover the assisted modes hold it against that
+            var windvane = ac.weathervane * vaR * (assist == AssistMode.Realistic ? 1 : assist == AssistMode.Standard ? 0.4 + 0.6 * fin : fin);
+            var rCmd = c.pedals * ac.yawRate * ctrlPower + torqueYaw * ctrlPower + followTurn + windvane + turb.r * gustScale;
+            // pedals centred: the yaw rate settles quickly on what the turn needs, so the nose stops where it is put
+            if (Math.Abs(c.pedals) < 0.05) rCmd -= (s.r - followTurn) * (assist != AssistMode.Realistic ? 1 : ac.hasAFCS ? 0.5 : 0);
             var fl = s.failures;
             if (fl != null && fl.tailRotor)
             {
