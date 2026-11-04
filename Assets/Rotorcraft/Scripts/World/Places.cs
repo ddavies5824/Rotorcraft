@@ -48,6 +48,8 @@ namespace Rotorcraft.World
         public static readonly List<Structure> NEW_STRUCTURES = new List<Structure>();
         public static readonly List<Prop> PROPS = new List<Prop>();
         public static readonly List<Paved> PAVED = new List<Paved>();
+        /// <summary>Kinloch Heliport's apron and taxiway. Drawn lower than other paved areas, so the pads lie on top of them.</summary>
+        public static readonly Paved HELIPORT_APRON = new Paved { x = 20, z = -20, w = 150, d = 110 }, HELIPORT_TAXIWAY = new Paved { x = -160, z = 30, w = 260, d = 14, rot = 0.2 };
         /// <summary>Wind turbines: tower base, hub height, rotor radius and the direction the rotor faces (rad).</summary>
         public static readonly List<Turbine> TURBINES = new List<Turbine>();
         /// <summary>Overhead line poles (33 kV wood poles up the glen) and ski-tow pylons.</summary>
@@ -156,9 +158,9 @@ namespace Rotorcraft.World
 
             RAW_ROADS = new[]
             {
-                new Road { name = "Kinloch road", width = 6.5, pts = new[] { P(95, 60), P(40, -150), P(-150, -330), P(-420, -650), P(-640, -930), P(-860, -1220), P(-1030, -1700), P(-1140, -2400), P(-1210, -3200), P(-1260, -3900), P(-1300, -4420), P(-1330, -4900), P(-1400, -5600) } },
+                new Road { name = "Kinloch road", width = 6.5, pts = new[] { P(175, 57.2), P(118, 30), P(108, -70), P(88, -125), P(-150, -330), P(-420, -650), P(-640, -930), P(-860, -1220), P(-1030, -1700), P(-1140, -2400), P(-1210, -3200), P(-1260, -3900), P(-1300, -4420), P(-1302, -4450), P(-1348, -4610), P(-1352, -4790), P(-1330, -4960), P(-1400, -5600) } },
                 new Road { name = "Coast road", width = 7, pts = CoastRoad() },
-                new Road { name = "Heliport link", width = 6, pts = new[] { P(95, 60), P(380, 50), P(700, 30), P(CoastX(0) - 280, 0) } },
+                new Road { name = "Heliport link", width = 6, pts = new[] { P(88, 36), P(95, 60), P(380, 50), P(700, 30), P(CoastX(0) - 280, 0) } },
                 new Road { name = "Glen road", width = 5.5, pts = new[] { P(-860, -1220), P(-1500, -1500), P(-2200, -1900), P(-2800, -2120), P(-3350, -1500), P(-3900, -500), P(-4200, 300), P(-4300, 821), P(-4380, 1500), P(-4600, 2400), P(-4900, 3300) } },
                 new Road { name = "Inverhallan road", width = 6.5, pts = new[] { P(-1400, -5600), P(-1250, -6150), P(-800, -6700), P(-250, -7150), P(120, -7420), P(215, -7560) } },
                 new Road { name = "Inverhallan link", width = 6, pts = new[] { P(215, -7560), P(520, -7420), P(900, -7330), P(CoastX(-7300) - 280 + 40 * Math.Sin(-7300.0 / 600), -7300) } },

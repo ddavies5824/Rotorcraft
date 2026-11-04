@@ -53,6 +53,7 @@ namespace Rotorcraft.Presentation
         GameApp App => GameApp.Instance;
         ModelAnimator animator;
         CockpitDisplays displays;
+        readonly MissionMarkers markers = new MissionMarkers();
         double fpT;
         int fpVer = -1; double fpSyncT;
         float? crashAt;
@@ -203,7 +204,17 @@ namespace Rotorcraft.Presentation
                 actors?.UpdateHoist(Runtime.hoist, s, heli.Aircraft);
             }
             else cam.shake = 0;
+            UpdateMarkers();
             UpdateHud();
+        }
+
+        /// <summary>The target in the world: a training aid the player can turn off, except a search area's corners.</summary>
+        void UpdateMarkers()
+        {
+            var nav = App.Settings.showTrainingAids ? Runtime.NavTargetNow() : null;
+            var searching = Runtime.Active?.def.kind == ObjectiveKind.Search;
+            if (searching) nav = null;
+            markers.Show(nav, searching ? Runtime.SearchOverlay()?.corners : null);
         }
 
         /// <summary>Doors follow what is happening: open for loading passengers and freight, the cabin door for the winch.</summary>
@@ -470,6 +481,7 @@ namespace Rotorcraft.Presentation
             hudRoot?.RemoveFromHierarchy();
             hudRoot = null;
             actors?.Clear();
+            markers.Clear();
             cam.scriptedLookYaw = null;
             SetMenuBackdrop(true);
         }

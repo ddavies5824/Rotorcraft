@@ -73,6 +73,27 @@ namespace Rotorcraft.Presentation.UI
                 Muted($"Flying since {(p.startedAt > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(p.startedAt).ToString("MMM yyyy") : "—")} · last active {Ago(p.updatedAt)} · freeplay {Money(p.fpEarned)} · {p.accidents} accident{(p.accidents == 1 ? "" : "s")}", "small"));
         }
 
+        /// <summary>Change the pilot's name: at once in the game, and on the leaderboards with the publish that follows the save.
+        /// Limited to the 24 characters a published profile can carry.</summary>
+        static VisualElement RenameField(GameApp app)
+        {
+            void Save()
+            {
+                var n = CareerManager.RenamePilot(app.Career, St(app, "rename", app.Career.pilotName));
+                if (n == null) { Set(app, "renameMsg", "A pilot name needs at least two letters or numbers."); return; }
+                if (ReferenceEquals(n, app.Career)) { Set(app, "renameMsg", "That is already your pilot name."); return; }
+                app.CommitCareer(n);
+                app.ScreenState["rename"] = n.pilotName;
+                var c = Cloud.Instance;
+                Set(app, "renameMsg", $"You are now {n.pilotName}." + (c != null && c.PilotSignedIn && c.PilotVisible ? " The leaderboards show it in a few seconds." : ""));
+            }
+            var msg = St<string>(app, "renameMsg", null);
+            return Stack(Field("Pilot name", Text(St(app, "rename", app.Career.pilotName), 24, "Your pilot name", v => app.ScreenState["rename"] = v)
+                    .With(t => t.RegisterCallback<KeyDownEvent>(e => { if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) Save(); }))),
+                Row(Btn("Change name", "small", Save)),
+                msg != null ? Muted(msg, "small") : null);
+        }
+
         static VisualElement AccountScreen(GameApp app)
         {
             var c = Cloud.Instance;
@@ -91,7 +112,7 @@ namespace Rotorcraft.Presentation.UI
             card.Add(Muted("• Sign-in happens on Google's own page in your browser: the game never sees your password.", "small"));
             card.Add(Muted("• Other pilots see only your pilot name and flying statistics: never your Google name, email or photo.", "small"));
             card.Add(Muted("• Without signing in, everything still works and saves on this computer.", "small"));
-            var prof = Panel(H3("Your pilot profile"), me == null ? Muted("Start a career to get a pilot profile.") : ProfileCard(me));
+            var prof = Panel(H3("Your pilot profile"), me == null ? Muted("Start a career to get a pilot profile.") : ProfileCard(me), me == null ? null : RenameField(app));
             if (cfg.HasFirebase && c != null)
             {
                 prof.Add(Check("Show me in the pilot directory and on the leaderboards", c.PilotVisible, v => c.SetVisible(v)));

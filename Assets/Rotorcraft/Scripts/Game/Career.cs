@@ -123,6 +123,18 @@ namespace Rotorcraft.Game
             return s.Length > 0 ? s : "Student Pilot";
         }
 
+        /// <summary>The same career under a new pilot name; unchanged if it is the same name, null if the name is unusable (under two letters or numbers).</summary>
+        public static Career RenamePilot(Career prev, string name)
+        {
+            if ((name ?? "").Count(char.IsLetterOrDigit) < 2) return null;
+            var s = SanitizeName(name);
+            if (s == prev.pilotName) return prev;
+            var c = prev.Clone();
+            c.pilotName = s;
+            c.updatedAt = Now();
+            return c;
+        }
+
         public static double Hours(Career c) => (c.flightSeconds + c.priorSeconds) / 3600;
         public static AirframeState Airframe(Career c, string acId) => c.fleet != null && c.fleet.TryGetValue(acId, out var a) ? a : new AirframeState();
         public static bool HasQual(Career c, string id) => c.qualifications.ContainsKey(id);

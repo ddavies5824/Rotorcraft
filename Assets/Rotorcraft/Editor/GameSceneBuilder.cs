@@ -190,6 +190,7 @@ namespace Rotorcraft.EditorTools
             Keep("Universal Render Pipeline/Unlit", "Unlit");
             Keep("Universal Render Pipeline/Unlit", "Unlit cutout", "_ALPHATEST_ON");
             Keep("Rotorcraft/Light Points", "Light points");
+            Keep("Rotorcraft/Mission Marker", "Mission marker");
             // the terrain and the instanced trees are made at run time, so the build cannot see their instancing
             // variants in use: keep them all
             var tm = AssetDatabase.LoadAssetAtPath<Material>($"{SettingsDir}/Terrain.mat");

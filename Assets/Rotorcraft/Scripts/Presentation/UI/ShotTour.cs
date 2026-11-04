@@ -30,6 +30,15 @@ namespace Rotorcraft.Presentation.UI
             app = GameApp.Instance;
             Directory.CreateDirectory(folder);
             yield return Wait(2.5f);
+            var a = System.Environment.GetCommandLineArgs();
+            if (System.Array.IndexOf(a, "-markings-only") >= 0)
+            {
+                app.CommitCareer(CareerManager.CreateCareer("Alex Ross", null, CareerStart.Student));
+                yield return Markings();
+                Debug.Log($"Shot tour done: {n} pictures in {folder}");
+                Application.Quit();
+                yield break;
+            }
             yield return Page("menu");
             app.Go("new"); yield return Page("new-career");
             app.CommitCareer(CareerManager.CreateCareer("Alex Ross", null, CareerStart.Student));
@@ -41,6 +50,13 @@ namespace Rotorcraft.Presentation.UI
             app.Go("company"); yield return Page("company");
             app.Go("pilots"); yield return Page("pilots");
             app.Go("account"); yield return Page("account");
+            // the rename control, pressed as a player would
+            app.ScreenState["rename"] = "  Ailsa  Munro! "; app.Refresh(); yield return null; yield return null;
+            var renameBtn = app.document.rootVisualElement.Query<Button>().ToList().First(b => b.Query<Label>().ToList().Any(l => l.text == "CHANGE NAME") || b.text.ToUpperInvariant() == "CHANGE NAME");
+            using (var e = NavigationSubmitEvent.GetPooled()) { e.target = renameBtn; renameBtn.SendEvent(e); }
+            yield return Wait(0.5f);
+            Debug.Log($"Tour: renamed to \"{app.Career.pilotName}\", saved copy: \"{app.Saves.LoadCareer().career?.pilotName}\"");
+            yield return Page("account-renamed");
 
             // a freeplay shift in the Northstar: loading screen, then the HUD and its panels
             var cfg = new FreeplayConfig { aircraftId = "northstar", kit = Loadout.DefaultKit(Aircraft.Get("northstar")), fuelKg = 900, pace = FreeplayPace.Busy };
@@ -102,11 +118,85 @@ namespace Rotorcraft.Presentation.UI
             f.cam.orbitDist = 12; f.Finish(FlightEnd.Complete); yield return Wait(1);
             yield return Effects();
             yield return Life();
+            yield return Markings();
             Debug.Log($"Shot tour done: {n} pictures in {folder}");
             Application.Quit();
         }
 
         FlightSession f;
+
+        /// <summary>What is painted and placed on the ground at each kind of site, the road past the hangar, and the markers a mission puts in the world.</summary>
+        IEnumerator Markings()
+        {
+            yield return Fly("kestrel", "calm", TimeOfDay.Day);
+            var h1y = Rotorcraft.World.WorldMap.SiteElevation(Rotorcraft.World.WorldMap.SiteById("kin_h1"));
+            f.heli.SetCamera(CameraMode.Orbit);
+            IEnumerator Look(string name, double x, double y, double z, float dist, float pitch, float yaw)
+            {
+                f.cam.orbitDist = dist; f.cam.orbitPitch = pitch; f.cam.orbitYaw = yaw;
+                yield return Hold(new Vec3(x, y, z), 1.5f);
+                yield return Shot(name);
+            }
+            yield return Look("mark-heliport", 40, h1y + 60, -30, 230, 48, 200);
+            yield return Look("mark-road-hangar", 105, h1y + 20, -60, 75, 20, 75);
+            yield return Look("mark-road-above", 60, h1y + 40, -120, 150, 70, 0);
+            foreach (var (id, dist, pitch) in new[] { ("kin_h1", 42f, 42f), ("kin_h2", 50f, 40f), ("kin_spot_a", 32f, 45f), ("moss_farm", 80f, 35f), ("glen_clearing", 50f, 40f), ("balnagown", 60f, 40f), ("portcraig_quay", 40f, 40f), ("ardoch_ski", 40f, 40f) })
+            {
+                var s = Rotorcraft.World.WorldMap.SiteById(id);
+                yield return Look("mark-" + id, s.x, (s.deckHeight ?? Rotorcraft.World.WorldMap.SiteElevation(s)) + 12, s.z, dist, pitch, 30);
+            }
+            // a ring laid on a roof and on a helideck, where it lies on the deck instead of following the ground below
+            var test = new MissionMarkers();
+            foreach (var (id, dist, pitch) in new[] { ("kinloch_royal", 50f, 42f), ("cormorant_a", 60f, 38f) })
+            {
+                var s = Rotorcraft.World.WorldMap.SiteById(id);
+                test.Show(new NavTarget { x = s.x, z = s.z, radiusM = s.radius * 1.3, elevationFt = s.deckHeight.Value * 3.28084, kind = ObjectiveKind.Land }, null);
+                yield return Look("mark-" + id, s.x, s.deckHeight.Value + 12, s.z, dist, pitch, 30);
+            }
+            test.Clear();
+            f.cam.orbitDist = 12; f.Finish(FlightEnd.Complete); yield return Wait(1);
+
+            // a real exercise: the beacon on the way to a waypoint, the ring round a hover, and then round the landing
+            app.FlyMission("cpl2_confined_area", 120, TimeOfDay.Day, "calm");
+            while (!f.Active || f.Runtime == null) yield return null;
+            yield return Wait(3);
+            f.SkipForTour(); f.ShowForTour();
+            var glen = Rotorcraft.World.WorldMap.SiteById("glen_clearing");
+            var ge = Rotorcraft.World.WorldMap.SiteElevation(glen);
+            var p0 = f.heli.State.pos.Clone();
+            yield return Hold(new Vec3(p0.x, p0.y + 30, p0.z), 3, true);
+            Debug.Log($"Tour: exercise on \"{f.Runtime.Active?.def.label}\", target {f.Runtime.NavTargetNow()?.name}");
+            f.heli.SetCamera(CameraMode.Chase);
+            f.heli.Input.trimX = 0.1;   // shows the trim tag beside the objective
+            yield return Hold(new Vec3(glen.x + 1000, ge + 170, glen.z), 2, true, -System.Math.PI / 2); yield return Shot("marker-waypoint");
+            f.heli.Input.trimX = 0;
+            f.heli.SetCamera(CameraMode.Orbit); f.cam.orbitDist = 420; f.cam.orbitPitch = 32; f.cam.orbitYaw = 90;
+            yield return Hold(new Vec3(glen.x + 320, ge + 170, glen.z), 2, true, -System.Math.PI / 2); yield return Shot("marker-waypoint-ring");
+            yield return Hold(new Vec3(glen.x, ge + 150, glen.z), 2, true);
+            Debug.Log($"Tour: exercise on \"{f.Runtime.Active?.def.label}\", target {f.Runtime.NavTargetNow()?.name}");
+            f.cam.orbitDist = 26; f.cam.orbitPitch = 38; f.cam.orbitYaw = 40;
+            yield return Hold(new Vec3(glen.x, ge + 3, glen.z), 2, true); yield return Shot("marker-hover");
+            yield return Hold(new Vec3(glen.x, ge + 3, glen.z), 10, true);
+            Debug.Log($"Tour: exercise on \"{f.Runtime.Active?.def.label}\", target {f.Runtime.NavTargetNow()?.name}");
+            yield return Shot("marker-land");
+            f.heli.ControlFilter = null; f.cam.orbitDist = 12; f.Finish(FlightEnd.Aborted); yield return Wait(1.5f);
+
+            // a search: a post at each corner of the area
+            app.FlyMission("sar_t1_search", 400, TimeOfDay.Day, "calm");
+            while (!f.Active || f.Runtime == null) yield return null;
+            yield return Wait(3);
+            f.SkipForTour(); f.ShowForTour();
+            p0 = f.heli.State.pos.Clone();
+            yield return Hold(new Vec3(p0.x, p0.y + 30, p0.z), 3, true);
+            var area = f.Runtime.NavTargetNow();
+            Debug.Log($"Tour: exercise on \"{f.Runtime.Active?.def.label}\", target {area?.name}");
+            if (area != null)
+            {
+                f.heli.SetCamera(CameraMode.Chase);
+                yield return Hold(new Vec3(area.x + area.radiusM * 1.4, area.elevationFt / 3.28084 + 220, area.z), 2, true, -System.Math.PI / 2); yield return Shot("marker-search");
+            }
+            f.heli.ControlFilter = null; f.cam.orbitDist = 12; f.Finish(FlightEnd.Aborted); yield return Wait(1.5f);
+        }
 
         IEnumerator Fly(string id, string weather, TimeOfDay tod)
         {

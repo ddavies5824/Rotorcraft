@@ -56,19 +56,40 @@ It takes about 15–20 minutes, once. You need a Google account.
    ```
    rules_version = '2';
    service cloud.firestore {
-     match /databases/{db}/documents {
+     match /databases/{database}/documents {
+
+       function num(v, lo, hi) { return (v is int || v is float) && v >= lo && v <= hi; }
+
+       function validProfile(d) {
+         return d.keys().hasOnly(['name', 'rank', 'rankLevel', 'rankScore', 'hours', 'flights', 'landings', 'smoothPct', 'accidents', 'rescues', 'passengers', 'operational', 'quals', 'qualCount', 'bestStanding', 'careerEarned', 'fpShifts', 'fpJobs', 'fpEarned', 'fpBest', 'acHours', 'startedAt', 'updatedAt'])
+           && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+           && d.rank is string && d.rank.size() <= 40
+           && num(d.rankLevel, 0, 7) && num(d.rankScore, 0, 1000000)
+           && num(d.hours, 0, 100000) && num(d.flights, 0, 1000000) && num(d.landings, 0, 10000000)
+           && num(d.smoothPct, 0, 100) && num(d.accidents, 0, 1000000)
+           && num(d.rescues, 0, 1000000) && num(d.passengers, 0, 10000000) && num(d.operational, 0, 1000000)
+           && d.quals is list && d.quals.size() <= 40 && num(d.qualCount, 0, 40)
+           && num(d.bestStanding, 0, 100) && num(d.careerEarned, 0, 10000000000)
+           && num(d.fpShifts, 0, 1000000) && num(d.fpJobs, 0, 10000000)
+           && num(d.fpEarned, -1000000000, 10000000000) && num(d.fpBest, -1000000000, 1000000000)
+           && d.acHours is map && d.acHours.keys().hasOnly(['kestrel', 'northstar', 'guardian', 'nightjar', 'peregrine'])
+           && num(d.startedAt, 0, 1000000000000000) && num(d.updatedAt, 0, 1000000000000000);
+       }
+
        match /pilots/{uid} {
          allow read: if true;
-         allow write: if request.auth != null && request.auth.uid == uid
-                      && request.resource.data.keys().hasOnly(['name','rank','rankLevel','rankScore','hours','flights','landings','smoothPct','accidents','rescues','passengers','operational','quals','qualCount','bestStanding','careerEarned','fpShifts','fpJobs','fpEarned','fpBest','acHours','startedAt','updatedAt'])
-                      && request.resource.data.name is string && request.resource.data.name.size() <= 24;
+         allow create, update: if request.auth != null && request.auth.uid == uid && validProfile(request.resource.data);
          allow delete: if request.auth != null && request.auth.uid == uid;
+       }
+
+       match /{document=**} {
+         allow read, write: if false;
        }
      }
    }
    ```
 
-   This means anyone can read the leaderboards, but each pilot can only write their own profile, with game statistics only.
+   This means anyone can read the leaderboards, but each pilot can only write their own profile, with type- and range-checked game statistics only. The `acHours` line names every aircraft in the game: when a new aircraft is added, add it there and publish the rules again, or every pilot's profile is refused.
 6. Get the web config: **Project settings** (gear icon) › **General** › **Your apps**.
    1. Click the **web** icon `</>` and register an app called `Rotorcraft`. Hosting is not needed.
    2. Copy the `firebaseConfig` block. Only `apiKey` and `projectId` are used.
@@ -120,7 +141,7 @@ Values pasted this way are saved on that computer or browser only.
 | `access_denied` / "app has not completed verification" | Add your Gmail as a **Test user** (Part 1, step 4.6), or publish the app. |
 | "Sign-in failed (401) invalid_client" (Windows) | Paste the **Desktop app** JSON, not the web client. |
 | "Uploading the save failed (403)" | The **Google Drive API** is not enabled (Part 1, step 3). |
-| Pilot area: "PERMISSION_DENIED" | The Firestore rules were not published, or Google is not enabled in Firebase Authentication. |
+| Pilot area: "PERMISSION_DENIED" or "(403) Missing or insufficient permissions" | The Firestore rules were not published or are out of date (the `acHours` line must name every aircraft), or Google is not enabled in Firebase Authentication. |
 | Pilot area: "unauthorized domain" (web) | Add the Netlify domain under Firebase **Authentication › Settings › Authorised domains**. |
 | Nothing happens on the web after clicking | A popup blocker stopped it: allow popups for your Netlify site. |
 

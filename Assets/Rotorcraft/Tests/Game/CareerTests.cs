@@ -49,6 +49,21 @@ namespace Rotorcraft.Game.Tests
         }
 
         [Test]
+        public void RenamingKeepsTheCareerAndCleansTheName()
+        {
+            var c = CareerManager.CreateCareer("Legend", 1000);
+            c.xp = 250;
+            var n = CareerManager.RenamePilot(c, "  Ailsa  Munro!! ");
+            Assert.AreEqual("Ailsa Munro", n.pilotName);
+            Assert.AreEqual("Legend", c.pilotName);
+            Assert.AreEqual(c.id, n.id);
+            Assert.AreEqual(250, n.xp);
+            Assert.Greater(n.updatedAt, c.updatedAt, "a rename must win the next cloud sync");
+            Assert.AreSame(c, CareerManager.RenamePilot(c, "Legend"));
+            foreach (var bad in new[] { null, "", "   ", "!!!", "A", "- -" }) Assert.IsNull(CareerManager.RenamePilot(c, bad), $"\"{bad}\"");
+        }
+
+        [Test]
         public void NewStudentStartsWithExerciseOne()
         {
             var c = CareerManager.CreateCareer("  Daniel  Davies!! ", 1000);

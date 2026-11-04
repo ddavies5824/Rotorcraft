@@ -51,6 +51,68 @@ namespace Rotorcraft.World.Tests
         }
 
         [Test]
+        public void NoRoadRunsThroughABuilding()
+        {
+            var hits = new System.Collections.Generic.HashSet<string>();
+            foreach (var L in RoadNet.Lines())
+                foreach (var st in STRUCTURES)
+                {
+                    if (st.kind == StructureKind.Pier) continue;   // a road may run along a quay
+                    double c = Math.Cos(st.rot), s = Math.Sin(st.rot), reach = Js.Hypot(st.w, st.d) / 2 + L.hw;
+                    // walk the centre line in short steps: its points can be some way apart on a straight
+                    for (int i = 0; i < L.x.Length - 1; i++)
+                    {
+                        if (Math.Min(L.x[i], L.x[i + 1]) > st.x + reach + 1 || Math.Max(L.x[i], L.x[i + 1]) < st.x - reach - 1 || Math.Min(L.z[i], L.z[i + 1]) > st.z + reach + 1 || Math.Max(L.z[i], L.z[i + 1]) < st.z - reach - 1) continue;
+                        var steps = Math.Max(1, (int)Math.Ceiling(Js.Hypot(L.x[i + 1] - L.x[i], L.z[i + 1] - L.z[i])));
+                        for (int k = 0; k <= steps; k++)
+                        {
+                            double dx = L.x[i] + (L.x[i + 1] - L.x[i]) * k / steps - st.x, dz = L.z[i] + (L.z[i + 1] - L.z[i]) * k / steps - st.z;
+                            double lx = dx * c - dz * s, lz = dx * s + dz * c;
+                            if (Math.Abs(lx) < st.w / 2 + L.hw && Math.Abs(lz) < st.d / 2 + L.hw) hits.Add($"{L.name} through {st.kind} {st.style} at {st.x:F0},{st.z:F0}");
+                        }
+                    }
+                }
+            Assert.That(hits, Is.Empty);
+        }
+
+        [Test]
+        public void NoRoadCrossesALandingSite()
+        {
+            var hits = new System.Collections.Generic.HashSet<string>();
+            foreach (var site in SITES)
+            {
+                // how far what is laid on the ground reaches: a pad's concrete surround, or a field's markers
+                var reach = site.kind == SiteKind.Heliport || site.kind == SiteKind.Hospital ? site.radius * 1.9 : site.kind == SiteKind.Pad ? site.radius * 1.25 * Math.Sqrt(2) : site.radius;
+                if (site.radius <= 0 || site.deckHeight.HasValue) continue;
+                foreach (var L in RoadNet.Lines())
+                    for (int i = 0; i < L.x.Length - 1; i++)
+                    {
+                        var steps = Math.Max(1, (int)Math.Ceiling(Js.Hypot(L.x[i + 1] - L.x[i], L.z[i + 1] - L.z[i])));
+                        for (int k = 0; k <= steps; k++)
+                        {
+                            double x = L.x[i] + (L.x[i + 1] - L.x[i]) * k / steps, z = L.z[i] + (L.z[i + 1] - L.z[i]) * k / steps;
+                            if (Js.Hypot(x - site.x, z - site.z) < reach + L.hw) hits.Add($"{L.name} across {site.name}");
+                        }
+                    }
+            }
+            Assert.That(hits, Is.Empty);
+        }
+
+        [Test]
+        public void TheKinlochRoadKeepsOffTheHeliportsApronAndPads()
+        {
+            var road = RoadNet.Lines().First(l => l.name == "Kinloch road");
+            var apron = Places.HELIPORT_APRON;
+            var h2 = SiteById("kin_h2");
+            for (int i = 0; i < road.x.Length; i++)
+            {
+                double x = road.x[i], z = road.z[i];
+                Assert.That(Math.Abs(x - apron.x) > apron.w / 2 + road.hw || Math.Abs(z - apron.z) > apron.d / 2 + road.hw, $"on the apron at {x:F0},{z:F0}");
+                Assert.That(Js.Hypot(x - h2.x, z - h2.z) > h2.radius * 1.9 + road.hw, $"on the H2 pad at {x:F0},{z:F0}");
+            }
+        }
+
+        [Test]
         public void RoundedBendsKeepTheirEndsAndStayInsideTheCorner()
         {
             var r = Places.RoundCorners(new[] { new Pt(0, 0), new Pt(100, 0), new Pt(100, 100) }, 40);

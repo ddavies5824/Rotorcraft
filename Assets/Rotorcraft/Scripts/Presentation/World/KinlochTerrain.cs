@@ -182,28 +182,39 @@ namespace Rotorcraft.Presentation
         /// <summary>No grass through floors and pads: clear the grass under every structure, pad and paved area.</summary>
         static void ClearUnderStructures(Tile t, double acell)
         {
-            void Clear(double x, double z, double hw, double hd, double rot)
+            void ClearWhere(double x, double z, double r, Func<double, double, bool> inside)
             {
-                double c = Math.Cos(rot), s = Math.Sin(rot), r = Js.Hypot(hw, hd);
                 int i0 = (int)Math.Floor((x - r - t.x0) / acell), i1 = (int)Math.Ceiling((x + r - t.x0) / acell);
                 int j0 = (int)Math.Floor((t.z0 + t.size - (z + r)) / acell), j1 = (int)Math.Ceiling((t.z0 + t.size - (z - r)) / acell);
                 for (int j = Math.Max(0, j0); j <= Math.Min(t.alphaRes - 1, j1); j++)
                     for (int i = Math.Max(0, i0); i <= Math.Min(t.alphaRes - 1, i1); i++)
-                    {
-                        double gx = t.x0 + (i + 0.5) * acell - x, gz = t.z0 + t.size - (j + 0.5) * acell - z;
-                        double lx = gx * c - gz * s, lz = gx * s + gz * c;
-                        if (Math.Abs(lx) <= hw && Math.Abs(lz) <= hd) { t.grass[0][j, i] = 0; t.grass[1][j, i] = 0; }
-                    }
+                        if (inside(t.x0 + (i + 0.5) * acell - x, t.z0 + t.size - (j + 0.5) * acell - z)) { t.grass[0][j, i] = 0; t.grass[1][j, i] = 0; }
+            }
+            void Clear(double x, double z, double hw, double hd, double rot)
+            {
+                double c = Math.Cos(rot), s = Math.Sin(rot);
+                ClearWhere(x, z, Js.Hypot(hw, hd), (gx, gz) => Math.Abs(gx * c - gz * s) <= hw && Math.Abs(gx * s + gz * c) <= hd);
             }
             bool Near(double x, double z, double r) => x + r >= t.x0 && x - r <= t.x0 + t.size && z + r >= t.z0 && z - r <= t.z0 + t.size;
             foreach (var st in WorldMap.STRUCTURES) if (Near(st.x, st.z, Js.Hypot(st.w, st.d))) Clear(st.x, st.z, st.w / 2 + 2, st.d / 2 + 2, st.rot);
             foreach (var p in Places.PAVED) if (Near(p.x, p.z, Js.Hypot(p.w, p.d))) Clear(p.x, p.z, p.w / 2 + 1, p.d / 2 + 1, p.rot);
-            foreach (var s in WorldMap.SITES) if (s.radius > 0 && s.kind != SiteKind.Field && Near(s.x, s.z, s.radius * 2)) Clear(s.x, s.z, s.radius * 1.45, s.radius * 1.45, 0);
+            foreach (var p in new[] { Places.HELIPORT_APRON, Places.HELIPORT_TAXIWAY }) if (Near(p.x, p.z, Js.Hypot(p.w, p.d))) Clear(p.x, p.z, p.w / 2 + 1, p.d / 2 + 1, p.rot);
+            // the grass stops at the edge of what is laid on the ground, so no bare patch shows round a pad
+            foreach (var s in WorldMap.SITES)
+            {
+                if (s.radius <= 0 || s.deckHeight.HasValue || !Near(s.x, s.z, s.radius * 2)) continue;
+                if (s.kind == SiteKind.Heliport || s.kind == SiteKind.Hospital)
+                {
+                    var r = s.radius * 1.9 + 0.5;
+                    ClearWhere(s.x, s.z, r, (gx, gz) => gx * gx + gz * gz <= r * r);
+                }
+                else if (s.kind == SiteKind.Pad) Clear(s.x, s.z, s.radius * 1.25 + 0.5, s.radius * 1.25 + 0.5, 0);
+            }
         }
 
         // ---- tile cache: computing the region takes about a minute, so each tile is kept on disk after the first
         // time, under a key that changes whenever the world data or this generator changes
-        const string GeneratorVersion = "terrain-7";
+        const string GeneratorVersion = "terrain-9";
 
         static string CacheDir()
         {

@@ -291,6 +291,7 @@ namespace Rotorcraft.Presentation.UI
             page.Add(Panel(H3("Career save"),
                 Muted(FileDialog.Available ? $"{c.pilotName} · started {Date(c.createdAt)} · saved on this computer. Export a backup to move it to another computer."
                     : $"{c.pilotName} · started {Date(c.createdAt)} · saved in this browser. Sign in with Google to carry it between the web and Windows versions."),
+                RenameField(app),
                 !FileDialog.Available ? null : Row(Btn("Export save", "", () => { var p = app.Saves.ExportCareer(app.Career); Set(app, "importMsg", $"Saved to {p}"); }),
                     Btn("Import save", "", () =>
                     {

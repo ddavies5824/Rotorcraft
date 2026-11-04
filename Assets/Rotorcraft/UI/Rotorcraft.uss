@@ -337,7 +337,7 @@ Label, .unity-label { white-space: normal; padding: 0; margin: 0; color: var(--f
 .hintcard > * { margin-bottom: 5px; }
 .hintcard-ttl { -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/BarlowCondensed-SemiBold.ttf"); letter-spacing: 1.9px; font-size: 11px; color: var(--nav); }
 .hintcard-txt { font-size: 13px; -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/B612-Regular.ttf"); }
-.trimchip { position: absolute; top: 106px; left: 10px; flex-direction: row; align-items: center; background-color: rgba(17, 24, 29, 0.82); border-width: 1px; border-color: var(--nav); border-radius: 4px; padding: 4px 10px; -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/BarlowCondensed-SemiBold.ttf"); letter-spacing: 1.4px; font-size: 12px; margin: 0; }
+.trimchip { position: absolute; top: 50px; left: 10px; flex-direction: row; align-items: center; background-color: rgba(17, 24, 29, 0.82); border-width: 1px; border-color: var(--nav); border-radius: 4px; padding: 4px 10px; -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/BarlowCondensed-SemiBold.ttf"); letter-spacing: 1.4px; font-size: 12px; margin: 0; }
 .trimchip-b { color: var(--nav); -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/BarlowCondensed-Bold.ttf"); margin-right: 8px; }
 .trimchip-s { color: var(--muted); font-size: 11px; }
 .pause-card .btn { margin-bottom: 7px; }

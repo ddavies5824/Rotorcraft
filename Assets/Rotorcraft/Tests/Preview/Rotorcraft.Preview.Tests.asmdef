@@ -2,6 +2,7 @@
     "name": "Rotorcraft.Preview.Tests",
     "rootNamespace": "Rotorcraft.Preview.Tests",
     "references": [
+        "Rotorcraft.Game",
         "Rotorcraft.Presentation",
         "Rotorcraft.Sim",
         "Rotorcraft.World",
