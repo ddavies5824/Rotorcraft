@@ -155,6 +155,51 @@ namespace Rotorcraft.Inputs.Tests
         }
 
         [Test]
+        public void AHandMovesTheControlsFromWhereTheyWereWithoutAJump()
+        {
+            var axis = new HandAxis(0.3, -1, 1, HandAxis.CyclicTravel, 5.0);
+            Assert.That(Math.Abs(axis.Update(5.0) - 0.3) < 1e-9, "taking hold moves nothing");
+            Assert.That(Math.Abs(axis.Update(5.0 + HandAxis.CyclicTravel * 0.5) - 0.8) < 1e-9, "half the travel, half the way");
+            Assert.That(axis.Update(5.0 + HandAxis.CyclicTravel * 3) == 1, "the stop holds it");
+            var justBack = axis.Update(5.0 + HandAxis.CyclicTravel * 3 - HandAxis.CyclicTravel * 0.25);
+            Assert.That(Math.Abs(justBack - 0.75) < 1e-9, $"it comes off the stop as soon as the hand reverses: {justBack}");
+            var lever = new HandAxis(0.5, 0, 1, HandAxis.LeverTravel, 1.0);
+            Assert.That(lever.Update(1.0 - HandAxis.LeverTravel * 4) == 0, "the lever stops at the bottom");
+        }
+
+        [Test]
+        public void HeldControlsGoWhereTheHandPutsThem()
+        {
+            var src = new FakeSource();
+            var im = new InputManager(new ControlSettings { controller = Controllers.PresetGamepad() }, src);
+            Controls c = default;
+            // a thumbstick or joystick moved at the same time makes no difference
+            src.Set("Pad", "rightStick/x", -0.9);
+            im.held = new HeldControls { cyclic = true, cyclicX = 0.4, cyclicY = -0.2, lever = true, leverPosition = 0.6 };
+            c = im.Sample(0.016);
+            Assert.That(Math.Abs(c.cyclicRoll - 0.4) < 1e-9 && Math.Abs(c.cyclicPitch + 0.2) < 1e-9, $"cyclic in the hand: {c.cyclicRoll}, {c.cyclicPitch}");
+            Assert.That(Math.Abs(c.collective - 0.6) < 1e-9 && Math.Abs(im.CollectiveLever - 0.6) < 1e-9, $"lever in the hand: {c.collective}");
+            Assert.That(Math.Abs(im.CyclicX - 0.4) < 1e-9 && Math.Abs(im.CyclicY + 0.2) < 1e-9, "the next hand finds them there");
+            src.Set("Pad", "rightStick/x", 0);
+
+            // trim set with the stick in the hand: let go and it stays there
+            im.SetTrimFromCurrent();
+            im.held = default;
+            for (int i = 0; i < 60; i++) c = im.Sample(0.016);
+            Assert.That(Math.Abs(c.cyclicRoll - 0.4) < 0.01 && Math.Abs(c.cyclicPitch + 0.2) < 0.01, $"it rests on the trim: {c.cyclicRoll}, {c.cyclicPitch}");
+            Assert.That(Math.Abs(c.collective - 0.6) < 1e-9, $"the lever stays where it was left: {c.collective}");
+
+            // no trim: let go and the cyclic springs back to the middle
+            im.ClearTrim();
+            for (int i = 0; i < 120; i++) c = im.Sample(0.016);
+            im.held = new HeldControls { cyclic = true, cyclicX = 0.7 };
+            im.Sample(0.016);
+            im.held = default;
+            for (int i = 0; i < 60; i++) c = im.Sample(0.016);
+            Assert.That(Math.Abs(c.cyclicRoll) < 0.01, $"it springs back: {c.cyclicRoll}");
+        }
+
+        [Test]
         public void MovingTheLeverOnASharedThumbstickDoesNotTurnTheNose()
         {
             var im = new InputManager(new ControlSettings { controller = Controllers.PresetGamepad() }, new FakeSource());

@@ -25,6 +25,7 @@ namespace Rotorcraft.Presentation.UI
                     : "Fly in a PC headset, such as a Quest over Link or Virtual Desktop. Connect the headset first. Your keyboard, joystick and pedals keep working in VR."),
                 Row(Btn(d.Starting ? "Starting…" : Vr.On ? "Leave VR" : "Start VR", "small", () => { if (Vr.On) d.End(); else d.Begin(); }, disabled: d.Starting)));
             if (d.Problem != null) panel.Add(T(d.Problem));
+            panel.Add(Muted("Hands: squeeze a grip button to take hold of a control from wherever your hand is, then move your hand. Right hand takes the cyclic, left hand the collective, or whichever one a hand is right beside. Let go and the cyclic returns to its trim; the collective stays where you left it. A hand holding something can work the pedals with its thumbstick."));
             panel.Add(Muted("Right stick: cyclic. Left stick: pedals across, collective up and down. A: set trim. B: release trim. X: show or hide the HUD. Y: tablet. Menu: pause. Click the right stick to recentre your view, the left stick to change camera."));
             return panel;
         }

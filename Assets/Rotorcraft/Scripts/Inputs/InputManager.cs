@@ -16,6 +16,9 @@ namespace Rotorcraft.Inputs
     /// <summary>Stick positions from a device outside the player's bindings (the VR controllers), each -1..1.</summary>
     public struct ExternalSticks { public double cyclicX, cyclicY, pedals, collective; }
 
+    /// <summary>Controls held in the hand (VR): where the hand has put them, in place of anything else moving them.</summary>
+    public struct HeldControls { public bool cyclic, lever; public double cyclicX, cyclicY, leverPosition; }
+
     public sealed class InputManager
     {
         /// <summary>Set each frame by the device's owner. Merged like a controller, so any other input still works beside it; a bound controller that is moving takes priority.</summary>
@@ -26,6 +29,10 @@ namespace Rotorcraft.Inputs
         double cycX, cycY;
         double pedal;
         public double trimX, trimY, trimPedal;
+        public HeldControls held;
+        /// <summary>Where the cyclic is now (-1..1), which is where a hand finds it.</summary>
+        public double CyclicX => cycX;
+        public double CyclicY => cycY;
         /// <summary>Trim easing back to centre after a release (so the aircraft is not jolted).</summary>
         public bool trimReleasing;
         public event Action<GameAction> ActionFired;
@@ -113,7 +120,7 @@ namespace Rotorcraft.Inputs
 
         public void SetCollective(double v) { collective = Clamp(v, 0, 1); }
         public double CollectiveLever => collective;
-        public void ResetForFlight(double collective = 0) { this.collective = collective; cycX = cycY = 0; pedal = 0; trimX = trimY = trimPedal = 0; trimReleasing = false; keysDown.Clear(); }
+        public void ResetForFlight(double collective = 0) { this.collective = collective; cycX = cycY = 0; pedal = 0; trimX = trimY = trimPedal = 0; trimReleasing = false; held = default; keysDown.Clear(); }
 
         /// <summary>Hold the cyclic and pedals where they are now: that becomes where they rest when let go.</summary>
         public void SetTrimFromCurrent() { trimReleasing = false; trimX = Clamp(cycX, -0.6, 0.6); trimY = Clamp(cycY, -0.6, 0.6); trimPedal = Clamp(pedal, -0.6, 0.6); }
@@ -189,6 +196,7 @@ namespace Rotorcraft.Inputs
                 if (lastLever == null || Math.Abs(padLever.Value - lastLever.Value) > 0.004) { collective = padLever.Value; lastSource = InputSourceKind.Controller; }
                 lastLever = padLever;
             }
+            if (held.lever) { collective = held.leverPosition; lastSource = InputSourceKind.Controller; }
             collective = Clamp(collective, 0, 1);
             // ---- cyclic (spring-centred to trim) ----
             double tx = 0, ty = 0;
@@ -212,6 +220,7 @@ namespace Rotorcraft.Inputs
             var rate = keyCyc ? 2.2 : 9; // keyboard ramps; analogue follows quickly
             cycX += Clamp(targetX - cycX, -rate * dt, rate * dt);
             cycY += Clamp(targetY - cycY, -rate * dt, rate * dt);
+            if (held.cyclic) { cycX = Clamp(held.cyclicX, -1, 1); cycY = Clamp(held.cyclicY, -1, 1); lastSource = InputSourceKind.Controller; }
             // ---- pedals (spring-centred to trim) ----
             double tp = trimPedal;
             bool keyLeft = K(s.KeyFor("pedalLeft")), keyRight = K(s.KeyFor("pedalRight"));

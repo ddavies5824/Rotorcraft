@@ -166,6 +166,101 @@ namespace Rotorcraft.Preview.Tests
 #endif
         }
 
+        /// <summary>
+        /// Each aircraft from the pilot's seat at a Quest eye's field of view: both hands on the controls, an open hand and
+        /// a closing one in the air, and a hand ready to take hold (it turns blue).
+        /// </summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator HandsInEachCockpit()
+        {
+            LogAssert.ignoreFailingMessages = true;
+#if UNITY_EDITOR
+            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode("Assets/Rotorcraft/Scenes/Kinloch.unity", new LoadSceneParameters(LoadSceneMode.Single));
+            yield return null;
+            yield return new WaitForSeconds(1);
+            var cam = Camera.main;
+            cam.GetComponent<ChaseCamera>().enabled = false;
+            foreach (var hud in Object.FindObjectsByType<FlightHud>(FindObjectsSortMode.None)) hud.enabled = false;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            cam.nearClipPlane = 0.03f;
+            cam.fieldOfView = 90;
+            Directory.CreateDirectory("Logs");
+            var pad = S("kin_h1");
+            var at = SimToUnity.Position(new Vec3(pad.x, WorldMap.SiteElevation(pad) + 1.2, pad.z));
+            const int Cell = 800;
+            foreach (var (id, file) in new[] { ("kestrel", "kestrel_k2"), ("northstar", "northstar_175"), ("guardian", "guardian_s9"), ("nightjar", "nightjar_n4"), ("peregrine", "peregrine_p3") })
+            {
+                var holder = new GameObject(id);
+                holder.transform.SetPositionAndRotation(at, Quaternion.identity);
+                var model = Object.Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Rotorcraft/Models/Aircraft/{file}.gltf"), holder.transform);
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.Euler(0, 180, 0);
+                AircraftDress.Apply(model.transform, Aircraft.Get(id));
+                Transform eye = null;
+                foreach (var t in model.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name == "cockpit_only") t.gameObject.SetActive(true);
+                    if (t.name == "eye") eye = t;
+                }
+                var grips = Rotorcraft.VR.CockpitGrip.Find(model.transform, holder.transform, eye.position);
+                Assert.That(grips.Count == 2 && grips.Exists(g => g.cyclic) && grips.Exists(g => !g.cyclic), $"{id} has a cyclic and a collective to hold: {grips.Count}");
+                var cyclic = grips.Find(g => g.cyclic); var lever = grips.Find(g => !g.cyclic);
+                foreach (var g in grips) Assert.That(Vector3.Distance(g.Anchor, eye.position) < 1.4f, $"{id}: {(g.cyclic ? "cyclic" : "collective")} is within reach of the seat: {Vector3.Distance(g.Anchor, eye.position):F2} m");
+
+                // a squeeze far from anything: each hand takes its own control, from wherever it is
+                var faraway = eye.position + new Vector3(0, -0.2f, 0.1f);
+                Assert.That(Rotorcraft.VR.CockpitGrip.ToTake(grips, faraway, false, 0.18f, null) == cyclic, $"{id}: the right hand takes the cyclic from anywhere");
+                Assert.That(Rotorcraft.VR.CockpitGrip.ToTake(grips, faraway, true, 0.18f, null) == lever, $"{id}: the left hand takes the collective from anywhere");
+                // right beside the other control: it takes that one instead, so the hands can swap
+                Assert.That(Rotorcraft.VR.CockpitGrip.ToTake(grips, lever.Anchor, false, 0.18f, null) == lever, $"{id}: a right hand beside the collective takes the collective");
+                Assert.That(Rotorcraft.VR.CockpitGrip.ToTake(grips, cyclic.Anchor, true, 0.18f, null) == cyclic, $"{id}: a left hand beside the cyclic takes the cyclic");
+                // a control already held is not taken away
+                Assert.That(Rotorcraft.VR.CockpitGrip.ToTake(grips, faraway, false, 0.18f, cyclic) == null, $"{id}: the right hand leaves a cyclic the other hand holds");
+                Assert.That(Rotorcraft.VR.CockpitGrip.ToTake(grips, cyclic.Anchor, true, 0.18f, cyclic) == lever, $"{id}: a left hand beside a held cyclic takes its own");
+
+                var right = new Rotorcraft.VR.VrHand(holder.transform, false, 5);
+                var left = new Rotorcraft.VR.VrHand(holder.transform, true, 5);
+                var sheet = new Texture2D(Cell * 2, Cell, TextureFormat.RGB24, false);
+                // on the controls, looking down between them
+                right.root.SetPositionAndRotation(cyclic.Anchor, cyclic.HandRotation(holder.transform, false)); right.SetCurl(1);
+                left.root.SetPositionAndRotation(lever.Anchor, lever.HandRotation(holder.transform, true)); left.SetCurl(1);
+                var mid = (cyclic.Anchor + lever.Anchor) / 2;
+                cam.transform.SetPositionAndRotation(eye.position, Quaternion.LookRotation(mid - eye.position, Vector3.up));
+                for (int i = 0; i < 4; i++) yield return null;
+                CaptureInto(cam, sheet, 0, Cell);
+                // in the air in front of the face, posed as OpenXR reports a controller held out with the thumb up and leaning
+                // forward: little finger to thumb up and forward, its Y back towards the wrist. An open right hand, a closing left.
+                var ahead = eye.position + new Vector3(0, -0.15f, 0.42f);
+                var gripPose = Quaternion.LookRotation(new Vector3(0, 0.8f, 0.6f), new Vector3(0, 0.6f, -0.8f));
+                right.root.SetPositionAndRotation(ahead + new Vector3(0.14f, 0, 0), gripPose * Rotorcraft.VR.VrHand.FromGripPose); right.SetCurl(0);
+                left.root.SetPositionAndRotation(ahead + new Vector3(-0.14f, 0, 0), gripPose * Rotorcraft.VR.VrHand.FromGripPose); left.SetCurl(0.6f); left.SetReady(true);
+                cam.transform.SetPositionAndRotation(eye.position, Quaternion.LookRotation(ahead - eye.position, Vector3.up));
+                for (int i = 0; i < 4; i++) yield return null;
+                CaptureInto(cam, sheet, 1, Cell);
+                sheet.Apply();
+                File.WriteAllBytes($"Logs/hands-{id}.png", sheet.EncodeToPNG());
+                Object.Destroy(sheet);
+                right.Dispose(); left.Dispose();
+                Object.Destroy(holder);
+                yield return null;
+            }
+#else
+            yield return null;
+#endif
+        }
+
+        static void CaptureInto(Camera cam, Texture2D sheet, int slot, int cell)
+        {
+            var rt = new RenderTexture(cell, cell, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+            var req = new RenderPipeline.StandardRequest { destination = rt };
+            if (RenderPipeline.SupportsRenderRequest(cam, req)) RenderPipeline.SubmitRenderRequest(cam, req);
+            else { cam.targetTexture = rt; cam.Render(); cam.targetTexture = null; }
+            var prev = RenderTexture.active; RenderTexture.active = rt;
+            sheet.ReadPixels(new Rect(0, 0, cell, cell), slot * cell, 0);
+            RenderTexture.active = prev;
+            rt.Release();
+        }
+
         /// <summary>The top right corner of the flight HUD, from the game's own style sheet: the nav box, autopilot and crew buttons and map must stack, never overlap.</summary>
         [UnityTest]
         public IEnumerator HudCornerStacks()

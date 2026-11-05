@@ -5,6 +5,7 @@ Shader "Rotorcraft/VR Panel"
     Properties
     {
         _MainTex ("UI", 2D) = "black" {}
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("Depth test", Float) = 8   // Always, so nothing in the cockpit cuts across the text
     }
     SubShader
     {
@@ -15,7 +16,7 @@ Shader "Rotorcraft/VR Panel"
             Tags { "LightMode" = "UniversalForward" }
             Blend One OneMinusSrcAlpha
             ZWrite Off
-            ZTest Always
+            ZTest [_ZTest]
             Cull Off
 
             HLSLPROGRAM
