@@ -16,9 +16,10 @@ namespace Rotorcraft.Sim
         public double altTarget;      // metres AMSL (or AGL in hover with radalt)
         public double hdgTarget;      // radians
         public double hoverX, hoverZ, hoverAgl = 15;
-        public double leverRef;       // collective lever position when ALT/HOVER engaged
+        public double leverRef;       // where the pilot's lever was when ALT/HOVER engaged (moving it away overrides)
         public double colOut;         // collective the AP is currently commanding
-        public double integ;
+        public double trim;           // the collective it has learnt holds this height
+        public bool holding;          // the AP has the collective, or is still easing it back to the pilot's lever
     }
 
     public struct APToggleResult
@@ -36,7 +37,27 @@ namespace Rotorcraft.Sim
 
     public static class Autopilot
     {
+        // The collective channel: a learnt trim plus a small correction for climb rate error, moving no faster than an
+        // autopilot's actuator would. (The original integrated the error alone, which never settled: it hunted up and
+        // down with the lever sweeping most of its travel, even in still air.)
+        const double HeightGain = 0.25;   // m/s of climb wanted per metre off target
+        const double MaxClimb = 2.5;      // m/s
+        const double ClimbGain = 0.05;    // lever per m/s of climb rate error
+        const double TrimGain = 0.015;    // lever per second per m/s of climb rate error
+        const double LeverRate = 0.2;     // lever per second
+        const double CaptureLead = 1.2;   // s: a climb or descent in hand carries on this long while it is taken off
+        const double ClimbLever = 0.02;   // lever a steady climb of 1 m/s holds above level flight, roughly
+
         public static APState NewAP() => new APState();
+
+        /// <summary>Take the collective from wherever it is now, so engaging never jolts the aircraft.</summary>
+        static void TakeCollective(APState ap, double lever, HeliState s)
+        {
+            var now = ap.holding ? ap.colOut : lever;
+            ap.leverRef = lever; ap.colOut = now; ap.trim = Clamp(now - s.vel.y * ClimbLever, 0, 1); ap.holding = true;
+        }
+
+        static double Lead(HeliState s) => Clamp(s.vel.y * CaptureLead, -8, 8);
 
         /// <summary>Engage or disengage a mode, capturing the current state as the target. Returns ok = false if not allowed.</summary>
         public static APToggleResult ToggleAP(APState ap, APMode mode, HeliState s, AircraftConfig ac, double lever)
@@ -46,7 +67,7 @@ namespace Rotorcraft.Sim
             if (mode == APMode.Alt)
             {
                 ap.alt = !ap.alt;
-                if (ap.alt) { ap.hover = false; ap.altTarget = s.pos.y; ap.leverRef = lever; ap.colOut = lever; ap.integ = 0; }
+                if (ap.alt) { ap.hover = false; ap.altTarget = s.pos.y + Lead(s); TakeCollective(ap, lever, s); }
             }
             else if (mode == APMode.Hdg)
             {
@@ -57,7 +78,7 @@ namespace Rotorcraft.Sim
             {
                 if (!ap.hover && Js.Hypot(s.vel.x, s.vel.z) > 6) return new APToggleResult(false, "Slow below 12 kt before engaging hover hold.");
                 ap.hover = !ap.hover;
-                if (ap.hover) { ap.alt = false; ap.hdg = false; ap.hoverX = s.pos.x; ap.hoverZ = s.pos.z; ap.hoverAgl = s.@out.aglM; ap.hdgTarget = s.psi; ap.leverRef = lever; ap.colOut = lever; ap.integ = 0; }
+                if (ap.hover) { ap.alt = false; ap.hdg = false; ap.hoverX = s.pos.x; ap.hoverZ = s.pos.z; ap.hoverAgl = Math.Max(3, s.@out.aglM + Lead(s)); ap.hdgTarget = s.psi; TakeCollective(ap, lever, s); }
             }
             return new APToggleResult(true);
         }
@@ -78,9 +99,10 @@ namespace Rotorcraft.Sim
         public static APResult ApplyAP(APState ap, HeliState s, AircraftConfig ac, Controls pilot, AssistMode assist, double dt)
         {
             var dropped = new List<APMode>();
-            if (!AnyAP(ap) || s.onGround || s.crashed)
+            if ((!AnyAP(ap) && !ap.holding) || s.onGround || s.crashed)
             {
                 if (AnyAP(ap) && (s.onGround || s.crashed)) { ap.alt = ap.hdg = ap.hover = false; dropped.Add(APMode.Alt); }
+                ap.holding = false;
                 return new APResult { controls = pilot, dropped = dropped };
             }
             var o = pilot;
@@ -96,11 +118,21 @@ namespace Rotorcraft.Sim
                 if (ap.alt || ap.hover)
                 {
                     var err = ap.hover ? ap.hoverAgl - s.@out.aglM : ap.altTarget - s.pos.y;
-                    var vsWant = Clamp(err * 0.35, -3, 3);
-                    ap.integ = Clamp(ap.integ + (vsWant - v.y) * dt * 0.05, -0.2, 0.2);
-                    ap.colOut = Clamp(ap.colOut + (vsWant - v.y) * 0.06 * dt * 10 + ap.integ * dt, 0, 1);
+                    var climbErr = Clamp(err * HeightGain, -MaxClimb, MaxClimb) - v.y;
+                    var want = ap.trim + climbErr * ClimbGain;
+                    var step = LeverRate * dt;
+                    // the trim learns only while the lever can follow, or it would wind up against a limit
+                    if (want > 0 && want < 1 && Math.Abs(want - ap.colOut) < step) ap.trim = Clamp(ap.trim + climbErr * TrimGain * dt, 0, 1);
+                    ap.colOut += Clamp(Clamp(want, 0, 1) - ap.colOut, -step, step);
                     o.collective = ap.colOut;
                 }
+            }
+            // just disengaged: the collective eases back to the pilot's lever rather than jumping there
+            if (ap.holding && !ap.alt && !ap.hover)
+            {
+                ap.colOut += Clamp(pilot.collective - ap.colOut, -LeverRate * dt, LeverRate * dt);
+                o.collective = ap.colOut;
+                if (Math.Abs(pilot.collective - ap.colOut) < 1e-3) ap.holding = false;
             }
             // ---- heading ----
             var gs = Js.Hypot(v.x, v.z);

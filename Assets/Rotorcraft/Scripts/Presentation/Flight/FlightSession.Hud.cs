@@ -168,16 +168,18 @@ namespace Rotorcraft.Presentation
             hudBtns = E("hud-btns");
             hudRoot.Add(E("hud-top", readouts, hudBtns).With(x => x.pickingMode = PickingMode.Ignore));
             objective = E("objective"); hudRoot.Add(objective);
-            navbox = E("navbox"); hudRoot.Add(navbox);
+            navbox = E("navbox");
             annun = E("annun"); annun.pickingMode = PickingMode.Ignore; hudRoot.Add(annun);
             agl = E("agl"); agl.pickingMode = PickingMode.Ignore; hudRoot.Add(agl);
             radio = E("radio"); radio.pickingMode = PickingMode.Ignore; hudRoot.Add(radio);
-            crewbar = E("crewbar"); hudRoot.Add(crewbar);
+            crewbar = E("crewbar");
             switches = E("switches"); hudRoot.Add(switches);
             instruments = new InstrumentPanel();
             panelBox = E("panel-overlay", instruments); hudRoot.Add(panelBox);
             map = new MapView(); map.style.flexGrow = 1;
-            mapBox = E("map-overlay", map); hudRoot.Add(mapBox);
+            mapBox = E("map-overlay", map);
+            // the top right corner, stacked so that none of these can sit on another
+            hudRoot.Add(E("hud-right", navbox, crewbar, mapBox).With(x => x.pickingMode = PickingMode.Ignore));
             trimChip = new Button(() => { heli.Input.ClearTrim(); hudDirty = true; }).Cls("trimchip"); hudRoot.Add(trimChip);
             hintBox = E("hintcard"); hudRoot.Add(hintBox);
             decisionBox = E("decision"); hudRoot.Add(decisionBox);

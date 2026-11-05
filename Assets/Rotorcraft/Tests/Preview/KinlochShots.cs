@@ -166,6 +166,58 @@ namespace Rotorcraft.Preview.Tests
 #endif
         }
 
+        /// <summary>The top right corner of the flight HUD, from the game's own style sheet: the nav box, autopilot and crew buttons and map must stack, never overlap.</summary>
+        [UnityTest]
+        public IEnumerator HudCornerStacks()
+        {
+#if UNITY_EDITOR
+            foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1024, 600) })
+            {
+                var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);   // rounded corners that clip need a stencil
+                rt.Create();
+                var ps = Object.Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<PanelSettings>("Assets/Rotorcraft/UI/Game Panel.asset"));
+                ps.scaleMode = PanelScaleMode.ConstantPixelSize; ps.scale = 1; ps.targetTexture = rt;
+                ps.clearColor = true; ps.colorClearValue = new Color(0.25f, 0.33f, 0.4f, 1);
+                var host = new GameObject("HUD");
+                host.SetActive(false);
+                var doc = host.AddComponent<UIDocument>();
+                doc.panelSettings = ps;
+                host.SetActive(true);
+                yield return null;
+                var root = doc.rootVisualElement;
+                root.styleSheets.Add(UnityEditor.AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Rotorcraft/UI/Rotorcraft.uss"));
+                root.style.flexGrow = 1;
+                var nav = Ui.E("navbox", Ui.T("Kinloch Royal helipad", "navbox-nm"), Ui.T("084° · 12.4 nm", "navbox-bd mono"), Ui.T("Turn right 12° · ETE 6:10", "navbox-al mono"), Ui.T("Cross at 1500 to 2000 ft", "navbox-al mono"));
+                var crew = Ui.E("crewbar");
+                foreach (var lab in new[] { "ALT", "HDG", "HVR", "WINCH", "FLIR" }) { var b = new Button { text = lab }; b.AddToClassList("hb"); b.AddToClassList(lab.Length == 3 ? "ap" : "crew"); if (lab == "ALT") b.AddToClassList("on"); crew.Add(b); }
+                crew.Add(Ui.T("ALT 1540 · HDG 084", "apstat mono"));
+                var map = Ui.E("map-overlay");
+                root.Add(Ui.E("hud", Ui.E("hud-right", nav, crew, map)));
+                for (int i = 0; i < 5; i++) yield return null;
+                Rect n = nav.worldBound, c = crew.worldBound, m = map.worldBound;
+                Assert.That(n.yMax <= c.yMin + 0.5f, $"{w}x{h}: the buttons sit below the nav box: nav {n}, buttons {c}");
+                Assert.That(c.yMax <= m.yMin + 0.5f, $"{w}x{h}: the map sits below the buttons: buttons {c}, map {m}");
+                Assert.That(m.yMax <= h, $"{w}x{h}: the map stays on the screen: {m}");
+                Assert.That(n.xMax > w - 12 && c.xMax > w - 12, $"{w}x{h}: both keep to the right edge: nav {n}, buttons {c}");
+                Assert.That(n.height > 40 && c.height > 30 && m.height >= 139, $"{w}x{h}: all drawn: nav {n}, buttons {c}, map {m}");
+                if (w == 1280)
+                {
+                    var prev = RenderTexture.active; RenderTexture.active = rt;
+                    var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+                    tex.ReadPixels(new Rect(0, 0, w, h), 0, 0); tex.Apply();
+                    RenderTexture.active = prev;
+                    Directory.CreateDirectory("Logs");
+                    File.WriteAllBytes("Logs/hud-corner.png", tex.EncodeToPNG());
+                    Object.Destroy(tex);
+                }
+                Object.Destroy(host); rt.Release();
+                yield return null;
+            }
+#else
+            yield return null;
+#endif
+        }
+
         /// <summary>The real attitude gauge drawn at a left bank, level and a right bank, and read back: sky on the side the aircraft banks away from.</summary>
         [UnityTest]
         public IEnumerator AttitudeIndicator()

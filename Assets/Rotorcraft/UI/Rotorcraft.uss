@@ -291,7 +291,8 @@ Label, .unity-label { white-space: normal; padding: 0; margin: 0; color: var(--f
 .objective-dt { -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/B612Mono-Regular.ttf"); font-size: 12px; color: #c4ced3; }
 .objective-pg { height: 3px; background-color: rgba(255, 255, 255, 0.12); margin-top: 4px; border-radius: 2px; overflow: hidden; }
 .objective-pg-fill { height: 100%; background-color: var(--nav); }
-.navbox { position: absolute; top: 52px; right: 10px; background-color: rgba(10, 14, 17, 0.62); border-radius: 6px; padding: 5px 9px; align-items: flex-end; min-width: 160px; }
+.hud-right { position: absolute; top: 52px; right: 10px; bottom: 8px; align-items: flex-end; }
+.navbox { flex-shrink: 0; margin-bottom: 4px; background-color: rgba(10, 14, 17, 0.62); border-radius: 6px; padding: 5px 9px; align-items: flex-end; min-width: 160px; }
 .navbox-nm { -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/B612-Regular.ttf"); font-size: 12px; color: var(--nav); }
 .navbox-bd { font-size: 15px; }
 .navbox-al { font-size: 11px; color: #c4ced3; }
@@ -316,7 +317,7 @@ Label, .unity-label { white-space: normal; padding: 0; margin: 0; color: var(--f
 .banner-box.fail { border-color: var(--warn); }
 .banner-box > * { margin-right: 14px; }
 .panel-overlay { position: absolute; left: 50%; bottom: 8px; width: 780px; height: 312px; translate: -50% 0; background-color: rgba(12, 16, 19, 0.88); border-width: 1px; border-color: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-.map-overlay { position: absolute; right: 10px; top: 52px; width: 440px; height: 330px; border-radius: 8px; overflow: hidden; border-width: 1px; border-color: rgba(255, 255, 255, 0.12); background-color: #0d1418; }
+.map-overlay { width: 440px; height: 330px; min-height: 140px; flex-shrink: 1; border-radius: 8px; overflow: hidden; border-width: 1px; border-color: rgba(255, 255, 255, 0.12); background-color: #0d1418; }
 .switches { position: absolute; left: 50%; top: 92px; translate: -50% 0; flex-direction: row; flex-wrap: wrap; justify-content: center; max-width: 640px; background-color: rgba(10, 14, 17, 0.72); border-width: 1px; border-color: rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 6px; }
 .sw { flex-direction: row; align-items: center; height: 34px; padding: 0 9px; border-radius: 5px; border-width: 1px; border-color: rgba(255, 255, 255, 0.14); background-color: #1a2126; color: #c9d3d8; -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/BarlowCondensed-SemiBold.ttf"); letter-spacing: 1.2px; font-size: 12px; margin: 2px; }
 .sw-lamp { width: 8px; height: 8px; border-radius: 4px; background-color: #3a4349; margin-right: 6px; }
@@ -324,7 +325,7 @@ Label, .unity-label { white-space: normal; padding: 0; margin: 0; color: var(--f
 .sw.on .sw-lamp { background-color: var(--ok); }
 .sw-kbd { -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/B612Mono-Regular.ttf"); font-size: 10px; color: #7f8d94; border-width: 1px; border-color: #3a4349; border-radius: 3px; padding: 0 3px; margin-left: 6px; }
 .swinfo { width: 100%; -unity-text-align: middle-center; font-size: 11px; color: #a9b6bd; -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/B612-Regular.ttf"); }
-.crewbar { position: absolute; right: 10px; top: 56px; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; max-width: 320px; align-items: center; }
+.crewbar { flex-shrink: 0; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; max-width: 320px; align-items: center; }
 .crewbar .hb { margin: 0 0 4px 4px; }
 .apstat { width: 100%; -unity-text-align: middle-right; font-size: 11px; color: #7fe0a8; }
 .decision { position: absolute; left: 50%; top: 22%; translate: -50% 0; width: 560px; background-color: rgba(10, 14, 17, 0.9); border-width: 1px; border-color: var(--caution); border-radius: 10px; padding: 11px 13px; -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/B612-Regular.ttf"); }
