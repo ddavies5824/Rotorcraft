@@ -190,6 +190,7 @@ namespace Rotorcraft.Presentation
                     m.SetVector(CloudDrift, new Vector4((float)(dx * tc * 0.00012), (float)(dz * tc * 0.00012), 0, 0));
                     m.SetFloat(CloudBase, baseM); m.SetFloat(CloudTop, baseM + (float)Rotorcraft.Sim.Weather.CLOUD_DEPTH_M);
                     var lit = new Color(Mathf.Min(light.r * 1.05f, 1.1f), Mathf.Min(light.g * 1.05f, 1.1f), Mathf.Min(light.b * 1.08f, 1.15f));
+                    if (env.Thermal) lit *= 0.22f;   // cloud is cold to the thermal camera, however bright the sun on it
                     m.SetColor(CloudLit, lit);
                     m.SetColor(CloudShade, lit * 0.55f);
                     var sim = SimToUnity.ToSim(eye);
@@ -206,7 +207,7 @@ namespace Rotorcraft.Presentation
             if (stars != null)
             {
                 var clear = 1 - Mathf.Clamp01((layer ? cover * 1.15f : 0) + (w != null && w.precip != Precip.None ? 1 : 0) + (w != null && w.visibilityM < 4000 ? 0.7f : 0));
-                var k = env.timeOfDay == TimeOfDay.Night ? 1 : env.timeOfDay == TimeOfDay.Dusk ? 0.12f : 0;
+                var k = env.Thermal ? 0 : env.timeOfDay == TimeOfDay.Night ? 1 : env.timeOfDay == TimeOfDay.Dusk ? 0.12f : 0;
                 var s = k * clear * (1 - inCloud);
                 stars.enabled = s > 0.01f;
                 Shader.SetGlobalFloat(Stars, s);

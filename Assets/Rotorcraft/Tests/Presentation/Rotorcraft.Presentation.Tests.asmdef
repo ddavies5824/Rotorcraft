@@ -2,6 +2,7 @@
     "name": "Rotorcraft.Presentation.Tests",
     "rootNamespace": "Rotorcraft.Presentation.Tests",
     "references": [
+        "Rotorcraft.Inputs",
         "Rotorcraft.Presentation",
         "Rotorcraft.Sim",
         "UnityEngine.TestRunner",

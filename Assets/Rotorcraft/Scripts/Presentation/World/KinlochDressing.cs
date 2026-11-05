@@ -271,6 +271,18 @@ namespace Rotorcraft.Presentation
             }
         }
 
+        /// <summary>A round tower, tapering from p0 up to p1, open at both ends.</summary>
+        static void Tower(MeshBuilder b, Material m, Vector3 p0, Vector3 p1, float r0, float r1)
+        {
+            const int Sides = 14;
+            for (int k = 0; k < Sides; k++)
+            {
+                float a0 = k * Mathf.PI * 2 / Sides, a1 = (k + 1) * Mathf.PI * 2 / Sides;
+                var d0 = new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)); var d1 = new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1));
+                b.Quad(m, p0 + d0 * r0, p1 + d0 * r1, p1 + d1 * r1, p0 + d1 * r0, default, (d0 + d1).normalized);
+            }
+        }
+
         /// <summary>Kinloch Heliport: the tarmac apron, the taxiway and its centre line, floodlight masts, a windsock and the fuel bowser.</summary>
         static void Heliport(Transform root, WorldMaterials M)
         {
@@ -371,6 +383,7 @@ namespace Rotorcraft.Presentation
                 Footprint(Cell(st.x, st.z), M, st, ground);
             }
             foreach (var kv in cells) kv.Value.Attach($"Buildings {kv.Key.Item1},{kv.Key.Item2}", root);
+            TurbineRotors.Add(root, M.white);
             Debug.Log($"Kinloch structures: {placed} Blender landmarks, {WorldMap.STRUCTURES.Count - placed} built from footprints");
         }
 
@@ -416,8 +429,12 @@ namespace Rotorcraft.Presentation
                     break;
                 case StructureKind.Turbine:
                     {
-                        b.Box(M.white, c + Vector3.up * (h / 2), new Vector3(1.6f, h / 2, 1.6f), rot);
-                        b.Box(M.white, c + Vector3.up * (h + 1.5f), new Vector3(1.8f, 1.6f, 5f), rot);
+                        // a tapering tower on a concrete foot and the nacelle behind the rotor, turned the way the rotor faces (TurbineRotors)
+                        var face = Vector3.forward;
+                        foreach (var t in Places.TURBINES) if (Js.Hypot(t.x - st.x, t.z - st.z) < 1) face = TurbineRotors.Facing(t.yaw);
+                        Tower(b, M.white, c + Vector3.down, c + Vector3.up * h, 2.2f, 1.4f);
+                        Tower(b, M.concrete, c + Vector3.down, c + Vector3.up * 0.6f, 4f, 4f);
+                        b.Box(M.white, c + Vector3.up * (h + TurbineRotors.HubAboveTower) - face * 1.8f, new Vector3(1.7f, 1.8f, 5f), Quaternion.LookRotation(face));
                         break;
                     }
                 case StructureKind.Tower:

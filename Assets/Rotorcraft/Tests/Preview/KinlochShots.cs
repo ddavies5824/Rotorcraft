@@ -249,6 +249,335 @@ namespace Rotorcraft.Preview.Tests
 #endif
         }
 
+        /// <summary>The VR switch panel in each cockpit: within reach and clear of what the pilot needs to see, with a fingertip on a switch; left, looking at it; right, the wide view ahead and down.</summary>
+        [UnityTest]
+        public IEnumerator SwitchPanelInEachCockpit()
+        {
+            LogAssert.ignoreFailingMessages = true;
+#if UNITY_EDITOR
+            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode("Assets/Rotorcraft/Scenes/Kinloch.unity", new LoadSceneParameters(LoadSceneMode.Single));
+            yield return null;
+            yield return new WaitForSeconds(1);
+            var cam = Camera.main;
+            cam.GetComponent<ChaseCamera>().enabled = false;
+            foreach (var hud in Object.FindObjectsByType<FlightHud>(FindObjectsSortMode.None)) hud.enabled = false;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            cam.nearClipPlane = 0.03f;
+            Directory.CreateDirectory("Logs");
+            var theme = UnityEditor.AssetDatabase.LoadAssetAtPath<PanelSettings>("Assets/Rotorcraft/UI/Game Panel.asset").themeStyleSheet;
+            var pad = S("kin_h1");
+            var at = SimToUnity.Position(new Vec3(pad.x, WorldMap.SiteElevation(pad) + 1.2, pad.z));
+            const int Cell = 800;
+            foreach (var (id, file) in new[] { ("kestrel", "kestrel_k2"), ("northstar", "northstar_175"), ("guardian", "guardian_s9"), ("nightjar", "nightjar_n4"), ("peregrine", "peregrine_p3") })
+            {
+                var holder = new GameObject(id);
+                holder.transform.SetPositionAndRotation(at, Quaternion.identity);
+                var model = Object.Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Rotorcraft/Models/Aircraft/{file}.gltf"), holder.transform);
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.Euler(0, 180, 0);
+                AircraftDress.Apply(model.transform, Aircraft.Get(id));
+                Transform eye = null;
+                foreach (var t in model.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name == "cockpit_only") t.gameObject.SetActive(true);
+                    if (t.name == "eye") eye = t;
+                }
+                var ac = Aircraft.Get(id);
+                var state = FlightModel.CreateState(new CreateOptions { headingDeg = 0, fuel = ac.fuelCapacity * 0.5 });
+                state.sys.beacon = true; state.sys.nav = true; state.sys.governor = true;
+                var ap = Autopilot.NewAP(); ap.hdg = true;
+                var panel = new Rotorcraft.VR.VrSwitchPanel(theme, 5);
+                panel.Mount(holder.transform, eye.position);
+                var hover = 7;
+                panel.Draw(CockpitSwitches.Build(state, ac, ap, false), hover, -1);
+                var reach = Vector3.Distance(panel.root.position, eye.position);
+                Assert.That(reach < 0.6f, $"{id}: the panel is {reach:F2} m from the eye");
+
+                // a right hand reaching in with its fingertip on the middle switch
+                var hand = new Rotorcraft.VR.VrHand(holder.transform, false, 5);
+                var target = panel.root.TransformPoint(new Vector3(0, 0, -0.002f));
+                var towards = (panel.root.forward + Vector3.up * 0.2f).normalized;
+                hand.root.rotation = Quaternion.LookRotation(Vector3.Cross(towards, Vector3.right), towards);
+                hand.SetCurl(0, 1);
+                hand.root.position += target - hand.IndexTip;
+                Assert.That(Vector3.Distance(hand.IndexTip, target) < 0.001f, $"{id}: the fingertip reaches the switch");
+                var press = new Rotorcraft.Inputs.FingerPress(CockpitSwitches.Columns, CockpitSwitches.Rows, Rotorcraft.VR.VrSwitchPanel.Width, Rotorcraft.VR.VrSwitchPanel.Height);
+                press.Update(0, 0, 0.1f);
+                var local = panel.root.InverseTransformPoint(hand.IndexTip);
+                Assert.That(press.Update(local.x, local.y, -local.z), Is.EqualTo(hover), $"{id}: touching there presses the middle switch");
+
+                var sheet = new Texture2D(Cell * 2, Cell, TextureFormat.RGB24, false);
+                cam.fieldOfView = 60;
+                cam.transform.SetPositionAndRotation(eye.position, Quaternion.LookRotation(panel.root.position - eye.position, Vector3.up));
+                for (int i = 0; i < 6; i++) yield return null;
+                CaptureInto(cam, sheet, 0, Cell);
+                cam.fieldOfView = 110;
+                cam.transform.SetPositionAndRotation(eye.position, Quaternion.LookRotation(holder.transform.forward + Vector3.down * 0.65f, Vector3.up));
+                for (int i = 0; i < 4; i++) yield return null;
+                CaptureInto(cam, sheet, 1, Cell);
+                sheet.Apply();
+                File.WriteAllBytes($"Logs/switches-{id}.png", sheet.EncodeToPNG());
+                Object.Destroy(sheet);
+                hand.Dispose();
+                panel.Dispose();
+                Object.Destroy(holder);
+                yield return null;
+            }
+#else
+            yield return null;
+#endif
+        }
+
+        static GameObject Dressed(string id, string file, AircraftConfig ac, Vector3 at, float heading)
+        {
+#if UNITY_EDITOR
+            var holder = new GameObject(id);
+            holder.transform.SetPositionAndRotation(at, Quaternion.Euler(0, heading, 0));
+            var model = Object.Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Rotorcraft/Models/Aircraft/{file}.gltf"), holder.transform);
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.Euler(0, 180, 0);
+            AircraftDress.Apply(model.transform, ac);
+            return holder;
+#else
+            return null;
+#endif
+        }
+
+        static IEnumerator OpenScene()
+        {
+            LogAssert.ignoreFailingMessages = true;
+#if UNITY_EDITOR
+            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode("Assets/Rotorcraft/Scenes/Kinloch.unity", new LoadSceneParameters(LoadSceneMode.Single));
+            yield return null;
+            yield return new WaitForSeconds(1);
+            Camera.main.GetComponent<ChaseCamera>().enabled = false;
+            foreach (var hud in Object.FindObjectsByType<FlightHud>(FindObjectsSortMode.None)) hud.enabled = false;
+            Directory.CreateDirectory("Logs");
+#else
+            yield return null;
+#endif
+        }
+
+        /// <summary>The wind farm from two distances, a moment apart: blades, turning, facing the way the nacelle does.</summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator WindFarm()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            var t = Places.TURBINES[4];
+            var face = TurbineRotors.Facing(t.yaw);
+            var tower = SimToUnity.Position(new Vec3(t.x, WorldMap.TerrainHeight(t.x, t.z), t.z));
+            var hub = tower + Vector3.up * (float)(t.hub + TurbineRotors.HubAboveTower) + face * TurbineRotors.HubAhead;
+            var side = Vector3.Cross(Vector3.up, face);
+            cam.fieldOfView = 55;
+            cam.transform.position = hub + face * 170 + side * 90 - Vector3.up * 20;
+            cam.transform.LookAt(hub);
+            for (int i = 0; i < 20; i++) yield return null;
+            Capture(cam, "fix-turbine-near");
+            yield return new WaitForSeconds(0.7f);
+            Capture(cam, "fix-turbine-near-later");
+            cam.transform.position = hub + side * 150 + Vector3.up * 5;
+            cam.transform.LookAt(hub);
+            for (int i = 0; i < 6; i++) yield return null;
+            Capture(cam, "fix-turbine-side");
+            cam.transform.position = hub + face * 620 + side * 200 + Vector3.up * 70;
+            cam.transform.LookAt(hub - Vector3.up * 30);
+            for (int i = 0; i < 20; i++) yield return null;
+            Capture(cam, "fix-turbine-farm");
+            Assert.Pass("pictures written to Logs/");
+        }
+
+        /// <summary>The belly strobe at the moment of its flash, close up at dusk on the Guardian, and from further off.</summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator StrobeFlash()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            SkyEnvironment.Current.Apply(TimeOfDay.Dusk, Rotorcraft.Sim.Weather.Presets["calm"]);
+            var pad = S("kin_h1");
+            var at = SimToUnity.Position(new Vec3(pad.x, WorldMap.SiteElevation(pad) + 14, pad.z));
+            var holder = Dressed("guardian", "guardian_s9", Aircraft.Get("guardian"), at, 0);
+            const float Period = 2000;
+            var glow = GlowPoints.Make("strobe", holder.transform);
+            GlowPoints.Fill(glow.sharedMesh, new[]
+            {
+                new GlowPoint { pos = new Vector3(0, 0.63f, 0.45f), color = new Color(3.2f, 3.2f, 3.5f, 1), size = 1.1f, mode = Rotorcraft.World.LightMode.Strobe, period = Period, phase = 0.01f - Time.timeSinceLevelLoad / Period },
+                new GlowPoint { pos = new Vector3(0, 3.47f, -7.73f), color = new Color(3.2f, 3.2f, 3.5f, 1), size = 1.1f, mode = Rotorcraft.World.LightMode.Strobe, period = Period, phase = 0.01f - Time.timeSinceLevelLoad / Period },
+            });
+            cam.fieldOfView = 44;
+            foreach (var (name, away) in new[] { ("near", 15f), ("mid", 34f), ("far", 110f) })
+            {
+                cam.transform.position = at + new Vector3(away, -away * 0.1f, 1);
+                cam.transform.LookAt(at + Vector3.up * 1.2f);
+                for (int i = 0; i < 4; i++) yield return null;
+                Capture(cam, "fix-strobe-" + name, 1200, 675);
+            }
+            Assert.Pass("pictures written to Logs/");
+        }
+
+        /// <summary>Each twin's console, at the pad and turned far out to sea: only real screens get instruments, and none lies askew.</summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator ConsoleDisplays()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            cam.nearClipPlane = 0.03f;
+            cam.fieldOfView = 90;
+#if UNITY_EDITOR
+            var theme = UnityEditor.AssetDatabase.LoadAssetAtPath<PanelSettings>("Assets/Rotorcraft/UI/Game Panel.asset").themeStyleSheet;
+#else
+            ThemeStyleSheet theme = null;
+#endif
+            var pad = S("kin_h1");
+            var near = SimToUnity.Position(new Vec3(pad.x, WorldMap.SiteElevation(pad) + 1.2, pad.z));
+            var results = new System.Text.StringBuilder();
+            foreach (var (id, file) in new[] { ("northstar", "northstar_175"), ("guardian", "guardian_s9"), ("nightjar", "nightjar_n4"), ("peregrine", "peregrine_p3"), ("kestrel", "kestrel_k2") })
+                foreach (var (where, at, heading) in new[] { ("pad", near, 0f), ("pad37", near, 37f), ("sea", near + new Vector3(29000, 40, 1700), 211f) })
+                {
+                    var ac = Aircraft.Get(id);
+                    var holder = Dressed(id, file, ac, at, heading);
+                    Transform eye = null, model = holder.transform.GetChild(0);
+                    foreach (var t in model.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (t.name == "cockpit_only") t.gameObject.SetActive(true);
+                        if (t.name == "eye") eye = t;
+                    }
+                    var displays = new GameObject("displays").AddComponent<CockpitDisplays>();
+                    displays.Bind(model, ac, theme, eye);
+                    var state = FlightModel.CreateState(new CreateOptions { headingDeg = 0, fuel = ac.fuelCapacity * 0.5 });
+                    displays.Set(state, ac, null, default, true);
+                    results.Append($"{id} {where}:");
+                    foreach (var r in model.GetComponentsInChildren<MeshRenderer>(true))
+                    {
+                        if (!r.name.StartsWith("Live display")) continue;
+                        var below = model.InverseTransformPoint(eye.position).y - model.InverseTransformPoint(r.bounds.center).y;
+                        results.Append($" {r.name.Substring(14)} {below:F2}");
+                        if (id == "northstar" || id == "guardian") Assert.That(below, Is.LessThan(0.62f), $"{id} at {where}: {r.name} is on the console");
+                    }
+                    results.AppendLine();
+                    if (where != "pad37")
+                    {
+                        cam.transform.SetPositionAndRotation(eye.position, holder.transform.rotation * Quaternion.Euler(34, 0, 0));
+                        for (int i = 0; i < 8; i++) yield return null;
+                        Capture(cam, $"fix-console-{id}-{where}", 1000, 800);
+                    }
+                    Object.Destroy(displays.gameObject);
+                    Object.Destroy(holder);
+                    yield return null;
+                }
+            File.WriteAllText("Logs/fix-console.txt", results.ToString());
+            Debug.Log("CONSOLE:\n" + results);
+            Assert.Pass("pictures written to Logs/");
+        }
+
+        /// <summary>Every paint scheme of the Nightjar, and that no two come out the same.</summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator NightjarPaint()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            var pad = S("kin_h1");
+            var at = SimToUnity.Position(new Vec3(pad.x, WorldMap.SiteElevation(pad) + 1.2, pad.z));
+            var skins = Aircraft.Get("nightjar").skins;
+            const int W = 640, H = 400;
+            var sheet = new Texture2D(W * 3, H * 2, TextureFormat.RGB24, false);
+            var seen = new System.Collections.Generic.List<(string id, Color c)>();
+            for (int k = 0; k < skins.Length; k++)
+            {
+                var ac = Aircraft.WithSkin(Aircraft.Get("nightjar"), skins[k].id);
+                var holder = Dressed("nightjar", "nightjar_n4", ac, at, 0);
+                cam.fieldOfView = 40;
+                cam.transform.position = at + new Vector3(12, 2.2f, 7);
+                cam.transform.LookAt(at + Vector3.up * 0.8f);
+                for (int i = 0; i < 6; i++) yield return null;
+                var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+                var req = new RenderPipeline.StandardRequest { destination = rt };
+                if (RenderPipeline.SupportsRenderRequest(cam, req)) RenderPipeline.SubmitRenderRequest(cam, req);
+                else { cam.targetTexture = rt; cam.Render(); cam.targetTexture = null; }
+                var prev = RenderTexture.active; RenderTexture.active = rt;
+                sheet.ReadPixels(new Rect(0, 0, W, H), (k % 3) * W, (1 - k / 3) * H);
+                var one = new Texture2D(W, H, TextureFormat.RGB24, false);
+                one.ReadPixels(new Rect(0, 0, W, H), 0, 0); one.Apply();
+                RenderTexture.active = prev; rt.Release();
+                var sum = Color.black; var n = 0;
+                for (int y = H / 3; y < H * 2 / 3; y += 3) for (int x = W / 3; x < W * 2 / 3; x += 3) { sum += one.GetPixel(x, y); n++; }
+                seen.Add((skins[k].id, sum / n));
+                Object.Destroy(one);
+                Object.Destroy(holder);
+                yield return null;
+            }
+            sheet.Apply();
+            File.WriteAllBytes("Logs/fix-paint-nightjar.png", sheet.EncodeToPNG());
+            var report = string.Join("\n", seen.ConvertAll(s => $"{s.id}: {s.c.r:F3} {s.c.g:F3} {s.c.b:F3}"));
+            File.WriteAllText("Logs/fix-paint-nightjar.txt", report);
+            for (int a = 0; a < seen.Count; a++)
+                for (int b = a + 1; b < seen.Count; b++)
+                {
+                    var d = Mathf.Abs(seen[a].c.r - seen[b].c.r) + Mathf.Abs(seen[a].c.g - seen[b].c.g) + Mathf.Abs(seen[a].c.b - seen[b].c.b);
+                    Assert.That(d, Is.GreaterThan(0.01f), $"{seen[a].id} and {seen[b].id} look the same\n{report}");
+                }
+        }
+
+        /// <summary>The thermal camera over the heliport and the town, by day, at night and in sea fog, with the ordinary view beside it; and that going off puts everything back.</summary>
+        [UnityTest, Timeout(1200000)]
+        public IEnumerator ThermalCamera()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            var env = SkyEnvironment.Current;
+#if UNITY_EDITOR
+            // the game sets these up in its own scene, not in this one; with them come the cars and walkers round the camera
+            var host = new GameObject("World actors");
+            host.SetActive(false);
+            var actors = host.AddComponent<WorldActors>();
+            actors.people = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/people.glb");
+            actors.vehicles = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/vehicles.glb");
+            Assert.That(actors.people != null && actors.vehicles != null, "the people and vehicle libraries load");
+            host.SetActive(true);
+#else
+            WorldActors actors = null;
+#endif
+            var holder = new GameObject("people").transform;
+            int seed = 5;
+            foreach (var (x, z, outfit, pose) in new[] { (34.0, 28.0, "walker", "wave"), (28.0, 36.0, "casual", "stand"), (44.0, 40.0, "medic", "kneel"), (22.0, 22.0, "casual", "lie"), (50.0, 26.0, "worker", "stand") })
+            {
+                var p = actors.MakePerson(outfit, pose, seed++, holder);
+                p.transform.position = SimToUnity.Position(new Vec3(x, WorldMap.TerrainHeight(x, z), z));
+            }
+            var car = actors.SpawnVehicle("saloon", holder);
+            car.transform.position = SimToUnity.Position(new Vec3(62, WorldMap.TerrainHeight(62, 30), 30));
+            HeatSource.Add(car, HeatSource.Engine);
+            cam.fieldOfView = 55;
+            var views = new (string name, Vector3 from, Vector3 to)[] { ("close", At(58, 58, 7), At(38, 32, 1)), ("heliport", At(90, 90, 26), At(30, 25, 1)), ("town", At(200, 300, 180), At(-700, -900, 0)), ("low", At(-1750, -2050, 40), At(-2100, -2150, 0)) };
+            foreach (var wx in new[] { "calm", "haar" })
+                foreach (var tod in new[] { TimeOfDay.Day, TimeOfDay.Night })
+                {
+                    if (wx == "haar" && tod == TimeOfDay.Night) continue;
+                    foreach (var (name, from, to) in views)
+                    {
+                        env.SetThermal(false);
+                        env.Apply(tod, Rotorcraft.Sim.Weather.Presets[wx]);
+                        var sun = (env.sun.intensity, env.sun.shadows);
+                        cam.transform.position = from;
+                        cam.transform.LookAt(to);
+                        for (int i = 0; i < 8; i++) yield return null;
+                        Capture(cam, $"fix-thermal-{wx}-{tod}-{name}-plain", 1000, 562);
+                        env.SetThermal(true);
+                        Assert.That(env.Thermal && env.Night == 0 && env.timeOfDay == tod, "thermal lighting keeps the time of day for later");
+                        for (int i = 0; i < 8; i++) yield return null;
+                        Capture(cam, $"fix-thermal-{wx}-{tod}-{name}-flir", 1000, 562);
+                        env.SetThermal(false);
+                        Assert.That(env.sun.intensity, Is.EqualTo(sun.intensity).Within(1e-3f), "the sun comes back");
+                        Assert.That(env.sun.shadows, Is.EqualTo(sun.shadows), "the shadows come back");
+                    }
+                }
+            Assert.Pass("pictures written to Logs/");
+        }
+
         static void CaptureInto(Camera cam, Texture2D sheet, int slot, int cell)
         {
             var rt = new RenderTexture(cell, cell, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };

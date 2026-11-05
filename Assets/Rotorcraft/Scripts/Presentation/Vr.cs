@@ -23,6 +23,8 @@ namespace Rotorcraft.Presentation
         void Place(Vector3 eye, Quaternion view, bool level);
         /// <summary>Where a point in the world appears on the UI panel from where the head is now, in the panel's layout units; false if it is not on the panel.</summary>
         bool PanelPoint(Vector3 world, out Vector2 at);
+        /// <summary>The refresh rates the headset lets the game choose from: none or one means its own software decides.</summary>
+        System.Collections.Generic.IReadOnlyList<float> RefreshRates { get; }
     }
 
     public static class Vr

@@ -14,7 +14,8 @@ namespace Rotorcraft.Presentation
     {
         public const int WALK_FRAMES = 8;
         public const float STRIDE = 1.4f;
-        const float RANGE = 2600, PED_RANGE = 1400;
+        const float RANGE = 2600, PED_RANGE = 1400, FAR = 1000, FAR_WALKER = 300;
+        const int OutOfRangeEvery = 32, FarEvery = 4;
 
         sealed class Path
         {
@@ -64,8 +65,8 @@ namespace Rotorcraft.Presentation
             new Color(0.85f, 0.4f, 0.1f), new Color(0.15f, 0.15f, 0.2f), new Color(0.7f, 0.12f, 0.1f),
         };
 
-        sealed class Car { public Path path; public int dir; public float speed, offset, s0; public string kind; public Color paint; public GameObject go; public Vector3[] heads, tails; }
-        sealed class Walker { public Path path; public float s0, span, side, speed, phase; public int seed; public GameObject go; public MeshFilter[] filters; public Mesh[][] frames; }
+        sealed class Car { public Path path; public int dir; public float speed, offset, s0; public string kind; public Color paint; public GameObject go; public Vector3[] heads, tails; public bool far; }
+        sealed class Walker { public Path path; public float s0, span, side, speed, phase; public int seed; public GameObject go; public MeshFilter[] filters; public Mesh[][] frames; public bool far; }
         sealed class Boat { public float cx, cz, rx, rz, w, ph, scale; public GameObject go; }
 
         WorldActors actors;
@@ -76,6 +77,7 @@ namespace Rotorcraft.Presentation
         MeshFilter lights;
         readonly List<GlowPoint> glow = new List<GlowPoint>();
         float clock;
+        int frame;
         HelicopterController heli;
 
         void Awake()
@@ -147,6 +149,7 @@ namespace Rotorcraft.Presentation
             float hw = b.extents.x * 0.68f, y = b.min.y + Mathf.Min(0.75f, b.size.y * 0.42f);
             c.heads = new[] { new Vector3(-hw, y, b.max.z - 0.05f), new Vector3(hw, y, b.max.z - 0.05f) };
             c.tails = new[] { new Vector3(-hw, y + 0.1f, b.min.z + 0.05f), new Vector3(hw, y + 0.1f, b.min.z + 0.05f) };
+            HeatSource.Add(g, HeatSource.Engine);
             return g;
         }
 
@@ -174,44 +177,56 @@ namespace Rotorcraft.Presentation
             var env = SkyEnvironment.Current;
             var night = env != null && env.Night > 0.5f;
             glow.Clear();
+            frame++;
 
-            foreach (var c in cars)
+            for (int i = 0; i < cars.Count; i++)
             {
+                var c = cars[i];
+                // working out where a car is costs far more than drawing it, so what is far off moves less often: a car out of
+                // sight is looked at twice a second, and one over a kilometre away, which only moves a pixel or so, four times less often
+                var shown = c.go != null && c.go.activeSelf;
+                if (!shown && (i + frame) % OutOfRangeEvery != 0) continue;
+                if (shown && c.far && (i + frame) % FarEvery != 0)
+                {
+                    if (night) CarLights(c);
+                    continue;
+                }
                 var s = (c.s0 + t * c.speed) % c.path.len;
                 if (c.dir < 0) s = c.path.len - s;
                 var p = c.path.At(s);
                 float fx = p.dx * c.dir, fz = p.dz * c.dir;
                 // keep left of the centre line
                 float x = p.x + fz * c.offset, z = p.z - fx * c.offset;
-                var near = (x - ex) * (x - ex) + (z - ez) * (z - ez) < RANGE * RANGE;
-                if (!near) { if (c.go != null && c.go.activeSelf) c.go.SetActive(false); continue; }
+                var d2 = (x - ex) * (x - ex) + (z - ez) * (z - ez);
+                if (d2 >= RANGE * RANGE) { if (c.go != null && c.go.activeSelf) c.go.SetActive(false); continue; }
+                c.far = d2 > FAR * FAR;
                 if (c.go == null) { c.go = MakeCar(c); if (c.go == null) continue; }
                 if (!c.go.activeSelf) c.go.SetActive(true);
                 var y = RoadY(x, z);
                 var pitch = Mathf.Atan2(RoadY(x + fx * 2, z + fz * 2) - RoadY(x - fx * 2, z - fz * 2), 4);
                 c.go.transform.SetPositionAndRotation(U(x, y, z), Facing(fx, fz, pitch));
-                if (night)
-                {
-                    var tr = c.go.transform;
-                    foreach (var h in c.heads) glow.Add(new GlowPoint { pos = tr.TransformPoint(h), color = new Color(1.0f, 0.95f, 0.82f, 0), size = 0.32f, mode = LightMode.Steady, period = 1 });
-                    foreach (var h in c.tails) glow.Add(new GlowPoint { pos = tr.TransformPoint(h), color = new Color(1.0f, 0.05f, 0.03f, 0), size = 0.22f, mode = LightMode.Steady, period = 1 });
-                }
+                if (night) CarLights(c);
             }
 
-            foreach (var w in walkers)
+            for (int i = 0; i < walkers.Count; i++)
             {
+                var w = walkers[i];
+                var shown = w.go != null && w.go.activeSelf;
+                if (!shown && (i + frame) % OutOfRangeEvery != 0) continue;
+                if (shown && w.far && (i + frame) % FarEvery != 0) continue;
                 var u = (t * w.speed + w.phase) % (w.span * 2);
                 var back = u > w.span;
                 var p = w.path.At(w.s0 + (back ? w.span * 2 - u : u));
                 var off = (w.path.width / 2 + 1.8f) * w.side;
                 float x = p.x - p.dz * off, z = p.z + p.dx * off;
-                var near = (x - ex) * (x - ex) + (z - ez) * (z - ez) < PED_RANGE * PED_RANGE;
-                if (!near) { if (w.go != null && w.go.activeSelf) w.go.SetActive(false); continue; }
+                var d2 = (x - ex) * (x - ex) + (z - ez) * (z - ez);
+                if (d2 >= PED_RANGE * PED_RANGE) { if (w.go != null && w.go.activeSelf) w.go.SetActive(false); continue; }
+                w.far = d2 > FAR_WALKER * FAR_WALKER;
                 if (w.go == null) { MakeWalker(w); if (w.go == null) continue; }
                 if (!w.go.activeSelf) w.go.SetActive(true);
                 float fx = back ? -p.dx : p.dx, fz = back ? -p.dz : p.dz;
-                var frame = Mathf.FloorToInt((t * w.speed + w.phase) / STRIDE % 1 * WALK_FRAMES) % WALK_FRAMES;
-                SetFrame(w.filters, w.frames[frame]);
+                var pose = Mathf.FloorToInt((t * w.speed + w.phase) / STRIDE % 1 * WALK_FRAMES) % WALK_FRAMES;
+                SetFrame(w.filters, w.frames[pose]);
                 w.go.transform.SetPositionAndRotation(U(x, Mathf.Max((float)WorldMap.TerrainHeight(x, z), 0.4f), z), Facing(fx, fz));
             }
 
@@ -226,6 +241,7 @@ namespace Rotorcraft.Presentation
                     b.go = actors.SpawnProp("boat", root);
                     if (b.go == null) continue;
                     b.go.transform.localScale = Vector3.one * b.scale;
+                    HeatSource.Add(b.go, HeatSource.Engine);
                 }
                 if (!b.go.activeSelf) b.go.SetActive(true);
                 float vx = -Mathf.Sin(a) * b.rx, vz = Mathf.Cos(a) * b.rz;
@@ -241,6 +257,13 @@ namespace Rotorcraft.Presentation
             }
             lights.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             GlowPoints.Fill(lights.sharedMesh, glow);
+        }
+
+        void CarLights(Car c)
+        {
+            var tr = c.go.transform;
+            foreach (var h in c.heads) glow.Add(new GlowPoint { pos = tr.TransformPoint(h), color = new Color(1.0f, 0.95f, 0.82f, 0), size = 0.32f, mode = LightMode.Steady, period = 1 });
+            foreach (var h in c.tails) glow.Add(new GlowPoint { pos = tr.TransformPoint(h), color = new Color(1.0f, 0.05f, 0.03f, 0), size = 0.22f, mode = LightMode.Steady, period = 1 });
         }
 
         /// <summary>For the screenshot tour: where the nearest shown car, walker or boat is (sim x, z), if any.</summary>

@@ -3230,6 +3230,9 @@ def build_nightjar():
         "equipment": {"medical": "fit_hems", "flir": "eq_flir", "searchlight": "eq_searchlight", "hoist": "eq_hoist", "floats": "eq_floats"},
         "interior": "interior",
         "doors": doors,
+        # the painted surfaces are baked as shading alone and tinted by the game, so every paint scheme shows
+        "liveryTint": True,
+        "previewLivery": {1: (0.95, 0.80, 0.06), 2: (0.08, 0.45, 0.20), 3: (0.95, 0.80, 0.06)},
     }
     build_tail_rotor(m, meta["tailRotor"])
     return m, meta

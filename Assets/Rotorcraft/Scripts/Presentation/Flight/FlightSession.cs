@@ -187,6 +187,7 @@ namespace Rotorcraft.Presentation
                 else TogglePause();
             }
             heli.Input.menuOpen = showTablet || Runtime.PendingDecision() != null || (Pre?.Active ?? false);
+            SkyEnvironment.Current?.SetThermal(Runtime.flir);
             if (!Paused)
             {
                 if (Pre != null) StepPreflight();
@@ -475,6 +476,7 @@ namespace Rotorcraft.Presentation
         void End()
         {
             Active = false;
+            SkyEnvironment.Current?.SetThermal(false);
             Paused = false;
             AudioListener.pause = false;
             heli.SetPaused(true);

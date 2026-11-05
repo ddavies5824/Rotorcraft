@@ -91,7 +91,9 @@ Shader "Rotorcraft/Light Points"
                 float3 hue = i.color;
                 float3 white = max(hue.r, max(hue.g, hue.b)).xxx;
                 float3 c = (lerp(hue, white, 0.65) * core * 3.0 + hue * (glow + halo) + lerp(hue, white, 0.4) * spikes) * _RcLightExposure;
-                return half4(min(c, 64.0), 1.0);
+                // down to nothing at the rim of the quad: cut off there, a bright flash close up is a hard-edged disc
+                float rim = 1.0 - r2;
+                return half4(min(c * rim * rim, 64.0), 1.0);
             }
             ENDHLSL
         }

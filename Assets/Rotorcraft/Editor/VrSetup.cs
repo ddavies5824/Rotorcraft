@@ -40,6 +40,11 @@ namespace Rotorcraft.EditorTools
             xr.renderMode = OpenXRSettings.RenderMode.SinglePassInstanced;
             xr.GetFeature<OculusTouchControllerProfile>().enabled = true;
             xr.GetFeature<MetaQuestTouchPlusControllerProfile>().enabled = true;   // the Quest 3 family's controllers
+            // by name, as the editor code does not refer to the VR assembly
+            var rate = System.Array.Find(xr.GetFeatures(), f => f.GetType().Name == "HeadsetRate");
+            if (rate == null) throw new System.Exception("The OpenXR settings have no HeadsetRate feature");
+            rate.enabled = true;
+            EditorUtility.SetDirty(rate);
             EditorUtility.SetDirty(xr);
             AssetDatabase.SaveAssets();
             Debug.Log($"VR setup: OpenXR loader assigned {assigned}, loaders {manager.activeLoaders.Count}, starts at launch {general.InitManagerOnStart}, render mode {xr.renderMode}");

@@ -59,6 +59,17 @@ namespace Rotorcraft.Presentation
             doc?.rootVisualElement?.Clear();
         }
 
+        /// <summary>
+        /// Which way is up on a display facing along nrm. On a flat console the aircraft's up lies along the normal, so all that
+        /// is left of it on the face is rounding error pointing anywhere: measured along that, a radio's letterbox display came
+        /// out as a square turned at an angle, and got a whole page of instruments. A display lying flat has its top towards the nose.
+        /// </summary>
+        public static Vector3 ScreenUp(Vector3 up, Vector3 nose, Vector3 nrm)
+        {
+            var onFace = Vector3.ProjectOnPlane(up, nrm);
+            return onFace.sqrMagnitude > 0.04f ? onFace.normalized : Vector3.ProjectOnPlane(nose, nrm).normalized;
+        }
+
         /// <summary>Find the model's gauge faces and screens and put live instruments on them.</summary>
         public void Bind(Transform model, AircraftConfig ac, ThemeStyleSheet theme, Transform eye)
         {
@@ -115,8 +126,7 @@ namespace Rotorcraft.Presentation
                     areaByDir[key] = (acc.n + tn * area, acc.a + area);
                 }
                 var nrm = areaByDir.Count > 0 ? areaByDir.Values.OrderByDescending(x => x.a).First().n.normalized : (eyePos - centre).normalized;
-                var upv = Vector3.ProjectOnPlane(up, nrm).normalized;
-                if (upv.sqrMagnitude < 0.5f) upv = Vector3.ProjectOnPlane(model.forward, nrm).normalized;
+                var upv = ScreenUp(up, -model.forward, nrm);   // the model is turned half round: its nose is along its -z
                 var right = Vector3.Cross(upv, -nrm).normalized;
                 float r0 = float.MaxValue, r1 = float.MinValue, u0 = float.MaxValue, u1 = float.MinValue, front = float.MinValue;
                 foreach (var v in vs)
@@ -184,9 +194,11 @@ namespace Rotorcraft.Presentation
                 panel.style.position = Position.Absolute; panel.style.left = rg.x; panel.style.top = rg.y; panel.style.width = rg.width; panel.style.height = rg.height;
                 panel.style.flexGrow = 0;
                 doc.rootVisualElement.Add(panel);
-                // the quad, a hair in front of the face, in the face's own part so it moves with it
+                // the quad, just in front of the face, in the face's own part so it moves with it. Far enough in front to stay
+                // there out at the platforms, 30 km from the origin, where a position is only good to about 2 mm: any closer and
+                // the face shows through it in patches or altogether, depending on where the aircraft is
                 var size = pl.dial ? new Vector2(Mathf.Max(pl.w, pl.h), Mathf.Max(pl.w, pl.h)) * 1.02f : new Vector2(pl.w, pl.h) * 0.96f;
-                var centre = pl.c + pl.n * 0.0008f;
+                var centre = pl.c + pl.n * 0.004f;
                 Vector3 Corner(float sx, float sy) => centre + pl.right * sx * size.x / 2 + pl.upv * sy * size.y / 2;
                 float uL = rg.x / (float)ATLAS_W, uR = (rg.x + rg.width) / (float)ATLAS_W;
                 float vT = 1 - rg.y / (float)atlasH, vB = 1 - (rg.y + rg.height) / (float)atlasH;

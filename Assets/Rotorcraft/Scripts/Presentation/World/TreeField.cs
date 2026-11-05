@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace Rotorcraft.Presentation
 {
@@ -30,11 +31,11 @@ namespace Rotorcraft.Presentation
         [Tooltip("Low crowns cast shadows too (costs a second pass over the far trees).")]
         public bool farShadows = false;
 
-        const float CellSize = 256;
+        const float CellSize = 256, CastMargin = 40;
         readonly List<Kind> kinds = new List<Kind>();
         readonly Dictionary<long, Cell> cells = new Dictionary<long, Cell>();
-        List<Matrix4x4>[] nearBuf, farBuf;
-        RenderParams[][] nearParams, farParams;
+        List<Matrix4x4>[] castBuf, nearBuf, farBuf;
+        RenderParams[][] castParams, nearParams, farParams;
         readonly Plane[] planes = new Plane[6];
         public int Count { get; private set; }
         public int DrawnNear { get; private set; }
@@ -63,12 +64,13 @@ namespace Rotorcraft.Presentation
         public void Finish()
         {
             foreach (var c in cells.Values) c.bounds.Expand(new Vector3(40, 0, 40));
-            nearBuf = new List<Matrix4x4>[kinds.Count]; farBuf = new List<Matrix4x4>[kinds.Count];
-            nearParams = new RenderParams[kinds.Count][]; farParams = new RenderParams[kinds.Count][];
+            castBuf = new List<Matrix4x4>[kinds.Count]; nearBuf = new List<Matrix4x4>[kinds.Count]; farBuf = new List<Matrix4x4>[kinds.Count];
+            castParams = new RenderParams[kinds.Count][]; nearParams = new RenderParams[kinds.Count][]; farParams = new RenderParams[kinds.Count][];
             for (int k = 0; k < kinds.Count; k++)
             {
-                nearBuf[k] = new List<Matrix4x4>(4096); farBuf[k] = new List<Matrix4x4>(4096);
-                nearParams[k] = Params(kinds[k].nearMats, ShadowCastingMode.On);
+                castBuf[k] = new List<Matrix4x4>(4096); nearBuf[k] = new List<Matrix4x4>(4096); farBuf[k] = new List<Matrix4x4>(4096);
+                castParams[k] = Params(kinds[k].nearMats, ShadowCastingMode.On);
+                nearParams[k] = Params(kinds[k].nearMats, ShadowCastingMode.Off);
                 farParams[k] = Params(kinds[k].farMats, farShadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
             }
         }
@@ -92,23 +94,29 @@ namespace Rotorcraft.Presentation
         void Update()
         {
             var cam = Camera.main;
-            if (cam == null || nearBuf == null) return;
+            if (cam == null || castBuf == null) return;
             // a headset's two eyes see more than the camera's own frustum says: cull with a wide one so no trees go missing at the edges
-            if (Vr.On) GeometryUtility.CalculateFrustumPlanes(Matrix4x4.Perspective(140, 1, cam.nearClipPlane, cam.farClipPlane) * cam.worldToCameraMatrix, planes);
+            if (Vr.On) GeometryUtility.CalculateFrustumPlanes(Matrix4x4.Perspective(125, 1, cam.nearClipPlane, cam.farClipPlane) * cam.worldToCameraMatrix, planes);
             else GeometryUtility.CalculateFrustumPlanes(cam, planes);
-            for (int k = 0; k < kinds.Count; k++) { nearBuf[k].Clear(); farBuf[k].Clear(); }
+            for (int k = 0; k < kinds.Count; k++) { castBuf[k].Clear(); nearBuf[k].Clear(); farBuf[k].Clear(); }
             var eye = cam.transform.position;
-            float near2 = nearDistance * nearDistance, far2 = farDistance * farDistance;
+            var vr = VrGraphics.Active;
+            float nearAt = vr ? Mathf.Min(nearDistance, VrGraphics.NearTrees) : nearDistance, farAt = vr ? Mathf.Min(farDistance, VrGraphics.FarTrees) : farDistance;
+            // a tree only needs to be in the shadow map if its shadow can be drawn, with a little over for shadows thrown towards the camera
+            var urp = UniversalRenderPipeline.asset;
+            var castAt = (urp != null ? urp.shadowDistance : nearAt) + CastMargin;
+            float cast2 = castAt * castAt, near2 = nearAt * nearAt, far2 = farAt * farAt;
             foreach (var c in cells.Values)
             {
                 var d2 = c.bounds.SqrDistance(eye);
                 if (d2 > far2 || !GeometryUtility.TestPlanesAABB(planes, c.bounds)) continue;
-                var buf = d2 < near2 ? nearBuf : farBuf;
+                var buf = d2 >= near2 ? farBuf : d2 < cast2 ? castBuf : nearBuf;
                 for (int k = 0; k < c.trees.Length; k++) if (c.trees[k] != null) buf[k].AddRange(c.trees[k]);
             }
             int dn = 0, df = 0;
             for (int k = 0; k < kinds.Count; k++)
             {
+                dn += Draw(kinds[k].near, castParams[k], castBuf[k]);
                 dn += Draw(kinds[k].near, nearParams[k], nearBuf[k]);
                 df += Draw(kinds[k].far, farParams[k], farBuf[k]);
             }

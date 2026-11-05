@@ -248,6 +248,7 @@ namespace Rotorcraft.Presentation
                     if (s.gearPos > 0.02 && s.gearPos < 0.98) ann.Add(("GEAR TRANSIT", true));
                     else if (s.gearPos <= 0.02 && !s.onGround && o.aglM < 60 && o.iasKt < 60) ann.Add(("GEAR UP", false));
                 }
+                if (Runtime.flir) ann.Add(("THERMAL CAMERA", true));
                 var key = string.Join("|", ann.Select(a => a.t + a.c));
                 if (annun.userData as string != key) { annun.userData = key; annun.Clear(); foreach (var (at, ac2) in ann) annun.Add(T(at, ac2 ? "ann c" : "ann")); }
                 // AGL aid / radar altimeter

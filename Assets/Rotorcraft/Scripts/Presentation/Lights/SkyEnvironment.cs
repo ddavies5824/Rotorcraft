@@ -22,6 +22,8 @@ namespace Rotorcraft.Presentation
         public event System.Action Changed;
         /// <summary>The weather last applied.</summary>
         public WeatherPreset Weather => weather;
+        /// <summary>The thermal camera is on: the world is lit for heat, not by the time of day, which is kept for when it goes off.</summary>
+        public bool Thermal { get; private set; }
 
         WeatherPreset weather;
         // the day as built
@@ -30,6 +32,7 @@ namespace Rotorcraft.Presentation
         Color dayFog; float dayFogStart, dayFogEnd;
         Material sky; float daySkyExposure = 1.3f, daySunSize = 0.04f; Color daySkyTint = new Color(0.5f, 0.5f, 0.5f), dayGroundColor = new Color(0.37f, 0.35f, 0.34f);
         Vignette vignette;
+        Volume thermalGrade;
         bool captured;
 
         static readonly int RcNight = Shader.PropertyToID("_RcNight"), RcFog = Shader.PropertyToID("_RcFogDensity"), RcExposure = Shader.PropertyToID("_RcLightExposure");
@@ -41,7 +44,11 @@ namespace Rotorcraft.Presentation
             if (GetComponent<WeatherEffects>() == null) gameObject.AddComponent<WeatherEffects>();
         }
 
-        void OnDestroy() { if (Current == this) Current = null; }
+        void OnDestroy()
+        {
+            if (Thermal) HeatSource.SetThermal(false);
+            if (Current == this) Current = null;
+        }
 
         void Capture()
         {
@@ -91,18 +98,75 @@ namespace Rotorcraft.Presentation
 
         static Color Grey(Color c, float t) { var l = c.r * 0.3f + c.g * 0.55f + c.b * 0.15f; return Color.Lerp(c, new Color(l, l, l), t); }
 
+        /// <summary>
+        /// Turn the thermal camera's view on or off. As in the browser game the whole view becomes the camera's: an even light
+        /// that is the same by day and by night, no shadows, a cold sky, then monochrome, with people glowing (HeatSource). It sees
+        /// further through haze than the eye does. All of it is the game's usual drawing with a different light and grade, so it
+        /// costs no more to draw than the ordinary view.
+        /// </summary>
+        public void SetThermal(bool on)
+        {
+            if (Thermal == on) return;
+            Thermal = on;
+            if (on && thermalGrade == null) MakeThermalGrade();
+            if (thermalGrade != null) thermalGrade.enabled = on;
+            HeatSource.SetThermal(on);
+            Apply(timeOfDay, weather);
+        }
+
+        void MakeThermalGrade()
+        {
+            var host = new GameObject("Thermal camera grade");
+            host.transform.SetParent(transform, false);
+            var existing = FindFirstObjectByType<Volume>();
+            if (existing != null) host.layer = existing.gameObject.layer;
+            thermalGrade = host.AddComponent<Volume>();
+            thermalGrade.isGlobal = true;
+            thermalGrade.priority = 100;
+            var profile = thermalGrade.profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            // red and green only: water and the blue in shadows read cold, painted and bare surfaces warmer than grass
+            var mix = profile.Add<ChannelMixer>(true);
+            mix.redOutRedIn.value = mix.blueOutRedIn.value = ThermalRed;
+            mix.redOutGreenIn.value = mix.blueOutGreenIn.value = ThermalGreen;
+            mix.greenOutRedIn.value = ThermalRed * ThermalTint;   // the faint green of the original's picture
+            mix.greenOutGreenIn.value = ThermalGreen * ThermalTint;
+            mix.redOutBlueIn.value = mix.greenOutBlueIn.value = mix.blueOutBlueIn.value = 0;
+            var look = profile.Add<ColorAdjustments>(true);
+            look.saturation.value = 0;
+            look.contrast.value = ThermalContrast;
+            look.postExposure.value = ThermalExposure;
+            look.hueShift.value = 0;
+            look.colorFilter.value = Color.white;
+            thermalGrade.enabled = false;
+        }
+
+        const float ThermalRed = 70, ThermalGreen = 30, ThermalTint = 1.07f, ThermalContrast = 6, ThermalExposure = 0.75f, ThermalSun = 0.6f;
+
         public void Apply(TimeOfDay tod, WeatherPreset w)
         {
             Capture();
             timeOfDay = tod; weather = w;
             var oc = Overcast(w);
-            var vis = w != null ? (float)w.visibilityM : 30000;
+            var vis = (w != null ? (float)w.visibilityM : 30000) * (Thermal ? 2.5f : 1);
             FogDensity = 3f / Mathf.Max(250, vis);
             // fog: as built in clear air, closing in with the visibility
             RenderSettings.fogStartDistance = Mathf.Min(dayFogStart, vis * 0.12f);
             RenderSettings.fogEndDistance = Mathf.Min(dayFogEnd, vis * 1.4f);
             float exposure;
-            if (tod == TimeOfDay.Day)
+            if (Thermal)
+            {
+                exposure = 0.78f;
+                Night = 0;
+                if (sun != null) { sun.transform.rotation = daySunRot; sun.intensity = daySunIntensity * ThermalSun; sun.color = Color.white; sun.shadows = LightShadows.None; }
+                RenderSettings.ambientMode = AmbientMode.Trilight;
+                RenderSettings.ambientSkyColor = new Color(0.62f, 0.62f, 0.62f);
+                RenderSettings.ambientEquatorColor = new Color(0.55f, 0.55f, 0.55f);
+                RenderSettings.ambientGroundColor = new Color(0.4f, 0.4f, 0.4f);
+                RenderSettings.ambientIntensity = 1;
+                RenderSettings.fogColor = new Color(0.09f, 0.09f, 0.09f);
+                SetSky(0.07f, 0, new Color(0.5f, 0.5f, 0.5f), new Color(0.08f, 0.08f, 0.08f));
+            }
+            else if (tod == TimeOfDay.Day)
             {
                 exposure = 0.78f + oc * 0.45f;
                 Night = 0;
@@ -152,9 +216,9 @@ namespace Rotorcraft.Presentation
             }
             // reflections outside the probe come from the sky cubemap captured at load (the day sky): dim them
             // with the light, or the sea shines white on the horizon at night
-            RenderSettings.reflectionIntensity = tod == TimeOfDay.Day ? dayReflection : tod == TimeOfDay.Dusk ? dayReflection * 0.3f : dayReflection * 0.04f;
+            RenderSettings.reflectionIntensity = Thermal ? dayReflection * 0.1f : tod == TimeOfDay.Day ? dayReflection : tod == TimeOfDay.Dusk ? dayReflection * 0.3f : dayReflection * 0.04f;
             // the browser game's grade darkened the corners a little more as the light went
-            if (vignette != null) vignette.intensity.Override(tod == TimeOfDay.Day ? 0.2f : tod == TimeOfDay.Dusk ? 0.25f : 0.3f);
+            if (vignette != null) vignette.intensity.Override(Thermal ? 0.3f : tod == TimeOfDay.Day ? 0.2f : tod == TimeOfDay.Dusk ? 0.25f : 0.3f);
             Shader.SetGlobalFloat(RcNight, Night);
             Shader.SetGlobalFloat(RcFog, FogDensity);
             Shader.SetGlobalFloat(RcExposure, exposure * 0.96f);

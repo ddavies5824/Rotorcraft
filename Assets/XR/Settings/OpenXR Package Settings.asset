@@ -78,6 +78,7 @@ MonoBehaviour:
   - {fileID: -2524867782872519084}
   - {fileID: 8897085423612458552}
   - {fileID: 7659324059877220228}
+  - {fileID: 6064445622511174929}
   customLoaderName: 
   m_renderMode: 1
   m_latencyOptimization: 0
@@ -90,7 +91,7 @@ MonoBehaviour:
   m_symmetricProjection: 0
   m_optimizeMultiviewRenderRegions: 0
   m_multiviewRenderRegionsOptimizationMode: 0
-  m_hasMigratedMultiviewRenderRegionSetting: 0
+  m_hasMigratedMultiviewRenderRegionSetting: 1
   m_foveatedRenderingApi: 1
   m_useOpenXRPredictedTime: 1
 --- !u!114 &-6100030126810732693
@@ -162,7 +163,7 @@ MonoBehaviour:
   m_symmetricProjection: 0
   m_optimizeMultiviewRenderRegions: 0
   m_multiviewRenderRegionsOptimizationMode: 0
-  m_hasMigratedMultiviewRenderRegionSetting: 0
+  m_hasMigratedMultiviewRenderRegionSetting: 1
   m_foveatedRenderingApi: 1
   m_useOpenXRPredictedTime: 1
 --- !u!114 &-3104755268939450991
@@ -483,6 +484,28 @@ MonoBehaviour:
   featureIdInternal: com.unity.openxr.feature.input.handinteraction
   openxrExtensionStrings: XR_EXT_hand_interaction
   company: Unity
+  priority: 0
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
+--- !u!114 &6064445622511174929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3d526b543d6c2f409c8ee8536d7e500, type: 3}
+  m_Name: HeadsetRate Standalone
+  m_EditorClassIdentifier: Rotorcraft.VR::Rotorcraft.VR.HeadsetRate
+  m_enabled: 1
+  nameUi: Rotorcraft headset refresh rate
+  version: 1.0.0
+  featureIdInternal: com.rotorcraft.vr.headset-rate
+  openxrExtensionStrings: XR_FB_display_refresh_rate
+  company: Rotorcraft
   priority: 0
   targetOpenXRApiVersion: 
   required: 0

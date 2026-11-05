@@ -9,16 +9,20 @@ namespace Rotorcraft.VR
 {
     public sealed class VrHand
     {
-        const float PalmX = -0.036f, KnuckleY = 0.046f;
+        const float PalmX = -0.036f, KnuckleY = 0.046f, TipReach = 0.028f, Folded = 0.8f;
         public static readonly Quaternion FromGripPose = Quaternion.Euler(0, 0, 180);
         static readonly Color Glove = new Color(0.72f, 0.63f, 0.47f), Cuff = new Color(0.24f, 0.26f, 0.28f), Ready = new Color(0.55f, 0.85f, 1f);
 
         public readonly Transform root;
         readonly Material glove, cuff;
-        readonly List<(Transform joint, float base_, float bend)> joints = new List<(Transform, float, float)>();
+        readonly List<(Transform joint, float base_, float bend, bool index)> joints = new List<(Transform, float, float, bool)>();
         readonly int layer;
-        float curl = -1;
+        float curl = -1, point = -1;
         bool ready;
+        Transform indexTip;
+
+        /// <summary>The very end of the index finger, in the world.</summary>
+        public Vector3 IndexTip => indexTip.TransformPoint(0, TipReach, 0);
 
         public VrHand(Transform parent, bool left, int layer)
         {
@@ -37,20 +41,25 @@ namespace Rotorcraft.VR
             Part(PrimitiveType.Cube, model, new Vector3(PalmX, 0.002f, 0), new Vector3(0.028f, 0.09f, 0.086f), glove);
             Part(PrimitiveType.Cylinder, model, new Vector3(PalmX, -0.072f, 0), new Vector3(0.05f, 0.03f, 0.066f), cuff);
             // index to little finger, from the thumb's end of the palm to the other
+            var index = true;
             foreach (var (z, length) in new[] { (0.031f, 1f), (0.0105f, 1.08f), (-0.0105f, 1f), (-0.031f, 0.82f) })
-                Finger(model, new Vector3(PalmX, KnuckleY, z), length);
+            {
+                Finger(model, new Vector3(PalmX, KnuckleY, z), length, index);
+                index = false;
+            }
             Thumb(model);
             SetCurl(0);
         }
 
-        void Finger(Transform model, Vector3 at, float length)
+        void Finger(Transform model, Vector3 at, float length, bool index)
         {
-            var knuckle = Joint(model, at, 0, -74);
+            var knuckle = Joint(model, at, 0, -74, index);
             Part(PrimitiveType.Capsule, knuckle, new Vector3(0, 0.022f * length, 0), new Vector3(0.019f, 0.03f * length, 0.019f), glove);
-            var middle = Joint(knuckle, new Vector3(0, 0.043f * length, 0), 0, -82);
+            var middle = Joint(knuckle, new Vector3(0, 0.043f * length, 0), 0, -82, index);
             Part(PrimitiveType.Capsule, middle, new Vector3(0, 0.015f * length, 0), new Vector3(0.018f, 0.022f * length, 0.018f), glove);
-            var tip = Joint(middle, new Vector3(0, 0.03f * length, 0), 0, -55);
+            var tip = Joint(middle, new Vector3(0, 0.03f * length, 0), 0, -55, index);
             Part(PrimitiveType.Capsule, tip, new Vector3(0, 0.011f * length, 0), new Vector3(0.017f, 0.017f * length, 0.017f), glove);
+            if (index) indexTip = tip;
         }
 
         void Thumb(Transform model)
@@ -65,12 +74,12 @@ namespace Rotorcraft.VR
             Part(PrimitiveType.Capsule, second, new Vector3(0, 0.014f, 0), new Vector3(0.02f, 0.021f, 0.02f), glove);
         }
 
-        Transform Joint(Transform parent, Vector3 at, float base_, float bend)
+        Transform Joint(Transform parent, Vector3 at, float base_, float bend, bool index = false)
         {
             var t = new GameObject("Joint").transform;
             t.SetParent(parent, false);
             t.localPosition = at;
-            joints.Add((t, base_, bend));
+            joints.Add((t, base_, bend, index));
             return t;
         }
 
@@ -89,13 +98,16 @@ namespace Rotorcraft.VR
             r.receiveShadows = false;
         }
 
-        /// <summary>0 an open hand, 1 a closed fist.</summary>
-        public void SetCurl(float value)
+        /// <summary>0 an open hand, 1 a closed fist; pointing straightens the index finger and folds the others out of its way, from 0 not at all to 1 fully.</summary>
+        public void SetCurl(float value, float pointing = 0)
         {
             value = Mathf.Clamp01(value);
-            if (Mathf.Approximately(value, curl)) return;
+            pointing = Mathf.Clamp01(pointing);
+            if (Mathf.Approximately(value, curl) && Mathf.Approximately(pointing, point)) return;
             curl = value;
-            foreach (var (joint, base_, bend) in joints) joint.localRotation = Quaternion.Euler(0, 0, base_ + bend * curl);
+            point = pointing;
+            foreach (var (joint, base_, bend, index) in joints)
+                joint.localRotation = Quaternion.Euler(0, 0, base_ + bend * (index ? curl * (1 - point) : Mathf.Lerp(curl, Folded, point)));
         }
 
         /// <summary>Show that the hand is close enough to take hold of something.</summary>

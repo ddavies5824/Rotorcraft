@@ -53,8 +53,22 @@ namespace Rotorcraft.Presentation.UI
             Instance = this;
             Vr.Load();
             var shots = ShotTour.ArgFolder();
-            Saves = new SaveManager(shots != null ? Path.Combine(shots, "saves") : null);
+#if UNITY_WEBGL
+            string perf = null;
+#else
+            var perf = PerfRun.ArgFolder();
+#endif
+            var saveRoot = shots ?? perf;
+#if RC_TRAILER
+            var trailerArgs = Environment.GetCommandLineArgs();
+            var trailerAt = Array.IndexOf(trailerArgs, "-trailer");
+            if (trailerAt >= 0 && trailerAt + 1 < trailerArgs.Length) saveRoot = trailerArgs[trailerAt + 1];
+#endif
+            Saves = new SaveManager(saveRoot != null ? Path.Combine(saveRoot, "saves") : null);
             if (shots != null) gameObject.AddComponent<ShotTour>().folder = shots;
+#if !UNITY_WEBGL
+            if (perf != null) gameObject.AddComponent<PerfRun>().folder = perf;
+#endif
             // web test hook: ?autofly starts a freeplay flight straight away (checks the world builds in a browser)
             if (Application.platform == RuntimePlatform.WebGLPlayer && Application.absoluteURL.Contains("autofly"))
                 Later(() => FlyFreeplay(new FreeplayConfig { aircraftId = "kestrel", kit = Loadout.DefaultKit(Aircraft.Get("kestrel")), fuelKg = 60, pace = FreeplayPace.Normal }));
@@ -163,6 +177,7 @@ namespace Rotorcraft.Presentation.UI
         {
             if (document != null && document.panelSettings != null) document.panelSettings.scale = Settings.textScale;
             QualitySettings.SetQualityLevel(Settings.graphics == GraphicsQuality.Low ? 0 : Settings.graphics == GraphicsQuality.Balanced ? 1 : Math.Max(0, QualitySettings.names.Length - 1), true);
+            VrGraphics.Refresh();
             AudioListener.volume = Settings.sound ? 1 : 0;
 #if !UNITY_EDITOR
             var mode = Settings.fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;

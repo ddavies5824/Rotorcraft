@@ -129,6 +129,7 @@ namespace Rotorcraft.Presentation
                 }
                 r.materials = mats;
             }
+            HeatSource.Add(g, HeatSource.Body);
             return g;
         }
 
@@ -179,6 +180,7 @@ namespace Rotorcraft.Presentation
                     case "v":
                         {
                             var v = Spawn(vehicleParts, parts.Length > 1 ? parts[1] : "saloon", t);
+                            HeatSource.Add(v, HeatSource.Engine);
                             if (p.beacons && v != null) AddBeacons(t, parts[1] == "police" ? new Color(0.2f, 0.4f, 1f) : parts[1] == "fireEngine" ? new Color(0.3f, 0.45f, 1f) : new Color(0.25f, 0.45f, 1f));
                             break;
                         }
@@ -227,7 +229,7 @@ namespace Rotorcraft.Presentation
                         Person("casual", "sit", sd, t)?.With(x => x.transform.localPosition = new Vector3(0.35f, 0.15f, 0.1f));
                         Person("casual", "sit", sd + 1, t)?.With(x => { x.transform.localPosition = new Vector3(-0.4f, 0.15f, -0.2f); x.transform.localRotation = Quaternion.Euler(0, 160, 0); });
                         break;
-                    case TargetKind.Vessel: Spawn(peopleParts, "boat", t); break;
+                    case TargetKind.Vessel: HeatSource.Add(Spawn(peopleParts, "boat", t), HeatSource.Engine); break;
                     case TargetKind.Casualty:
                         // a crashed car with the casualty beside it, a passer-by kneeling and another on the phone
                         Spawn(vehicleParts, "hatch", t)?.With(x => { x.transform.localPosition = new Vector3(2.2f, 0, 1.2f); x.transform.localRotation = Quaternion.Euler(4, 35, 8); });

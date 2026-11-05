@@ -15,6 +15,7 @@ namespace Rotorcraft.Presentation
         static readonly Dictionary<string, (int slot, float k)> PAINT = new Dictionary<string, (int, float)>
         {
             ["RC paint"] = (1, 1f), ["RC belly"] = (1, 0.82f), ["RC seam"] = (1, 0.42f), ["RC stripe"] = (2, 1f), ["RC bladetip"] = (2, 1f), ["RC accent"] = (3, 1f), ["RC accentdk"] = (3, 0.62f),
+            ["RC chk_a"] = (2, 1f), ["RC chk_b"] = (3, 1f),   // the two colours of the Nightjar's check band
         };
 
         public static void Apply(Transform model, AircraftConfig ac)

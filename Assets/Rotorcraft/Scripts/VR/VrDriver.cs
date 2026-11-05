@@ -7,7 +7,8 @@
 //
 // Hands: squeeze a grip button to take hold of a control, from wherever the hand is: the right hand takes the cyclic and the
 // left the collective, or whichever one a hand is right beside. While a hand holds something its thumbstick is free to
-// work the pedals. Letting go of the cyclic returns it to the trim; the collective stays put.
+// work the pedals. Letting go of the cyclic returns it to the trim; the collective stays put. A free hand's index finger
+// presses the switches on the panel beside the seat.
 // Controllers: right stick cyclic; left stick pedals (across) and collective (up and down); A set trim; B release
 // trim; X show or hide the HUD; Y tablet; menu button pause; click the right stick to recentre the view; click the
 // left stick to change camera. Keyboard, joystick, pedals and gamepad keep working alongside them.
@@ -20,8 +21,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.XR;
 using UnityEngine.UIElements;
+using UnityEngine.XR;
 using UnityEngine.XR.Management;
 using UnityEngine.XR.OpenXR.Input;
+using ProviderStats = UnityEngine.XR.Provider.XRStats;
 
 namespace Rotorcraft.VR
 {
@@ -36,6 +39,8 @@ namespace Rotorcraft.VR
         const float ReseatDistance = 0.25f, ReseatAfter = 0.4f;
         // How close (m) a hand must be to a control to take that one rather than its own, and how far the grip button must go in and out.
         const float GrabRadius = 0.18f, GripOn = 0.6f, GripOff = 0.35f;
+        // How near the switch panel (m) a hand starts to point.
+        const float PointWithin = 0.12f;
 
         sealed class Hand
         {
@@ -46,11 +51,15 @@ namespace Rotorcraft.VR
             public HandAxis first, second;
             public Vector3 smoothed;
             public bool squeezed;
-            public float curl;
+            public float curl, pointing;
+            public FingerPress press;
         }
         Hand leftHand, rightHand;
         List<CockpitGrip> grips = new List<CockpitGrip>();
         Transform gripsModel;
+        VrSwitchPanel switches;
+        CockpitSwitch[] switchStates;
+        float switchesAt;
 
         // The panel: wide enough to fill the middle of the view without turning the head for the HUD's edges.
         const float PanelDistance = 2.2f, PanelWidth = 2.6f, PanelDrop = -0.1f;
@@ -62,6 +71,7 @@ namespace Rotorcraft.VR
         public bool Running { get; private set; }
         public bool Starting { get; private set; }
         public string Problem { get; private set; }
+        public IReadOnlyList<float> RefreshRates => HeadsetRate.Rates;
 
         Camera view;
         Transform parentBefore;
@@ -87,11 +97,23 @@ namespace Rotorcraft.VR
         Vector2 lastPoint;
         float fps = 72, statsAt;
 
+        XRDisplaySubsystem display;
+        float[] ladder;
+        int ladderStep, begunSeen, settingAsked = -1;
+        readonly VrFrameWatch watch = new VrFrameWatch();
+        readonly List<float> minute = new List<float>(8000);
+        float minuteTime, cpuSum, gpuSum;
+        int timed;
+
         InputAction rightStick, leftStick, buttonA, buttonB, buttonX, buttonY, menu, rightClick, leftClick, trigger, aimPosition, aimRotation;
         InputAction[] all;
 
         void Start()
         {
+#if RC_TRAILER
+            var trailer = TrailerRun.ArgFolder();
+            if (trailer != null) { gameObject.AddComponent<TrailerRun>().folder = trailer; return; }
+#endif
             var asked = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-vr") >= 0;
             Debug.Log($"VR: available{(asked ? ", asked for on the command line" : "")}");
             if (asked) Begin();
@@ -121,6 +143,8 @@ namespace Rotorcraft.VR
                 yield break;
             }
             manager.StartSubsystems();
+            display = manager.activeLoader.GetLoadedSubsystem<XRDisplaySubsystem>();
+            VrGraphics.Apply(true);
             var app = GameApp.Instance;
             Attach(app.flight.cam.GetComponent<Camera>(), app.document, app.flight);
             Debug.Log($"VR: running with {manager.activeLoader.name}");
@@ -131,6 +155,10 @@ namespace Rotorcraft.VR
         {
             if (!Running) return;
             Detach();
+            VrGraphics.Apply(false);
+            display = null;
+            ladder = null;
+            settingAsked = -1;
             var manager = XRGeneralSettings.Instance != null ? XRGeneralSettings.Instance.Manager : null;
             if (manager != null && manager.activeLoader != null)
             {
@@ -166,6 +194,8 @@ namespace Rotorcraft.VR
             MakePanel();
             MakeLaser();
             MakeControls();
+            switches = new VrSwitchPanel(doc.panelSettings.themeStyleSheet, PanelLayer);
+            switches.SetVisible(false);
             hudVisible = true;
             pressing = false;
             recentreAt = Time.unscaledTime + 1;   // once the headset has reported where it is
@@ -182,6 +212,8 @@ namespace Rotorcraft.VR
             leftHand?.view.Dispose(); rightHand?.view.Dispose();
             leftHand = rightHand = null;
             grips.Clear(); gripsModel = null;
+            switches?.Dispose();
+            switches = null;
             if (headDriver != null) Destroy(headDriver);
             if (view != null) view.transform.SetParent(parentBefore, true);
             if (stats != null) { stats.RemoveFromHierarchy(); stats = null; }
@@ -341,6 +373,7 @@ namespace Rotorcraft.VR
             {
                 left = left,
                 view = new VrHand(rig, left, PanelLayer),
+                press = new FingerPress(CockpitSwitches.Columns, CockpitSwitches.Rows, VrSwitchPanel.Width, VrSwitchPanel.Height),
                 position = new InputAction(side + " position", InputActionType.Value, $"<XRController>{{{side}}}/devicePosition", expectedControlType: "Vector3"),
                 rotation = new InputAction(side + " rotation", InputActionType.Value, $"<XRController>{{{side}}}/deviceRotation", expectedControlType: "Quaternion"),
                 grip = new InputAction(side + " grip", InputActionType.Value, $"<XRController>{{{side}}}/grip", expectedControlType: "Axis"),
@@ -363,11 +396,53 @@ namespace Rotorcraft.VR
                 grips = heli.Eye != null ? CockpitGrip.Find(heli.model, heli.transform, heli.Eye.position) : new List<CockpitGrip>();
                 Debug.Log($"VR: {grips.Count} controls to hold in this aircraft");
                 leftHand.held = rightHand.held = null;
+                if (heli.Eye != null) switches.Mount(heli.transform, heli.Eye.position);
             }
+            var panelShows = canHold && hudVisible && heli.Eye != null && flight.Runtime != null;
+            switches.SetVisible(panelShows);
             var hold = default(HeldControls);
             UpdateHand(leftHand, rightHand, canHold, heli, input, ref hold);
             UpdateHand(rightHand, leftHand, canHold, heli, input, ref hold);
             if (input != null) input.held = hold;
+            if (panelShows) DrawSwitches(heli, input);
+        }
+
+        /// <summary>A free hand's index finger against the switch panel: it folds its other fingers as it comes near, and a touch is a press.</summary>
+        void TouchSwitches(Hand hand, HelicopterController heli, InputManager input)
+        {
+            var wanted = 0f;
+            if (hand.squeezed || !switches.Visible) hand.press.Release();
+            else
+            {
+                var at = switches.root.InverseTransformPoint(hand.view.IndexTip);
+                var pressed = hand.press.Update(at.x, at.y, -at.z);
+                // the panel's face looks back along its own -z, at the pilot
+                if (-at.z < PointWithin && -at.z > -PointWithin && Mathf.Abs(at.x) < VrSwitchPanel.Width / 2 + PointWithin && Mathf.Abs(at.y) < VrSwitchPanel.Height / 2 + PointWithin) wanted = 1;
+                if (pressed >= 0)
+                {
+                    var sw = Current(heli, input)[pressed];
+                    Debug.Log($"VR: {(hand.left ? "left" : "right")} finger pressed {(sw.available ? sw.label : "a blank switch")}");
+                    Buzz(hand, sw.available ? 0.6f : 0.1f, sw.available ? 0.05f : 0.02f);
+                    if (sw.available) input.Fire(sw.action);
+                    switchesAt = 0;
+                }
+            }
+            hand.pointing = Mathf.MoveTowards(hand.pointing, wanted, Time.unscaledDeltaTime * 8);
+        }
+
+        CockpitSwitch[] Current(HelicopterController heli, InputManager input) =>
+            CockpitSwitches.Build(heli.State, heli.Aircraft, flight.Runtime.ap, input.Trimmed);
+
+        void DrawSwitches(HelicopterController heli, InputManager input)
+        {
+            if (flight.Runtime == null) return;
+            // the states are looked at a few times a second, unless something has just been pressed
+            if (switchStates == null || Time.unscaledTime >= switchesAt)
+            {
+                switchesAt = Time.unscaledTime + 0.1f;
+                switchStates = Current(heli, input);
+            }
+            switches.Draw(switchStates, leftHand.press.Hover, rightHand.press.Hover);
         }
 
         void UpdateHand(Hand hand, Hand other, bool canHold, HelicopterController heli, InputManager input, ref HeldControls hold)
@@ -376,7 +451,7 @@ namespace Rotorcraft.VR
             var turn = hand.rotation.ReadValue<Quaternion>();
             var tracked = turn.x != 0 || turn.y != 0 || turn.z != 0 || turn.w != 0;   // all zero: asleep or out of sight
             hand.view.SetVisible(tracked);
-            if (!tracked) { hand.held = null; hand.near = null; hand.view.SetReady(false); return; }
+            if (!tracked) { hand.held = null; hand.near = null; hand.view.SetReady(false); hand.press.Release(); return; }
             turn = Quaternion.Normalize(turn);
 
             var squeeze = hand.grip.ReadValue<float>();
@@ -400,13 +475,16 @@ namespace Rotorcraft.VR
             hand.view.SetReady(hand.held == null && hand.near != null);
 
             hand.curl = Mathf.MoveTowards(hand.curl, hand.held != null ? 1 : Mathf.Max(squeeze, hand.near != null ? 0.25f : 0), Time.unscaledDeltaTime * 8);
-            hand.view.SetCurl(hand.curl);
+            if (hand.held != null) hand.pointing = 0;
+            hand.view.SetCurl(hand.curl, hand.pointing);
             if (hand.held == null)
             {
                 hand.view.root.localPosition = local;
                 hand.view.root.localRotation = turn * VrHand.FromGripPose;
+                TouchSwitches(hand, heli, input);
                 return;
             }
+            hand.press.Release();
             // the control follows the hand, measured in the aircraft (the seat moves and tilts with it); a little
             // smoothing takes out the tremor of the tracking, and the hand is drawn on the control itself
             hand.smoothed = Vector3.Lerp(hand.smoothed, SeatVector(local), 1 - Mathf.Exp(-Time.unscaledDeltaTime * 40));
@@ -479,7 +557,36 @@ namespace Rotorcraft.VR
             // the panel is always there when something on it needs an answer
             panelRenderer.enabled = hudVisible || !inFlight || flight.Paused || input.menuOpen;
             UpdatePointer(flying ? 0 : right.y);
-            UpdateStats();
+            UpdateRate(flying);
+            UpdateStats(flying);
+        }
+
+        /// <summary>Ask the headset for a rate when it starts showing the game or the setting changes, and step down if frames keep coming late.</summary>
+        void UpdateRate(bool flying)
+        {
+            var setting = GameApp.Instance != null ? GameApp.Instance.Settings.vrRefreshHz : 0;
+            if (begunSeen != HeadsetRate.Begun || setting != settingAsked)
+            {
+                begunSeen = HeadsetRate.Begun;
+                settingAsked = setting;
+                ladder = VrRates.Ladder(HeadsetRate.Rates, setting);
+                ladderStep = 0;
+                watch.Reset();
+                if (ladder.Length > 0 && begunSeen > 0) Ask();
+                return;
+            }
+            if (!flying || ladder == null || ladderStep >= ladder.Length - 1) { watch.Reset(); return; }
+            if (watch.Tick(Time.unscaledDeltaTime, ladder[ladderStep]))
+            {
+                Debug.Log($"VR: too many frames late at {ladder[ladderStep]} Hz");
+                ladderStep++;
+                Ask();
+            }
+        }
+
+        void Ask()
+        {
+            if (!HeadsetRate.Request(ladder[ladderStep])) ladder = null;
         }
 
         void UpdatePointer(float scroll)
@@ -514,13 +621,43 @@ namespace Rotorcraft.VR
             }
         }
 
-        /// <summary>The frame rate in the corner of the panel, so a slow view can be told from a problem with the headset.</summary>
-        void UpdateStats()
+        /// <summary>
+        /// The frame rate in the corner of the panel, so a slow view can be told from a problem with the headset; and each
+        /// minute of flying in the log, from the headset's own timings where it gives them.
+        /// </summary>
+        void UpdateStats(bool flying)
         {
-            fps = Mathf.Lerp(fps, 1 / Mathf.Max(Time.unscaledDeltaTime, 0.001f), 0.05f);
+            var dt = Time.unscaledDeltaTime;
+            fps = Mathf.Lerp(fps, 1 / Mathf.Max(dt, 0.001f), 0.05f);
+            var hz = 0f;
+            var appCpu = 0f; var appGpu = 0f;
+            if (display != null)
+            {
+                display.TryGetDisplayRefreshRate(out hz);
+                ProviderStats.TryGetStat(display, "perfmetrics.appcputime", out appCpu);
+                ProviderStats.TryGetStat(display, "perfmetrics.appgputime", out appGpu);
+            }
+            if (flying)
+            {
+                minute.Add(dt);
+                minuteTime += dt;
+                if (appCpu > 0) { cpuSum += appCpu; gpuSum += appGpu; timed++; }
+                if (minuteTime >= 60) LogMinute(hz);
+            }
             if (stats == null || Time.unscaledTime < statsAt) return;
             statsAt = Time.unscaledTime + 0.5f;
-            stats.text = $"VR {fps:0} fps";
+            stats.text = $"VR {fps:0} fps{(hz > 0 ? $" at {hz:0} Hz" : "")}{(appCpu > 0 ? $" · cpu {appCpu:0.0} gpu {appGpu:0.0} ms" : "")}";
+        }
+
+        void LogMinute(float hz)
+        {
+            minute.Sort();
+            var late = hz > 0 ? minute.FindAll(d => d > 1.4f / hz).Count * 100 / minute.Count : 0;
+            Debug.Log($"VR: minute of flying: {minute.Count / minuteTime:0} fps at {hz:0} Hz, frames {minute[minute.Count / 2] * 1000:0.0} ms, slowest 5% over {minute[minute.Count * 95 / 100] * 1000:0.0} ms, {late}% late"
+                + (timed > 0 ? $", headset's timing cpu {cpuSum / timed:0.0} gpu {gpuSum / timed:0.0} ms" : ""));
+            minute.Clear();
+            minuteTime = cpuSum = gpuSum = 0;
+            timed = 0;
         }
     }
 }

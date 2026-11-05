@@ -235,7 +235,15 @@ namespace Rotorcraft.EditorTools
         }
 
         [MenuItem("Rotorcraft/Build for Windows")]
-        public static void BuildWindows()
+        public static void BuildWindows() => BuildForWindows("../Builds/Windows/Rotorcraft.exe", BuildOptions.None);
+
+        /// <summary>For measuring only: the profiler's named timings exist in a development build and not in the real one.</summary>
+        public static void BuildWindowsDev() => BuildForWindows("../test-output/dev-windows/Rotorcraft.exe", BuildOptions.Development);
+
+        /// <summary>The build that films the trailer (Scripts/VR/TrailerRun.cs): a separate one, so none of that is in the real game.</summary>
+        public static void BuildWindowsTrailer() => BuildForWindows("../test-output/trailer-windows/Rotorcraft.exe", BuildOptions.None, "RC_TRAILER");
+
+        static void BuildForWindows(string path, BuildOptions options, params string[] defines)
         {
             UseTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
             VrSetup.Ensure();
@@ -244,8 +252,8 @@ namespace Rotorcraft.EditorTools
             PlayerSettings.defaultScreenWidth = 1920; PlayerSettings.defaultScreenHeight = 1080;
             PlayerSettings.resizableWindow = true;
             PlayerSettings.runInBackground = true;
-            var out_ = Path.GetFullPath("../Builds/Windows/Rotorcraft.exe");
-            var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = out_, target = BuildTarget.StandaloneWindows64, options = BuildOptions.None });
+            var out_ = Path.GetFullPath(path);
+            var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = out_, target = BuildTarget.StandaloneWindows64, options = options, extraScriptingDefines = defines });
             Report(r, "Windows");
             // VR is loaded by name at run time, so nothing else would notice if it went missing
             var vr = Path.Combine(Path.GetDirectoryName(out_), "Rotorcraft_Data", "Managed", "Rotorcraft.VR.dll");

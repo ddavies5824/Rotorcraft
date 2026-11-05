@@ -16,7 +16,7 @@ namespace Rotorcraft.Presentation.UI
     public static partial class Screens
     {
         /// <summary>Start or leave VR, and what the controllers do. Keyboard, joystick and pedals keep working in VR.</summary>
-        static VisualElement VrPanel()
+        static VisualElement VrPanel(GameApp app, Action<Action<GameSettings>> change)
         {
             var d = Vr.Driver;
             var panel = Panel(H3("Virtual reality"),
@@ -25,8 +25,15 @@ namespace Rotorcraft.Presentation.UI
                     : "Fly in a PC headset, such as a Quest over Link or Virtual Desktop. Connect the headset first. Your keyboard, joystick and pedals keep working in VR."),
                 Row(Btn(d.Starting ? "Starting…" : Vr.On ? "Leave VR" : "Start VR", "small", () => { if (Vr.On) d.End(); else d.Begin(); }, disabled: d.Starting)));
             if (d.Problem != null) panel.Add(T(d.Problem));
+            if (d.RefreshRates.Count > 1)
+            {
+                panel.Add(Field("Headset refresh rate", Seg(VrRates.Choices.Select(r => (r, r == 0 ? "Auto" : $"{r} Hz")).ToArray(), app.Settings.vrRefreshHz, v => change(n => n.vrRefreshHz = v))));
+                panel.Add(Muted("A frame that misses the headset's deadline halves the frame rate, so a steady lower rate looks smoother than a higher one the game cannot hold. Auto starts at 90 Hz and steps down if frames keep coming late.", "small"));
+            }
+            else panel.Add(Muted("Frame rate: a frame that misses the headset's deadline halves the frame rate, so at 120 Hz anything slower than 8 ms shows as 60 frames a second. On Quest Link the rate is set in the Meta Horizon app on your PC, under your headset's Graphics Preference: 90 Hz suits this game well.", "small"));
             panel.Add(Muted("Hands: squeeze a grip button to take hold of a control from wherever your hand is, then move your hand. Right hand takes the cyclic, left hand the collective, or whichever one a hand is right beside. Let go and the cyclic returns to its trim; the collective stays where you left it. A hand holding something can work the pedals with its thumbstick."));
-            panel.Add(Muted("Right stick: cyclic. Left stick: pedals across, collective up and down. A: set trim. B: release trim. X: show or hide the HUD. Y: tablet. Menu: pause. Click the right stick to recentre your view, the left stick to change camera."));
+            panel.Add(Muted("Switches: in the cockpit, the panel beside your seat has the engine, throttle, trim, lights, autopilot and gear. Reach out and press one with your fingertip."));
+            panel.Add(Muted("Right stick: cyclic. Left stick: pedals across, collective up and down. A: set trim. B: release trim. X: show or hide the HUD and switch panel. Y: tablet. Menu: pause. Click the right stick to recentre your view, the left stick to change camera."));
             return panel;
         }
 
@@ -262,7 +269,7 @@ namespace Rotorcraft.Presentation.UI
                     : s.assist == AssistMode.Standard ? "Attitude-command cyclic, but no drift damping. The nose follows your turns at speed, but in the hover collective changes make it swing until you correct with pedal."
                     : "Rate-command cyclic: the aircraft holds whatever attitude you leave it in and never levels itself. Full torque reaction needs pedal in the hover (hold it and press Trim to keep it there) and the fin takes most of the load at speed. Disc flap-back means forward cyclic is needed as speed builds.", "small"),
                 Check("Training aids: target markers and height readout", s.showTrainingAids, v => Change(n => n.showTrainingAids = v))));
-            if (Vr.Available) page.Add(VrPanel());
+            if (Vr.Available) page.Add(VrPanel(app, Change));
             var keys = new List<VisualElement[]>();
             foreach (var k in ControlSettings.DefaultKeys().Keys)
             {
