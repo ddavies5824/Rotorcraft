@@ -34,5 +34,22 @@ namespace Rotorcraft.Presentation
         /// <summary>VR started, stopped or failed to start.</summary>
         public static event Action Changed;
         public static void RaiseChanged() => Changed?.Invoke();
+
+        /// <summary>
+        /// Load the driver, if this build has its assembly. It goes by name because the game cannot refer to the VR code
+        /// (the reference runs the other way). Not left to [RuntimeInitializeOnLoadMethod]: later Windows builds lost that
+        /// registration (why is not proven), so VR was silently not there.
+        /// </summary>
+        public static void Load()
+        {
+            if (Driver != null) return;
+            var type = Type.GetType(DriverType);
+            if (type == null) return;
+            var go = new GameObject("VR");
+            UnityEngine.Object.DontDestroyOnLoad(go);
+            Driver = (IVrDriver)go.AddComponent(type);
+        }
+
+        public const string DriverType = "Rotorcraft.VR.VrDriver, Rotorcraft.VR";
     }
 }

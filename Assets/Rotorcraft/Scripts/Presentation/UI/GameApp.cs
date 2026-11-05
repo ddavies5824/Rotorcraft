@@ -51,6 +51,7 @@ namespace Rotorcraft.Presentation.UI
         void Awake()
         {
             Instance = this;
+            Vr.Load();
             var shots = ShotTour.ArgFolder();
             Saves = new SaveManager(shots != null ? Path.Combine(shots, "saves") : null);
             if (shots != null) gameObject.AddComponent<ShotTour>().folder = shots;

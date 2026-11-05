@@ -34,6 +34,14 @@ namespace Rotorcraft.Presentation.Tests
         }
 
         [Test]
+        public void TheGameFindsTheVrCodeByItsName()
+        {
+            var type = System.Type.GetType(Vr.DriverType);
+            Assert.That(type != null, $"nothing called {Vr.DriverType}");
+            Assert.That(typeof(IVrDriver).IsAssignableFrom(type) && typeof(MonoBehaviour).IsAssignableFrom(type), $"{type} cannot be the driver");
+        }
+
+        [Test]
         public void TheAttitudeIndicatorsHorizonTiltsAgainstTheBank()
         {
             var right = Rotorcraft.Presentation.UI.InstrumentPanel.OnHorizonCard(Vector2.right, 20 * SimMath.DEG);

@@ -223,9 +223,21 @@ namespace Rotorcraft.EditorTools
             if (s.result != BuildResult.Succeeded && Application.isBatchMode) EditorApplication.Exit(1);
         }
 
+        /// <summary>
+        /// Make this the editor's active platform before building for it. URP decides what to strip from the active
+        /// platform, not the one being built: a Windows build made while the web was active lost every XR shader pass.
+        /// </summary>
+        static void UseTarget(BuildTargetGroup group, BuildTarget target)
+        {
+            if (EditorUserBuildSettings.activeBuildTarget != target) EditorUserBuildSettings.SwitchActiveBuildTarget(group, target);
+            if (EditorUserBuildSettings.activeBuildTarget != target) throw new System.Exception($"The editor could not switch to {target}: it is on {EditorUserBuildSettings.activeBuildTarget}");
+            Debug.Log($"Building with {target} active");
+        }
+
         [MenuItem("Rotorcraft/Build for Windows")]
         public static void BuildWindows()
         {
+            UseTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
             VrSetup.Ensure();
             Common();
             PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
@@ -235,12 +247,16 @@ namespace Rotorcraft.EditorTools
             var out_ = Path.GetFullPath("../Builds/Windows/Rotorcraft.exe");
             var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = out_, target = BuildTarget.StandaloneWindows64, options = BuildOptions.None });
             Report(r, "Windows");
+            // VR is loaded by name at run time, so nothing else would notice if it went missing
+            var vr = Path.Combine(Path.GetDirectoryName(out_), "Rotorcraft_Data", "Managed", "Rotorcraft.VR.dll");
+            if (!File.Exists(vr)) throw new System.Exception("The Windows build has no VR code: " + vr);
             File.WriteAllText(Path.Combine(Path.GetDirectoryName(out_), "Start in VR.bat"), string.Join("\r\n", "@echo off", "start \"\" \"%~dp0Rotorcraft.exe\" -vr", ""));
         }
 
         [MenuItem("Rotorcraft/Build for the web")]
         public static void BuildWeb()
         {
+            UseTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
             Common();
             PlayerSettings.WebGL.template = "PROJECT:Rotorcraft";   // Assets/WebGLTemplates/Rotorcraft: full window, the game's own loading page
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;

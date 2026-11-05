@@ -323,6 +323,7 @@ namespace Rotorcraft.Preview.Tests
             wide.style.position = Position.Absolute; wide.style.left = 340; wide.style.top = 360; wide.style.fontSize = 13; wide.style.color = Color.white;
             root.Add(wide);
 
+            Vr.Load();
             var driver = (Rotorcraft.VR.VrDriver)Vr.Driver;
             driver.Attach(cam, doc, null);
             Assert.That(Vr.On, "attached");
@@ -332,6 +333,20 @@ namespace Rotorcraft.Preview.Tests
             driver.Place(eye, ahead, true);
             for (int i = 0; i < 10; i++) yield return null;
             Capture(cam, "vr-seat", 1832, 1920);
+
+            // the game's menu turns the world off with a culling mask of nothing: the panel must still draw
+            var worldMask = cam.cullingMask;
+            var clearFlags = cam.clearFlags; var background = cam.backgroundColor;
+            cam.cullingMask = 0; cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color32(0x11, 0x18, 0x1d, 255);
+            for (int i = 0; i < 3; i++) yield return null;
+            Capture(cam, "vr-seat-menu", 1832, 1920);
+            var menuShot = new Texture2D(2, 2);
+            menuShot.LoadImage(File.ReadAllBytes("Logs/vr-seat-menu.png"));
+            int lit = 0;
+            foreach (var px in menuShot.GetPixels32()) if (px.r > 60 || px.g > 60 || px.b > 60) lit++;
+            Object.Destroy(menuShot);
+            Assert.That(lit > 1000, $"at the menu the panel shows in the headset: {lit} lit pixels");
+            cam.cullingMask = worldMask; cam.clearFlags = clearFlags; cam.backgroundColor = background;
 
             var ui = root.panel;
             PanelPointer.Move(ui, button.worldBound.center);
@@ -357,6 +372,23 @@ namespace Rotorcraft.Preview.Tests
             driver.Place(eye + Vector3.up * 40, Quaternion.Euler(-8, ahead.eulerAngles.y, 12), false);
             for (int i = 0; i < 6; i++) yield return null;
             Capture(cam, "vr-seat-banked", 1832, 1920);
+
+            // the headset reports its height only after the first recentring (or goes on later): at the menu the seat
+            // catches up by itself, so the panel is in front of the eyes and not down by the floor
+            var tracking = cam.GetComponent("TrackedPoseDriver") as Behaviour;
+            tracking.enabled = false;
+            driver.Place(eye, ahead, true);
+            cam.transform.localPosition = new Vector3(0.05f, 1.6f, 0);
+            cam.transform.localRotation = Quaternion.identity;
+            driver.Place(eye, ahead, true);
+            Assert.That(cam.transform.position.y - eye.y > 1, $"the head starts well above the seat: {cam.transform.position.y - eye.y} m");
+            var settle = Time.unscaledTime + 1;
+            while (Time.unscaledTime < settle) { driver.Place(eye, ahead, true); yield return null; }
+            Assert.That((cam.transform.position - eye).magnitude < 0.01f, $"the seat caught up with the head: {(cam.transform.position - eye).magnitude} m off");
+            var panelShown = GameObject.Find("VR panel").transform.position;
+            Assert.That(Mathf.Abs(panelShown.y - cam.transform.position.y + 0.1f) < 0.01f, $"the panel is at eye height: {panelShown.y - cam.transform.position.y} m from the eyes");
+            tracking.enabled = true;
+
             cam.transform.localPosition = new Vector3(0.2f, 1.1f, -0.1f);
             cam.transform.localRotation = Quaternion.Euler(0, 40, 0);
             driver.Recentre();

@@ -20,8 +20,16 @@ using UnityEngine.XR.Management;
 
 namespace Rotorcraft.VR
 {
+    [DefaultExecutionOrder(10000)]   // LateUpdate after anything that sets the camera's culling mask
     public sealed class VrDriver : MonoBehaviour, IVrDriver
     {
+        // The panel, laser and dot are on Unity's UI layer, which nothing else in the world uses: the game's menus turn
+        // the world off with a culling mask of nothing (on a screen the UI draws on top by itself), and in VR the
+        // menus are an object in the world.
+        const int PanelLayer = 5;
+        // Outside a flight, a head this far (m) from the seat for this long (s) means the seat is wrong.
+        const float ReseatDistance = 0.25f, ReseatAfter = 0.4f;
+
         // The panel: wide enough to fill the middle of the view without turning the head for the HUD's edges.
         const float PanelDistance = 2.2f, PanelWidth = 2.6f, PanelDrop = -0.1f;
         const int TextureW = 2048, TextureH = 1152;
@@ -52,7 +60,7 @@ namespace Rotorcraft.VR
 
         Vector3 headNeutral;
         float recentreYaw;
-        float recentreAt;
+        float recentreAt, awayFor;
         bool hudVisible = true, pressing;
         Vector2 lastPoint;
         float fps = 72, statsAt;
@@ -60,17 +68,11 @@ namespace Rotorcraft.VR
         InputAction rightStick, leftStick, buttonA, buttonB, buttonX, buttonY, menu, rightClick, leftClick, trigger, aimPosition, aimRotation;
         InputAction[] all;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void Register()
-        {
-            var go = new GameObject("VR");
-            DontDestroyOnLoad(go);
-            Vr.Driver = go.AddComponent<VrDriver>();
-        }
-
         void Start()
         {
-            if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-vr") >= 0) Begin();
+            var asked = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-vr") >= 0;
+            Debug.Log($"VR: available{(asked ? ", asked for on the command line" : "")}");
+            if (asked) Begin();
         }
 
         // ------------------------------------------------------------------------------------ start and stop
@@ -78,6 +80,7 @@ namespace Rotorcraft.VR
         {
             if (Running || Starting) return;
             Problem = null;
+            Debug.Log("VR: starting the headset");
             StartCoroutine(StartHeadset());
         }
 
@@ -149,22 +152,25 @@ namespace Rotorcraft.VR
 
         void Detach()
         {
+            // when the game is quitting any of these may already be gone, and End must still get on to shutting XR down
             Running = false;
             foreach (var a in all) { a.Disable(); a.Dispose(); }
             all = null;
             if (flight != null && flight.heli != null && flight.heli.Input != null) flight.heli.Input.external = default;
-            Destroy(headDriver);
-            view.transform.SetParent(parentBefore, true);
+            if (headDriver != null) Destroy(headDriver);
+            if (view != null) view.transform.SetParent(parentBefore, true);
             if (stats != null) { stats.RemoveFromHierarchy(); stats = null; }
-            panelSettings.SetScreenToPanelSpaceFunction(null);
-            panelSettings.targetTexture = null;
-            panelSettings.referenceResolution = layoutBefore;
-            panelSettings.clearColor = clearBefore;
-            panelSettings.colorClearValue = clearColorBefore;
-            panelTexture.Release();
-            Destroy(panelTexture);
-            Destroy(panelMaterial);
-            Destroy(rig.gameObject);
+            if (panelSettings != null)
+            {
+                panelSettings.SetScreenToPanelSpaceFunction(null);
+                panelSettings.targetTexture = null;
+                panelSettings.referenceResolution = layoutBefore;
+                panelSettings.clearColor = clearBefore;
+                panelSettings.colorClearValue = clearColorBefore;
+            }
+            if (panelTexture != null) { panelTexture.Release(); Destroy(panelTexture); }
+            if (panelMaterial != null) Destroy(panelMaterial);
+            if (rig != null) Destroy(rig.gameObject);
         }
 
         public void Recentre()
@@ -228,7 +234,7 @@ namespace Rotorcraft.VR
             mesh.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
             mesh.triangles = new[] { 0, 2, 1, 0, 3, 2 };
             mesh.RecalculateBounds();
-            var go = new GameObject("VR panel");
+            var go = new GameObject("VR panel") { layer = PanelLayer };
             panel = go.transform;
             panel.SetParent(rig, false);
             panel.localPosition = new Vector3(0, PanelDrop, PanelDistance);
@@ -253,7 +259,7 @@ namespace Rotorcraft.VR
             var unlit = Shader.Find("Universal Render Pipeline/Unlit");
             var beam = new Material(unlit) { name = "VR laser" };
             beam.SetColor("_BaseColor", new Color(0.55f, 0.85f, 1f));
-            var go = new GameObject("VR laser");
+            var go = new GameObject("VR laser") { layer = PanelLayer };
             go.transform.SetParent(rig, false);
             laser = go.AddComponent<LineRenderer>();
             laser.sharedMaterial = beam;
@@ -265,6 +271,7 @@ namespace Rotorcraft.VR
             laser.enabled = false;
             var ball = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             ball.name = "VR laser dot";
+            ball.layer = PanelLayer;
             Destroy(ball.GetComponent<Collider>());
             ball.GetComponent<MeshRenderer>().sharedMaterial = beam;
             ball.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -296,6 +303,11 @@ namespace Rotorcraft.VR
             foreach (var a in all) a.Enable();
         }
 
+        void LateUpdate()
+        {
+            if (Running && view != null) view.cullingMask |= 1 << PanelLayer;
+        }
+
         void Update()
         {
             if (!Running || all == null) return;
@@ -305,6 +317,14 @@ namespace Rotorcraft.VR
             var input = flight != null && flight.heli != null ? flight.heli.Input : null;
             var inFlight = flight != null && flight.Active && input != null;
             var flying = inFlight && !flight.Paused;
+            // Nothing else seats the player at the menus, and the first recentring may have come before the headset
+            // reported where it is, or before it was put on: left there, the menus would be down by the floor.
+            if (!inFlight && view != null && (view.transform.localPosition - headNeutral).magnitude > ReseatDistance)
+            {
+                awayFor += Time.unscaledDeltaTime;
+                if (awayFor >= ReseatAfter) { awayFor = 0; Recentre(); }
+            }
+            else awayFor = 0;
             var right = rightStick.ReadValue<Vector2>();
             var left = leftStick.ReadValue<Vector2>();
             if (input != null) input.external = flying ? new ExternalSticks { cyclicX = right.x, cyclicY = right.y, pedals = left.x, collective = left.y } : default;
