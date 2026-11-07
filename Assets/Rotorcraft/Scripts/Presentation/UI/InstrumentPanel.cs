@@ -12,7 +12,7 @@ namespace Rotorcraft.Presentation.UI
 
     public sealed class InstrumentPanel : VisualElement
     {
-        static readonly Color FACE = Hex(0x0b0e10), BEZEL = Hex(0x262d32), TICK = Hex(0xe8ecee), DIM = Hex(0x8d989e), GREEN = Hex(0x4fc27a), AMBER = Hex(0xf2b53c), RED = Hex(0xef5a4c), NAV = Hex(0xe05cc8), SKY = Hex(0x3f7fb4), EARTH = Hex(0x7a5634), HSI = Hex(0x4fd47a);
+        static readonly Color FACE = Hex(0x0b0e10), BEZEL = Hex(0x262d32), TICK = Hex(0xe8ecee), DIM = Hex(0x8d989e), GREEN = Hex(0x4fc27a), AMBER = Hex(0xf2b53c), RED = Hex(0xef5a4c), NAV = Hex(0xe05cc8), SKY = Hex(0x3f7fb4), EARTH = Hex(0x7a5634), HSI = Hex(0x4fd47a), WIND = Hex(0x80d1ff);
         static Color Hex(int v) => new Color(((v >> 16) & 255) / 255f, ((v >> 8) & 255) / 255f, (v & 255) / 255f);
 
         public HeliState s;
@@ -241,6 +241,13 @@ namespace Rotorcraft.Presentation.UI
                     var br = (float)(bearingToTarget.Value * Mathf.Deg2Rad) - hd;
                     p.fillColor = NAV; p.BeginPath(); p.MoveTo(P(c, br, r * 0.97f)); p.LineTo(P(c, br - 0.12f, r * 0.8f)); p.LineTo(P(c, br + 0.12f, r * 0.8f)); p.ClosePath(); p.Fill();
                     Line(p, P(c, br, r * 0.5f), P(c, br + Mathf.PI, r * 0.5f), NAV, 3);
+                }
+                // the wind: a marker on the card at the bearing it comes from, pointing in, and its figures
+                if (o.windAvgKt >= 0.5)
+                {
+                    var from = (float)(o.windAvgFromDeg * Mathf.Deg2Rad) - hd;
+                    p.fillColor = WIND; p.BeginPath(); p.MoveTo(P(c, from, r * 0.74f)); p.LineTo(P(c, from - 0.09f, r * 0.94f)); p.LineTo(P(c, from + 0.09f, r * 0.94f)); p.ClosePath(); p.Fill();
+                    Readout(m, $"{(int)(Math.Round(o.windAvgFromDeg / 10) * 10) % 360:000}/{Math.Round(o.windAvgKt):0}", c + new Vector2(0, r * 0.46f), r * 0.13f, WIND);
                 }
                 p.fillColor = AMBER; p.BeginPath(); p.MoveTo(c + new Vector2(0, -r * 0.98f)); p.LineTo(c + new Vector2(-6, -r * 1.12f)); p.LineTo(c + new Vector2(6, -r * 1.12f)); p.ClosePath(); p.Fill();
                 Line(p, c + new Vector2(0, -r * 0.3f), c + new Vector2(0, r * 0.3f), AMBER, 2);

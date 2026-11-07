@@ -1,5 +1,45 @@
 // Browser helpers for the web build: keep saves in IndexedDB, and Google sign-in with Google Identity Services.
 mergeInto(LibraryManager.library, {
+  // The aircraft's sound. Web builds never call OnAudioFilterRead, so the game renders blocks of sound itself and queues them here.
+  // Browsers keep audio asleep until the page is touched or a key is pressed.
+  RcAudioStart: function () {
+    if (window['rcAudio']) return window['rcAudio']['ctx'].sampleRate;
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return 0;
+    var ctx = new Ctx();
+    var out = ctx.createGain();
+    out.connect(ctx.destination);
+    var meter = ctx.createAnalyser();
+    meter.fftSize = 2048;
+    out.connect(meter);
+    window['rcAudio'] = { 'ctx': ctx, 'out': out, 'meter': meter, 'next': 0 };
+    var wake = function () { if (ctx.state !== 'running') { try { ctx.resume(); } catch (e) { } } };
+    ['pointerdown', 'pointerup', 'touchend', 'mousedown', 'keydown'].forEach(function (e) { document.addEventListener(e, wake, true); });
+    wake();
+    return ctx.sampleRate;
+  },
+
+  // Seconds of sound still to play; a full second while audio is asleep, so that nothing piles up.
+  RcAudioQueued: function () {
+    var a = window['rcAudio'];
+    if (!a || a['ctx'].state !== 'running') return 1;
+    return Math.max(0, a['next'] - a['ctx'].currentTime);
+  },
+
+  RcAudioPush: function (samples, count) {
+    var a = window['rcAudio'];
+    if (!a || a['ctx'].state !== 'running') return;
+    var ctx = a['ctx'];
+    var buffer = ctx.createBuffer(1, count, ctx.sampleRate);
+    buffer.getChannelData(0).set(HEAPF32.subarray(samples >> 2, (samples >> 2) + count));
+    var source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(a['out']);
+    var at = Math.max(a['next'], ctx.currentTime + 0.02);
+    source.start(at);
+    a['next'] = at + count / ctx.sampleRate;
+  },
+
   RcSyncFs: function () {
     try { FS.syncfs(false, function (err) { if (err) console.warn('Rotorcraft: saving to browser storage failed', err); }); } catch (e) { }
   },

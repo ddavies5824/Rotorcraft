@@ -18,6 +18,7 @@ namespace Rotorcraft.Presentation
 {
     public sealed partial class FlightSession
     {
+        WindArrow windArrow;
         VisualElement hudRoot, readouts, hudBtns, objective, navbox, annun, radio, crewbar, switches, decisionBox, hintBox, trimChip, agl, panelBox, mapBox, preflight, hood, banner, center, tablet, hotspotLayer;
         InstrumentPanel instruments;
         MapView map;
@@ -158,10 +159,10 @@ namespace Rotorcraft.Presentation
             hood = E("hood", Up("Instrument hood: fly by the instruments", "hood-l")); hood.pickingMode = PickingMode.Ignore; hudRoot.Add(hood);
             readouts = E("readouts");
             ro.Clear();
-            foreach (var (k, l) in new[] { ("ias", "IAS kt"), ("alt", "ALT ft"), ("vs", "V/S fpm"), ("hdg", "HDG"), ("rpm", "RRPM %"), ("tq", "TQ %"), ("fuel", "FUEL kg") })
+            foreach (var (k, l) in new[] { ("ias", "IAS kt"), ("alt", "ALT ft"), ("vs", "V/S fpm"), ("hdg", "HDG"), ("rpm", "RRPM %"), ("tq", "TQ %"), ("fuel", "FUEL kg"), ("wind", "WIND kt") })
             {
                 var v = T("–", "ro-v");
-                var box = E("ro", Up(l, "ro-l"), v);
+                var box = k == "wind" ? E("ro", Up(l, "ro-l"), E("ro-row", windArrow = new WindArrow(), v)) : E("ro", Up(l, "ro-l"), v);
                 ro[k] = (box, v);
                 readouts.Add(box);
             }
@@ -227,6 +228,11 @@ namespace Rotorcraft.Presentation
                 Set("rpm", $"{o.rpm:0}", s.engine == EngineState.Off && o.rpm < 5 ? "" : o.rpm < ac.rpmMin ? "warn" : o.rpm > ac.rpmMax ? "caution" : "ok");
                 Set("tq", $"{o.torque:0}", o.torque > ac.torqueMax ? "warn" : o.torque > ac.torqueMcp ? "caution" : "");
                 Set("fuel", s.fuel.ToString(s.fuel < 100 ? "F1" : "F0"), s.fuel < Setup.mission.minFuelKg ? "caution" : "");
+                // where it comes from and how strong, and an arrow for the way it is blowing with the nose at the top
+                var calmAir = o.windAvgKt < 0.5;
+                Set("wind", calmAir ? "CALM" : $"{(int)(Math.Round(o.windAvgFromDeg / 10) * 10) % 360:000}/{Math.Round(o.windAvgKt):0}");
+                windArrow.style.display = calmAir ? DisplayStyle.None : DisplayStyle.Flex;
+                windArrow.style.rotate = new Rotate(Angle.Degrees((float)(o.windAvgFromDeg - o.hdg + 180)));
                 var ann = new List<(string t, bool c)>();
                 if (s.engine != EngineState.Off && o.rpm < ac.rpmMin && o.rpm > 20) ann.Add(("LOW RPM", false));
                 if (o.rpm > ac.rpmMax) ann.Add(("RPM HIGH", true));

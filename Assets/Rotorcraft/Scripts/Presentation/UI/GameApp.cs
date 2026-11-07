@@ -52,6 +52,7 @@ namespace Rotorcraft.Presentation.UI
         {
             Instance = this;
             Vr.Load();
+            AmbientRecordings.EnsureLoading();   // Windows: the world-sound recordings, read while the menus are up
             var shots = ShotTour.ArgFolder();
 #if UNITY_WEBGL
             string perf = null;
@@ -179,6 +180,7 @@ namespace Rotorcraft.Presentation.UI
             QualitySettings.SetQualityLevel(Settings.graphics == GraphicsQuality.Low ? 0 : Settings.graphics == GraphicsQuality.Balanced ? 1 : Math.Max(0, QualitySettings.names.Length - 1), true);
             VrGraphics.Refresh();
             AudioListener.volume = Settings.sound ? 1 : 0;
+            RotorAudio.Master = Settings.volume;
 #if !UNITY_EDITOR
             var mode = Settings.fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
             if (Screen.fullScreenMode != mode) Screen.fullScreenMode = mode;

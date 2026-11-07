@@ -26,6 +26,10 @@ namespace Rotorcraft.Presentation
             ["peregrine"] = ((new Vector3(1.15f, 0, -2.0f), "crew_r"), (new Vector3(1.2f, 0, -0.8f), "cabin_r")),
         };
 
+        /// <summary>The cabin door (model axes, x right, z aft), and the door group it belongs to, for people loading through it.</summary>
+        public static Vector3 CabinDoor(string id) => (DOORS.TryGetValue(id ?? "", out var d) ? d : DOORS["northstar"]).others.pos;
+        public static string CabinDoorGroup(string id) => (DOORS.TryGetValue(id ?? "", out var d) ? d : DOORS["northstar"]).others.group;
+
         enum State { Aboard, Leaving, Out, There, Back, Boarding }
         sealed class Member
         {

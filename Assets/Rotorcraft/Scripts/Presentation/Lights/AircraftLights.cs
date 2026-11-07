@@ -30,8 +30,9 @@ namespace Rotorcraft.Presentation
             },
             ["northstar"] = new Mounts
             {
-                navL = new Vector3(-1.62f, 1.05f, 0.35f), navR = new Vector3(1.62f, 1.05f, 0.35f), tail = new Vector3(0, 2.5f, 8.02f), beacon = new Vector3(0, 3.36f, 1.7f),
-                strobes = new[] { new Vector3(0, 4.3f, 7.75f), new Vector3(0, 0.82f, 0.4f) }, landing = new Vector3(-0.4f, 0.52f, -3.2f), landingDir = new Vector3(0, -0.3f, -1),
+                // the tail 1.8 m further back than first built, to clear the main rotor (TWIN_TAIL_DZ in the model script)
+                navL = new Vector3(-1.62f, 1.05f, 0.35f), navR = new Vector3(1.62f, 1.05f, 0.35f), tail = new Vector3(0, 2.5f, 9.82f), beacon = new Vector3(0, 3.36f, 1.7f),
+                strobes = new[] { new Vector3(0, 4.3f, 9.55f), new Vector3(0, 0.82f, 0.4f) }, landing = new Vector3(-0.4f, 0.52f, -3.2f), landingDir = new Vector3(0, -0.3f, -1),
                 search = new Vector3(0.5f, 0.36f, -3.36f), searchDir = new Vector3(0, -0.8f, -0.6f), cabin = new Vector3(0, 1.8f, -0.5f),
             },
             ["nightjar"] = new Mounts
@@ -76,7 +77,8 @@ namespace Rotorcraft.Presentation
             if (heli == null) return;
             foreach (var l in new Component[] { glowMesh, landing, search, beaconLight, strobeLight }) if (l != null) Destroy(l.gameObject);
             search = null;
-            if (!MOUNTS.TryGetValue(heli.aircraftId, out m)) m = heli.aircraftId == "guardian" ? Scaled(MOUNTS["northstar"], 1.12f) : MOUNTS["kestrel"];
+            // the Guardian is built on the Northstar's own lines at the same size, so it shares its mounts (scaling them up put its lights off the skin)
+            if (!MOUNTS.TryGetValue(heli.aircraftId, out m)) m = heli.aircraftId == "guardian" ? MOUNTS["northstar"] : MOUNTS["kestrel"];
             glowMesh = GlowPoints.Make("Aircraft light points", transform);
             landing = Spot("Landing light", m.landing, m.landingDir, 0.32f, 0.18f, landingRange);
             if (m.search.HasValue) search = Spot("Searchlight", m.search.Value, m.searchDir.Value, 0.2f, 0.1f, 400);

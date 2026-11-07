@@ -145,6 +145,92 @@ namespace Rotorcraft.Game.Tests
             Assert.That(st.Contains("cool-down"), st);
         }
 
+        /// <summary>Seconds counted as inadvertent cloud while a Northstar flies 4 s at about 3,100 ft over the sea, in cloud for that mission's weather (or the one given).</summary>
+        static double ImcSeconds(string id, string weatherId = null)
+        {
+            var def = Missions.ById(id);
+            var ns = Aircraft.Get("northstar");
+            var site = WorldMap.SiteById(def.startSiteId);
+            var s = At(site.x + 3000, site.z, 90, 600, true, new Airborne(950, 40));
+            var m = new MissionRuntime(def, ns, s.fuel, true, TimeOfDay.Day, new MissionOptions { weatherId = weatherId });
+            var wx = Weather.Presets[weatherId ?? def.weatherId];
+            for (int i = 0; i < 4 / FixedStepper.SIM_DT; i++)
+            {
+                Step(s, idle, ns, wx, new SimSettings(AssistMode.Beginner), FixedStepper.SIM_DT);
+                var ev = s.events.ToList(); s.events.Clear();
+                m.Update(s, ev, FixedStepper.SIM_DT, idle);
+            }
+            Assert.That(s.@out.altFt, Is.GreaterThan(wx.cloudBaseFt.Value + 50), $"{id}: still up in the cloud");
+            Assert.That(m.Hood, Is.False, $"{id}: hood down");
+            return m.Stats.imcSec;
+        }
+
+        [Test]
+        public void InstrumentLessonsGoIntoCloudWithoutItCountingAsInadvertent()
+        {
+            // the exercises climb above the broken cloud and take the hood off there: the instructor or examiner is in command
+            var ns = Aircraft.Get("northstar");
+            foreach (var def in Missions.All.Where(d => d.pathway == Pathway.Ir))
+                Assert.That(new MissionRuntime(def, ns, 600, true).CloudAllowed, def.id);
+            Assert.That(new MissionRuntime(Missions.ById("tr_ns175"), ns, 600, true).CloudAllowed, Is.False, "a type rating, without the instrument rating");
+            Assert.That(new MissionRuntime(Missions.ById("tr_ns175"), ns, 600, true, TimeOfDay.Day, new MissionOptions { instrumentRated = true }).CloudAllowed, "once rated");
+            // flown: up in the cloud on the way out to the first fix, hood down
+            Assert.That(ImcSeconds("ir2_gps_approach"), Is.EqualTo(0), "GPS approach");
+            // the same aircraft and cloud on any other flight, without the rating: still inadvertent
+            Assert.That(ImcSeconds("tr_ns175", "breezy_w"), Is.GreaterThan(2), "type rating flight in cloud");
+        }
+
+        /// <summary>
+        /// The three holds of Basic Instruments, flown as asked: a 500 ft/min climb or a rate-one turn onto each, then held with the
+        /// given wander either side. Returns the instrument score and each hold's line.
+        /// </summary>
+        static (int instrument, string holds) FlyBasicInstrumentHolds(double altWander, double hdgWander)
+        {
+            var def = Missions.ById("ir1_basic_instruments");
+            var ns = Aircraft.Get("northstar");
+            var site = WorldMap.SiteById(def.startSiteId);
+            var s = At(site.x + 3000, site.z, 90, 600, true, new Airborne(490, 40));
+            var m = new MissionRuntime(def, ns, s.fuel, true);
+            Step(s, idle, ns, Weather.Presets["calm"], new SimSettings(AssistMode.Beginner), FixedStepper.SIM_DT);   // fills in the outputs
+            s.events.Clear();
+            const double dt = 0.1;
+            double alt = 1600, hdg = 90;
+            void Tick()
+            {
+                s.t += dt; s.onGround = false;
+                s.@out.altFt = alt + altWander * Math.Sin(s.t * 0.4);
+                s.psi = (hdg + hdgWander * Math.Sin(s.t * 0.3 + 1)) * Math.PI / 180;
+                m.Update(s, new SimEvent[0], dt, idle);
+            }
+            for (int i = 0; i < 100 && m.Active?.def.kind != ObjectiveKind.Hold; i++) Tick();
+            var targets = new[] { (2000.0, 90.0), (2000.0, 180.0), (3000.0, 270.0) };
+            foreach (var (toAlt, toHdg) in targets)
+            {
+                var hold = m.Active;
+                Assert.That(hold?.def.kind, Is.EqualTo(ObjectiveKind.Hold), "the next hold is up");
+                for (int i = 0; i < 4000 && hold.status != ObjectiveStatus.Complete; i++)
+                {
+                    alt += Math.Sign(toAlt - alt) * Math.Min(Math.Abs(toAlt - alt), 500.0 / 60 * dt);   // 500 ft/min
+                    hdg += Math.Sign(toHdg - hdg) * Math.Min(Math.Abs(toHdg - hdg), 3 * dt);             // rate one
+                    Tick();
+                }
+                Assert.That(hold.status, Is.EqualTo(ObjectiveStatus.Complete), hold.def.label);
+            }
+            var r = m.Finish(s, FlightEnd.Aborted);
+            return (r.scores[ScoreCategory.Instrument], string.Join("; ", r.objectives.Where(o => o.label.StartsWith("Hood")).Select(o => o.detail)));
+        }
+
+        [Test]
+        public void HoldsAreMarkedOnHowTheyAreHeldNotOnTheTurnOrClimbOntoThem()
+        {
+            // the turn to 180° and the climb to 3,000 ft used to count as error, so a clean flight scored 40, 0 and 0: 13%
+            var (clean, cleanHolds) = FlyBasicInstrumentHolds(15, 1);
+            Assert.That(clean, Is.GreaterThanOrEqualTo(85), cleanHolds);
+            var (sloppy, sloppyHolds) = FlyBasicInstrumentHolds(110, 7);
+            Assert.That(sloppy, Is.LessThan(clean - 20), $"wandering about the band still costs: {sloppyHolds}");
+            Assert.That(sloppy, Is.GreaterThanOrEqualTo(30), $"but held inside it is not a fail: {sloppyHolds}");
+        }
+
         [Test]
         public void EveryMissionIsWellFormed()
         {

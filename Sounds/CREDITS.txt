@@ -1,0 +1,9 @@
+World sounds in the Windows build (the web build makes its own).
+Recordings by Joseph Sardin, BigSoundBank.com, CC0 (public domain): free to use, no attribution required.
+Each was cut, filtered and levelled by Tools/ambient_recordings.py.
+
+forest.ogg: Forest #4  https://bigsoundbank.com/forest-4-s2749.html
+leaves.ogg: Wind in the Trees  https://bigsoundbank.com/forest-wind-in-the-trees-s0904.html
+rain.ogg: Summer Rain on Terrace  https://bigsoundbank.com/summer-rain-on-terrace-s1019.html
+town.ogg: Street and Roads  https://bigsoundbank.com/street-and-roads-s0608.html
+owl.ogg: Long-eared owl #2  https://bigsoundbank.com/long-eared-owl-2-s0937.html

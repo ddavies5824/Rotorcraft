@@ -266,7 +266,7 @@ namespace Rotorcraft.Inputs.Tests
             im.ActionFired += actions.Add;
             src.keys.Add(Key.W);
             for (int i = 0; i < 60; i++) im.Sample(1.0 / 60);
-            Assert.That(System.Math.Abs(im.CollectiveLever - 0.38) < 1e-6, $"W raises the lever at 0.38 per second: {im.CollectiveLever}");
+            Assert.That(System.Math.Abs(im.CollectiveLever - 0.26) < 1e-6, $"W raises the lever at 0.26 per second: {im.CollectiveLever}");
             src.keys.Clear();
             src.keys.Add(Key.E);
             im.Sample(0.016); im.Sample(0.016);

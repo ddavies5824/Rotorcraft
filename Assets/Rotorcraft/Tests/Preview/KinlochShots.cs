@@ -578,6 +578,179 @@ namespace Rotorcraft.Preview.Tests
             Assert.Pass("pictures written to Logs/");
         }
 
+        /// <summary>Each twin side on, with a main rotor blade turned to point straight back over the tail: the worst case for a clash.</summary>
+        [UnityTest, Timeout(600000)]
+        public IEnumerator RotorClearsTheTail()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            var pad = S("kin_h1");
+            var at = SimToUnity.Position(new Vec3(pad.x, WorldMap.SiteElevation(pad), pad.z));
+            const int W = 960, H = 540;
+            var sheet = new Texture2D(W * 2, H * 2, TextureFormat.RGB24, false);
+            int k = 0;
+            foreach (var (id, file) in new[] { ("northstar", "northstar_175"), ("guardian", "guardian_s9") })
+            {
+                var holder = Dressed(id, file, Aircraft.Get(id), at, 0);
+                Transform blades = null;
+                foreach (var t in holder.GetComponentsInChildren<Transform>(true)) if (t.name == "blades") blades = t;
+                foreach (var spin in new[] { 0f, 45f })
+                {
+                    // find the turn that puts a blade straight back over the tail, then add the second view's offset
+                    if (blades != null) blades.localRotation = Quaternion.Euler(0, spin, 0);
+                    cam.fieldOfView = 40;
+                    cam.transform.position = at + new Vector3(24, 3.5f, -3);
+                    cam.transform.LookAt(at + new Vector3(0, 3, -3.5f));
+                    for (int i = 0; i < 4; i++) yield return null;
+                    CaptureInto(cam, sheet, k % 2, W, H, k / 2);
+                    k++;
+                }
+                Object.Destroy(holder);
+                yield return null;
+            }
+            sheet.Apply();
+            File.WriteAllBytes("Logs/rotor-clearance.png", sheet.EncodeToPNG());
+            Assert.Pass("pictures written to Logs/");
+        }
+
+        /// <summary>Each kind of load at four stages, on the Kinloch pad: who comes, how they move, and that they finish with the load.</summary>
+        [UnityTest, Timeout(1200000)]
+        public IEnumerator LoadingScenes()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+#if UNITY_EDITOR
+            var host = new GameObject("World actors");
+            host.SetActive(false);
+            var actors = host.AddComponent<WorldActors>();
+            actors.people = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/people.glb");
+            actors.vehicles = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/vehicles.glb");
+            host.SetActive(true);
+#endif
+            var heli = Object.FindAnyObjectByType<HelicopterController>();
+            var party = heli.GetComponent<LoadingParty>() ?? heli.gameObject.AddComponent<LoadingParty>();
+            heli.State.onGround = true;
+            heli.State.engine = EngineState.Running;
+            var scenes = new (string name, string what, bool pickup, double seconds, string site)[]
+            {
+                ("passengers-on", "four passengers", true, 30, "kin_h1"),
+                ("offshore-off-on", "passengers (net six on)", true, 45, "cormorant_b"),
+                ("patient-pickup", "patient and paramedic", true, 40, "kin_h1"),
+                ("patient-handover", "patient", false, 20, "kin_h1"),
+                ("soldiers", "eight soldiers", true, 30, "kin_h1"),
+                ("freight-off", "freight", false, 25, "kin_h1"),
+            };
+            const int W = 800, H = 450;
+            var stages = new[] { 0.06, 0.3, 0.6, 0.97 };
+            foreach (var sc in scenes)
+            {
+                var sheet = new Texture2D(W * 2, H * 2, TextureFormat.RGB24, false);
+                var obj = new Rotorcraft.Game.ObjectiveRuntime(new Rotorcraft.Game.ObjectiveDef { kind = Rotorcraft.Game.ObjectiveKind.Load, what = sc.what, pickup = sc.pickup, seconds = sc.seconds, siteId = sc.site, payloadKg = 400 });
+                party.Reset();
+                var at = heli.transform.position;
+                var right = heli.transform.right;
+                cam.fieldOfView = 50;
+                cam.transform.position = at + right * 15 + heli.transform.forward * 16 + Vector3.up * 7;
+                cam.transform.LookAt(at + right * 6 + Vector3.up * 0.8f);
+                for (int k = 0; k < stages.Length; k++)
+                {
+                    // the stages in order, as the loading does, so that everyone is made when they first come
+                    for (double p = k == 0 ? 0.01 : stages[k - 1]; p <= stages[k] + 1e-6; p += 0.02)
+                    {
+                        obj.progress = System.Math.Min(p, stages[k]);
+                        party.Show(obj);
+                        yield return null;
+                    }
+                    for (int i = 0; i < 3; i++) yield return null;
+                    CaptureInto(cam, sheet, k % 2, W, H, k / 2);
+                }
+                sheet.Apply();
+                File.WriteAllBytes($"Logs/load-{sc.name}.png", sheet.EncodeToPNG());
+                Object.Destroy(sheet);
+                party.Show(null);    // the load finished
+                yield return null;
+            }
+            party.Reset();
+            Assert.Pass("pictures written to Logs/");
+        }
+
+        /// <summary>
+        /// A stretcher team close up and from above, to a Nightjar (its rear doors) and a Northstar (the cabin door): one patient
+        /// on the stretcher, and the team coming in from the side.
+        /// </summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator StretcherCloseUps()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+#if UNITY_EDITOR
+            var host = new GameObject("World actors");
+            host.SetActive(false);
+            var actors = host.AddComponent<WorldActors>();
+            actors.people = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/people.glb");
+            actors.vehicles = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/vehicles.glb");
+            host.SetActive(true);
+            var heli = Object.FindAnyObjectByType<HelicopterController>();
+            var party = heli.GetComponent<LoadingParty>() ?? heli.gameObject.AddComponent<LoadingParty>();
+            foreach (var (id, file) in new[] { ("nightjar", "nightjar_n4"), ("northstar", "northstar_175") })
+            {
+                heli.SetAircraft(Aircraft.Get(id), UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Rotorcraft/Models/Aircraft/{file}.gltf"));
+                heli.State.onGround = true;
+                heli.State.engine = EngineState.Running;
+                yield return null;
+                const int W = 800, H = 450;
+                var sheet = new Texture2D(W * 2, H * 2, TextureFormat.RGB24, false);
+                var obj = new Rotorcraft.Game.ObjectiveRuntime(new Rotorcraft.Game.ObjectiveDef { kind = Rotorcraft.Game.ObjectiveKind.Load, what = "patient and paramedic", pickup = true, seconds = 40, siteId = "kin_h1", payloadKg = 110 });
+                party.Reset();
+                var t = heli.transform;
+                var right = t.right; right.y = 0; right.Normalize();
+                var fwd = t.forward; fwd.y = 0; fwd.Normalize();
+                var stages = new[] { 0.12, 0.22, 0.32, 0.4 };
+                for (int k = 0; k < stages.Length; k++)
+                {
+                    for (double p = k == 0 ? 0.01 : stages[k - 1]; p <= stages[k] + 1e-6; p += 0.01) { obj.progress = System.Math.Min(p, stages[k]); party.Show(obj); yield return null; }
+                    for (int i = 0; i < 3; i++) yield return null;
+                    if (k < 2)
+                    {
+                        // close, from ahead and to the right: the team and what is on the stretcher
+                        cam.fieldOfView = 40;
+                        cam.transform.position = t.position + right * 11 + fwd * 7 + Vector3.up * 2.6f;
+                        cam.transform.LookAt(t.position + right * 5 - fwd * 1 + Vector3.up * 0.9f);
+                    }
+                    else
+                    {
+                        // from above: where they walk round the aircraft
+                        cam.fieldOfView = 55;
+                        cam.transform.position = t.position + right * 6 + Vector3.up * 30;
+                        cam.transform.rotation = Quaternion.LookRotation(Vector3.down, fwd);
+                    }
+                    CaptureInto(cam, sheet, k % 2, W, H, k / 2);
+                }
+                sheet.Apply();
+                File.WriteAllBytes($"Logs/load-stretcher-{id}.png", sheet.EncodeToPNG());
+                Object.Destroy(sheet);
+                party.Reset();
+                yield return null;
+            }
+            Assert.Pass("pictures written to Logs/");
+#else
+            yield return null;
+#endif
+        }
+
+        static void CaptureInto(Camera cam, Texture2D sheet, int column, int w, int h, int row)
+        {
+            var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+            var req = new RenderPipeline.StandardRequest { destination = rt };
+            if (RenderPipeline.SupportsRenderRequest(cam, req)) RenderPipeline.SubmitRenderRequest(cam, req);
+            else { cam.targetTexture = rt; cam.Render(); cam.targetTexture = null; }
+            var prev = RenderTexture.active; RenderTexture.active = rt;
+            sheet.ReadPixels(new Rect(0, 0, w, h), column * w, (1 - row) * h);
+            RenderTexture.active = prev;
+            rt.Release();
+        }
+
         static void CaptureInto(Camera cam, Texture2D sheet, int slot, int cell)
         {
             var rt = new RenderTexture(cell, cell, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };

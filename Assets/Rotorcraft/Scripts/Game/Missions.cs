@@ -202,7 +202,7 @@ namespace Rotorcraft.Game
                 summary = "The practical test for your private licence. Precision hover, navigation to Glen Ardoch Bridge, a field landing at Moss Farm and return to H1.",
                 briefing = new[]
                 {
-                    "The examiner will assess everything you have learned. The wind is a fresh northerly across the heliport: expect drift in the hover and a crosswind on approach.",
+                    "The examiner will assess everything you have learned. The wind is a steady northerly across the heliport: expect drift in the hover and a crosswind on approach.",
                     "Hover over Spot A within 5 m for 12 seconds, between 3 and 13 ft, heading within 20°. Then route to Glen Ardoch Bridge (258°, 2.4 nm) between 1,200 and 2,000 ft, land at Moss Farm, and return to H1.",
                     "Pass standard: overall 70%, no hard landings, no torque or rotor-speed exceedances, all items completed. A fail is not the end: you will be set remedial training and can re-sit.",
                 },

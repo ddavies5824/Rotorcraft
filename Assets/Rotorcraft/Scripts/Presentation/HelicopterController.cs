@@ -90,6 +90,7 @@ namespace Rotorcraft.Presentation
             if (GetComponent<AircraftLights>() == null) gameObject.AddComponent<AircraftLights>();
             if (GetComponent<AircraftEffects>() == null) gameObject.AddComponent<AircraftEffects>();
             if (GetComponent<CrewOnFoot>() == null) gameObject.AddComponent<CrewOnFoot>();
+            if (GetComponent<LoadingParty>() == null) gameObject.AddComponent<LoadingParty>();
         }
 
         void FindParts()

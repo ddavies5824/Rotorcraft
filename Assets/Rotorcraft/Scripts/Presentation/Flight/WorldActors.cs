@@ -35,7 +35,31 @@ namespace Rotorcraft.Presentation
 
         readonly List<Vector2> propPatients = new List<Vector2>(), targetPatients = new List<Vector2>();
         /// <summary>People needing the crew (casualties on the ground, sim x and z), for the crew on foot.</summary>
-        public IEnumerable<Vector2> Patients => propPatients.Concat(targetPatients);
+        public IEnumerable<Vector2> Patients => propPatients.Concat(targetPatients).Where(p => !Hidden(p));
+
+        // places whose figures have been taken away (a casualty lifted onto a stretcher): they stay gone through a resync
+        readonly List<Vector2> hiddenAt = new List<Vector2>();
+        bool Hidden(Vector2 sim) { foreach (var h in hiddenAt) if (Vector2.Distance(h, sim) < 3.5f) return true; return false; }
+
+        /// <summary>Take away whatever stands or lies within r of a point (sim x, z): the casualty and the things round them.</summary>
+        public void HideNear(Vector2 sim, float r)
+        {
+            hiddenAt.Add(sim);
+            HideHidden();
+        }
+
+        void HideHidden()
+        {
+            foreach (var g in props.Concat(targets))
+                if (g != null && Hidden(new Vector2(g.transform.position.x, -g.transform.position.z))) g.SetActive(false);
+        }
+
+        /// <summary>Is something of this kind (its model key, such as "v:ambulance") already standing within r?</summary>
+        public bool AnyPropNear(string key, Vector3 at, float r)
+        {
+            foreach (var g in props) if (g != null && g.name.StartsWith(key) && Vector3.Distance(g.transform.position, at) < r) return true;
+            return false;
+        }
 
         void Awake()
         {
@@ -74,7 +98,7 @@ namespace Rotorcraft.Presentation
         public void Clear()
         {
             foreach (var g in props.Concat(targets)) if (g != null) Destroy(g);
-            props.Clear(); targets.Clear(); wavers.Clear(); beacons.Clear(); propPatients.Clear(); targetPatients.Clear();
+            props.Clear(); targets.Clear(); wavers.Clear(); beacons.Clear(); propPatients.Clear(); targetPatients.Clear(); hiddenAt.Clear();
             if (cable != null) cable.enabled = false;
             if (winchman != null) { winchman.SetActive(false); winchmanGround.SetActive(false); strop.SetActive(false); }
         }
@@ -94,7 +118,7 @@ namespace Rotorcraft.Presentation
         /// <summary>A figure dressed for the role (casual, walker, medic, police, fire, hivis, worker, scrubs, winchman).</summary>
         GameObject Person(string outfit, string pose, int seed, Transform parent)
         {
-            var helmet = outfit == "fire" || outfit == "worker" || outfit == "winchman" || outfit == "climber" || outfit == "aircrew";
+            var helmet = outfit == "fire" || outfit == "worker" || outfit == "winchman" || outfit == "climber" || outfit == "aircrew" || outfit == "soldier" || outfit == "armed";
             var key = helmet && peopleParts.ContainsKey("helmet_" + pose) ? "helmet_" + pose : "pose_" + pose;
             var g = Spawn(peopleParts, key, parent);
             if (g == null) return null;
@@ -111,6 +135,9 @@ namespace Rotorcraft.Presentation
                 case "scrubs": top = legs = Pick(new[] { C(0.35f, 0.55f, 0.75f), C(0.2f, 0.45f, 0.45f), C(0.15f, 0.22f, 0.45f) }); break;
                 case "winchman": top = C(0.95f, 0.45f, 0.08f); legs = C(0.95f, 0.45f, 0.08f); hat = C(0.92f, 0.92f, 0.9f); break;
                 case "aircrew": top = legs = C(0.2f, 0.24f, 0.19f); hat = C(0.9f, 0.9f, 0.88f); break;   // flight suit and helmet
+                case "immersion": top = legs = C(0.95f, 0.38f, 0.05f); break;                              // an offshore survival suit
+                case "soldier": top = legs = hat = C(0.24f, 0.27f, 0.18f); break;
+                case "armed": top = legs = C(0.07f, 0.07f, 0.09f); hat = C(0.1f, 0.1f, 0.12f); break;   // armed police
                 case "walker": case "climber": top = Pick(OUTDOOR); legs = C(0.12f, 0.13f, 0.14f); hat = C(0.85f, 0.2f, 0.1f); break;
                 default: top = Pick(CASUAL_TOP); legs = Pick(CASUAL_LEGS); break;
             }
@@ -186,6 +213,7 @@ namespace Rotorcraft.Presentation
                         }
                 }
             }
+            HideHidden();
         }
 
         void AddBeacons(Transform vehicle, Color c)
@@ -240,6 +268,7 @@ namespace Rotorcraft.Presentation
                     default: Person("worker", "lie", sd, t); break;   // training dummy in orange
                 }
             }
+            HideHidden();
         }
 
         // -------------------------------------------------------------------------------- the winch

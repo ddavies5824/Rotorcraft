@@ -1,0 +1,60 @@
+{
+  "rate": 48000,
+  "sounds": [
+    {
+      "layer": "birds",
+      "file": "forest.ogg",
+      "kind": "bed",
+      "rms": 0.09473,
+      "fade": 3.0,
+      "seconds": 93.0,
+      "title": "Forest #4",
+      "source": "https://bigsoundbank.com/forest-4-s2749.html",
+      "licence": "CC0 (public domain)"
+    },
+    {
+      "layer": "leaves",
+      "file": "leaves.ogg",
+      "kind": "bed",
+      "rms": 0.09488,
+      "fade": 3.0,
+      "seconds": 63.0,
+      "title": "Wind in the Trees",
+      "source": "https://bigsoundbank.com/forest-wind-in-the-trees-s0904.html",
+      "licence": "CC0 (public domain)"
+    },
+    {
+      "layer": "rain",
+      "file": "rain.ogg",
+      "kind": "bed",
+      "rms": 0.09324,
+      "fade": 3.0,
+      "seconds": 73.0,
+      "title": "Summer Rain on Terrace",
+      "source": "https://bigsoundbank.com/summer-rain-on-terrace-s1019.html",
+      "licence": "CC0 (public domain)"
+    },
+    {
+      "layer": "hum",
+      "file": "town.ogg",
+      "kind": "bed",
+      "rms": 0.09468,
+      "fade": 3.0,
+      "seconds": 103.0,
+      "title": "Street and Roads",
+      "source": "https://bigsoundbank.com/street-and-roads-s0608.html",
+      "licence": "CC0 (public domain)"
+    },
+    {
+      "layer": "owls",
+      "file": "owl.ogg",
+      "kind": "calls",
+      "rms": 0.18186,
+      "fade": 0,
+      "seconds": 75.5,
+      "title": "Long-eared owl #2",
+      "source": "https://bigsoundbank.com/long-eared-owl-2-s0937.html",
+      "licence": "CC0 (public domain)"
+    }
+  ]
+}

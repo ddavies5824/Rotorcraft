@@ -46,7 +46,8 @@ namespace Rotorcraft.Sim
         const double TrimGain = 0.015;    // lever per second per m/s of climb rate error
         const double LeverRate = 0.2;     // lever per second
         const double CaptureLead = 1.2;   // s: a climb or descent in hand carries on this long while it is taken off
-        const double ClimbLever = 0.02;   // lever a steady climb of 1 m/s holds above level flight, roughly
+        const double ClimbLever = 0.045;  // lever a steady climb of 1 m/s holds above level flight, roughly
+        const double TrimNearM = 4;       // the trim learns only this close to the height: on the way there it would learn the climb, and carry on past
 
         public static APState NewAP() => new APState();
 
@@ -122,7 +123,7 @@ namespace Rotorcraft.Sim
                     var want = ap.trim + climbErr * ClimbGain;
                     var step = LeverRate * dt;
                     // the trim learns only while the lever can follow, or it would wind up against a limit
-                    if (want > 0 && want < 1 && Math.Abs(want - ap.colOut) < step) ap.trim = Clamp(ap.trim + climbErr * TrimGain * dt, 0, 1);
+                    if (want > 0 && want < 1 && Math.Abs(want - ap.colOut) < step && Math.Abs(err) < TrimNearM) ap.trim = Clamp(ap.trim + climbErr * TrimGain * dt, 0, 1);
                     ap.colOut += Clamp(Clamp(want, 0, 1) - ap.colOut, -step, step);
                     o.collective = ap.colOut;
                 }

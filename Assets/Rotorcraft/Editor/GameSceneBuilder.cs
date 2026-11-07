@@ -259,6 +259,18 @@ namespace Rotorcraft.EditorTools
             var vr = Path.Combine(Path.GetDirectoryName(out_), "Rotorcraft_Data", "Managed", "Rotorcraft.VR.dll");
             if (!File.Exists(vr)) throw new System.Exception("The Windows build has no VR code: " + vr);
             File.WriteAllText(Path.Combine(Path.GetDirectoryName(out_), "Start in VR.bat"), string.Join("\r\n", "@echo off", "start \"\" \"%~dp0Rotorcraft.exe\" -vr", ""));
+            // the world-sound recordings (Windows only: the web build makes its own), read at run time from Rotorcraft_Data/Sounds
+            var sounds = Path.GetFullPath("Sounds");
+            var into = Path.Combine(Path.GetDirectoryName(out_), "Rotorcraft_Data", "Sounds");
+            if (Directory.Exists(into)) Directory.Delete(into, true);
+            if (File.Exists(Path.Combine(sounds, "sounds.json")))
+            {
+                Directory.CreateDirectory(into);
+                var files = Directory.GetFiles(sounds);
+                foreach (var f in files) File.Copy(f, Path.Combine(into, Path.GetFileName(f)));
+                Debug.Log($"World-sound recordings: {files.Length} files copied into the build");
+            }
+            else Debug.LogWarning("No Sounds folder beside Assets: this Windows build will make all its world sounds itself");
         }
 
         [MenuItem("Rotorcraft/Build for the web")]

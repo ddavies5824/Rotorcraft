@@ -30,6 +30,8 @@ namespace Rotorcraft.Game
         public double t0;            // activation time
         // hover / hold tracking
         public double timer; public int resets; public double errPos, errAlt, errHdg, samples; public double? refHdg; public bool inside;
+        /// <summary>A hold: established on the heading and altitude at least once (the turn or climb onto them is not marked).</summary>
+        public bool captured;
         public HoverSums hv;
         // waypoint tracking
         public double minDist = double.PositiveInfinity;
@@ -130,6 +132,7 @@ namespace Rotorcraft.Game
         readonly List<string> rescueLog = new List<string>();
         int winchAborts;
         double? winchStartT, casualtyAboardT, deliveredT, enteredAreaT;
+        bool heldOffSaid;
         readonly List<int> searchScores = new List<int>(), rescueScores = new List<int>(), instrumentScores = new List<int>();
         bool hintGiven;
         // weather
@@ -167,7 +170,9 @@ namespace Rotorcraft.Game
             targets = Search.PlaceTargets(def.targets ?? new TargetDef[0], def.searchAreas ?? new SearchAreaDef[0], seed);
             // a target at a reported position (no search area) is known from the start
             foreach (var d in def.targets ?? new TargetDef[0]) if (d.areaId == null && d.x != null && d.z != null) found.Add(d.id);
-            ifr = opts.instrumentRated && ac.equipment.autopilot;
+            // in cloud legitimately: an instrument-rated pilot, or an instrument-rating lesson or test, where the instructor or
+            // examiner is in command (the exercises climb into the cloud and take the hood off there)
+            ifr = (opts.instrumentRated || (def.pathway == Pathway.Ir && def.dual)) && ac.equipment.autopilot;
             objectives = def.objectives.Select(d => new ObjectiveRuntime(d)).ToList();
             if (!checklistComplete) proceduralErrors.Add("Pre-flight checklist not completed");
             var opening = def.category == MissionCategory.Freeplay ? $"Kinloch Ops: {def.summary}"
@@ -178,6 +183,9 @@ namespace Rotorcraft.Game
         }
 
         public ObjectiveRuntime Active => index < objectives.Count ? objectives[index] : null;
+
+        /// <summary>Flying in cloud is allowed on this flight (instrument-rated, or an instrument-rating lesson or test, in an IFR-equipped aircraft).</summary>
+        public bool CloudAllowed => ifr;
 
         /// <summary>Simulated instrument flight: the outside view is hooded while the active objective says so.</summary>
         public bool Hood => Active != null && Active.def.hood && status == MissionStatus.Running;
@@ -623,6 +631,12 @@ namespace Rotorcraft.Game
                 var wasAbort = hoist.abortReason;
                 Hoist.StepHoist(hoist, s, tgt, w ?? V3(), Scale, dt);
                 if (hoist.abortReason != null && hoist.abortReason != wasAbort) { winchAborts++; Say(t, "Winch op", hoist.abortReason, MessageKind.Warning); }
+                if (hoist.heldOff && !heldOffSaid)
+                {
+                    heldOffSaid = true;
+                    Say(t, "Winch op", $"He's at the bottom, {F0(Js.Hypot(hoist.hook.x - tgt.x, hoist.hook.z - tgt.z))} m short of the casualty. Holding him just off the ground: move me across.", MessageKind.Caution);
+                }
+                if (!hoist.heldOff) heldOffSaid = false;
                 if (before != HoistPhase.OnScene && hoist.phase == HoistPhase.OnScene) Say(t, "Winch op", "Winchman is on scene with the casualty. Steady… hold this hover.", MessageKind.Info);
                 if (before == HoistPhase.OnScene && hoist.phase == HoistPhase.Raising && hoist.attached) Say(t, "Winch op", "Casualty in the strop. Taking the weight… both coming up.", MessageKind.Info);
                 if (hoist.phase == HoistPhase.Aboard && before != HoistPhase.Aboard)
@@ -927,7 +941,7 @@ namespace Rotorcraft.Game
                         var h = hoist;
                         var call = Hoist.ConningCall(h, s, HT(tg), Scale);
                         if (!s.onGround) Caution(t, "conn", call, MessageKind.Info, h.phase == HoistPhase.Stowed ? 5 : 3, "Winch op");
-                        a.detail = h.phase == HoistPhase.Stowed ? call : h.phase == HoistPhase.Lowering ? $"Lowering {F0(h.cable)} m · swing {F0(h.swingDeg)}°" : h.phase == HoistPhase.OnScene ? $"On scene {F0(h.sceneTimer)} / {Hoist.sceneTime} s · hold the hover" : h.phase == HoistPhase.Raising ? $"Raising {F0(h.cable)} m{(h.attached ? " with casualty" : "")}" : "Aboard";
+                        a.detail = h.phase == HoistPhase.Stowed ? call : h.phase == HoistPhase.Lowering ? (h.heldOff ? $"Held off the ground, {F0(Js.Hypot(h.hook.x - tg.x, h.hook.z - tg.z))} m short · move across" : $"Lowering {F0(h.cable)} m · swing {F0(h.swingDeg)}°") : h.phase == HoistPhase.OnScene ? $"On scene {F0(h.sceneTimer)} / {Hoist.sceneTime} s · hold the hover" : h.phase == HoistPhase.Raising ? $"Raising {F0(h.cable)} m{(h.attached ? " with casualty" : "")}" : "Aboard";
                         a.progress = h.phase == HoistPhase.Stowed ? 0 : h.phase == HoistPhase.Lowering ? 0.25 : h.phase == HoistPhase.OnScene ? 0.5 + 0.25 * h.sceneTimer / Hoist.sceneTime : h.phase == HoistPhase.Raising ? 0.8 : 1;
                         if (casualtyAboardT != null && h.phase == HoistPhase.Aboard)
                         {
@@ -964,7 +978,11 @@ namespace Rotorcraft.Game
                         var he = Math.Abs(((hdg - d.headingDeg + 540) % 360) - 180);
                         var ae = Math.Abs(o.altFt - d.altFt);
                         var inside = !s.onGround && ae <= d.altTolFt && he <= d.hdgTolDeg;
-                        if (!s.onGround) { a.errAlt += ae * ae * dt; a.errHdg += he * he * dt; a.samples += dt; }
+                        // marked from when the aircraft is first established (well inside, or inside for a few seconds): the turn or
+                        // climb onto the new heading and altitude is the manoeuvre the hold asks for, not an error (counting it scored
+                        // a perfect rate-one turn 0), and so is the level-off through the edge of the band
+                        if (inside && ((ae <= d.altTolFt / 2 && he <= d.hdgTolDeg / 2) || a.timer >= 5)) a.captured = true;
+                        if (!s.onGround && a.captured) { a.errAlt += ae * ae * dt; a.errHdg += he * he * dt; a.samples += dt; }
                         var hdgLabel = ((int)d.headingDeg).ToString().PadLeft(3, '0');
                         if (inside) a.timer += dt;
                         else { if (a.timer > 2) { a.resets++; Caution(t, "holdreset", ae > d.altTolFt ? $"Altitude {F0(o.altFt)} ft: target {d.altFt}." : $"Heading {F0(hdg)}°: target {hdgLabel}.", MessageKind.Caution, 4); } a.timer = 0; }

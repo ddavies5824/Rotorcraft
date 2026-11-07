@@ -42,15 +42,15 @@ namespace Rotorcraft.Sim
         public static readonly IReadOnlyDictionary<string, WeatherPreset> Presets = new Dictionary<string, WeatherPreset>
         {
             ["calm"] = W("calm", "Calm and clear", 240, 3, 0, 0.05, 30000, null, CloudCover.FEW, Precip.None, 14, 1021, 11),
-            ["light_sw"] = W("light_sw", "Light south-westerly", 230, 8, 4, 0.15, 25000, 3500, CloudCover.SCT, Precip.None, 12, 1015, 23),
-            ["breezy_w"] = W("breezy_w", "Fresh westerly, gusting", 270, 14, 9, 0.35, 18000, 2500, CloudCover.BKN, Precip.None, 10, 1008, 37),
-            ["crosswind_n"] = W("crosswind_n", "Northerly crosswind", 350, 12, 6, 0.25, 15000, 2000, CloudCover.BKN, Precip.None, 8, 1011, 41),
-            ["haar"] = W("haar", "Coastal haar (sea fog)", 90, 6, 2, 0.1, 1800, 400, CloudCover.OVC, Precip.None, 9, 1019, 53),
-            ["glen_closing"] = W("glen_closing", "Cloud lowering on the hills, drizzle", 250, 18, 10, 0.4, 3500, 1100, CloudCover.OVC, Precip.Drizzle, 8, 1004, 71),
-            ["fair_nw"] = W("fair_nw", "Fair, north-westerly breeze", 310, 11, 5, 0.2, 22000, 3000, CloudCover.SCT, Precip.None, 11, 1018, 83),
-            ["glen_lowering"] = W("glen_lowering", "Cloud lowering in the glen, drizzle", 245, 16, 9, 0.38, 6000, 2100, CloudCover.OVC, Precip.Drizzle, 8, 1006, 79),
-            ["north_sea"] = W("north_sea", "North Sea, fresh south-westerly", 225, 20, 8, 0.3, 20000, 2200, CloudCover.BKN, Precip.None, 9, 1009, 91),
-            ["showers"] = W("showers", "Showers, moderate wind", 300, 16, 12, 0.45, 7000, 1400, CloudCover.BKN, Precip.Rain, 7, 1003, 67),
+            ["light_sw"] = W("light_sw", "Light south-westerly", 230, 6, 2, 0.1, 25000, 3500, CloudCover.SCT, Precip.None, 12, 1015, 23),
+            ["breezy_w"] = W("breezy_w", "Breezy westerly, gusting", 270, 9, 4, 0.25, 18000, 2500, CloudCover.BKN, Precip.None, 10, 1008, 37),
+            ["crosswind_n"] = W("crosswind_n", "Northerly crosswind", 350, 8, 3, 0.18, 15000, 2000, CloudCover.BKN, Precip.None, 8, 1011, 41),
+            ["haar"] = W("haar", "Coastal haar (sea fog)", 90, 4, 1, 0.07, 1800, 400, CloudCover.OVC, Precip.None, 9, 1019, 53),
+            ["glen_closing"] = W("glen_closing", "Cloud lowering on the hills, drizzle", 250, 12, 5, 0.28, 3500, 1100, CloudCover.OVC, Precip.Drizzle, 8, 1004, 71),
+            ["fair_nw"] = W("fair_nw", "Fair, north-westerly breeze", 310, 7, 3, 0.14, 22000, 3000, CloudCover.SCT, Precip.None, 11, 1018, 83),
+            ["glen_lowering"] = W("glen_lowering", "Cloud lowering in the glen, drizzle", 245, 11, 4, 0.27, 6000, 2100, CloudCover.OVC, Precip.Drizzle, 8, 1006, 79),
+            ["north_sea"] = W("north_sea", "North Sea, south-westerly", 225, 13, 4, 0.21, 20000, 2200, CloudCover.BKN, Precip.None, 9, 1009, 91),
+            ["showers"] = W("showers", "Showers, moderate wind", 300, 11, 5, 0.32, 7000, 1400, CloudCover.BKN, Precip.Rain, 7, 1003, 67),
         };
 
         /// <summary>Mean wind vector (m/s) the air is moving TOWARD, in world axes.</summary>
@@ -112,7 +112,7 @@ namespace Rotorcraft.Sim
         {
             var dir = Int(Js.Round(w.windDirDeg / 10) * 10).PadLeft(3, '0');
             var spd = Int(Js.Round(w.windKt)).PadLeft(2, '0');
-            var gust = w.gustKt >= 8 ? "G" + Int(Js.Round(w.windKt + w.gustKt)).PadLeft(2, '0') : "";
+            var gust = w.gustKt >= 3 ? "G" + Int(Js.Round(w.windKt + w.gustKt)).PadLeft(2, '0') : "";
             var vis = w.visibilityM >= 10000 ? "9999" : Int(Js.Round(w.visibilityM / 100) * 100).PadLeft(4, '0');
             var wx = w.precip == Precip.None ? (w.visibilityM < 5000 ? " BR" : "") : w.precip == Precip.Drizzle ? " -DZ" : w.precip == Precip.Rain ? " RA" : " +RA";
             var cloud = w.cloudBaseFt == null ? " NSC" : $" {w.cloudCover}{Int(Js.Round(w.cloudBaseFt.Value / 100)).PadLeft(3, '0')}";

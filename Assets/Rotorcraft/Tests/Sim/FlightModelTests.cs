@@ -126,6 +126,7 @@ namespace Rotorcraft.Sim.Tests
             double minRpm = 200;
             // a pilot managing rotor rpm with collective while holding ~55 kt
             var col = 0.1;
+            var height = s.pos.y; var t0 = s.t;
             RunFor(s, 25, st =>
             {
                 col = Math.Min(1, Math.Max(0, col + (st.@out.rpm - 100) * 0.0008));
@@ -133,7 +134,8 @@ namespace Rotorcraft.Sim.Tests
                 return new Controls(col, (st.@out.iasKt - 55) * -0.01 + 0.15, 0, 0);
             }, ac, Wx("calm"), AssistMode.Standard, st => st.@out.aglM < 60);
             Assert.That(minRpm > 85, $"min rpm {minRpm}");
-            Assert.That(s.vel.y < -2, "descending");
+            // this pilot's lever hunts, so a single moment could be the top of a swing: what counts is the height lost on the way
+            Assert.That((height - s.pos.y) / (s.t - t0) > 2, $"descending at {(height - s.pos.y) / (s.t - t0):F1} m/s");
         }
 
         [Test]

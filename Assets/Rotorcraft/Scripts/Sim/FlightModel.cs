@@ -89,6 +89,7 @@ namespace Rotorcraft.Sim
         public double etlShudder;    // 0..1 vibration as the aircraft passes through translational lift
         public double windKt;
         public double windFromDeg;
+        public double windAvgKt, windAvgFromDeg;
         public double sideslipMs;
         public Surface surfaceBelow = Surface.Grass;
         public double hoverPowerOGE; // % torque needed to hover out of ground effect at current mass
@@ -173,6 +174,8 @@ namespace Rotorcraft.Sim
         public bool crashed;
         public string crashReason;
         public double torqueSmoothed;
+        public double windAvgX, windAvgZ;
+        public bool windAvgSet;
         public double pedalTrim;
         /// <summary>Retractable wheels: 1 down and locked, 0 up; in between while they travel.</summary>
         public double gearPos = 1;
@@ -197,6 +200,11 @@ namespace Rotorcraft.Sim
     public static class FlightModel
     {
         const double MIN_PITCH = 0.3;
+        const double HEAVE_NEAR_LEVEL = 0.35;   // 1/s, on top of the aircraft's own heave damping
+        const double ATT_PITCH_GAIN = 2.6, ATT_ROLL_GAIN = 2.8, ATT_DAMPING_RATIO = 0.85;
+
+        /// <summary>The share of its own rate fed back in the attitude-command modes, to give that damping ratio with the rate response's lag.</summary>
+        static double AttitudeDamping(double gain, double tau) => Math.Max(0, 2 * ATT_DAMPING_RATIO * Math.Sqrt(gain * tau) - 1);
 
         /// <summary>Engine temperature limits by engine type (°C).</summary>
         public static TempLimits TempLimitsOf(AircraftConfig ac) =>
@@ -378,6 +386,10 @@ namespace Rotorcraft.Sim
             // heave damping uses the vertical air velocity (inflow change from climb/descent), not the
             // forward-flight component through a tilted disc, which is accounted for as parasite power.
             thrust -= ac.heaveDamping * mass * va.y * rpmFrac;
+            // Close to level flight the inflow resists a change of height much more firmly: without this a small movement of a lever
+            // worked at a rate (keyboard, thumbstick) sets off a swing in height that grows. It fades out at the sink rates of an
+            // autorotation, whose balance of power and descent it would otherwise upset. (Not in the browser game.)
+            thrust -= HEAVE_NEAR_LEVEL * mass * va.y * (1 - Smoothstep(3, 9, Math.Abs(va.y))) * rpmFrac;
             // Vortex ring state: descending into your own downwash at low airspeed with power applied.
             var vh0 = Math.Sqrt((mass * G) / (2 * 1.225 * sigma * Math.PI * Math.Pow(ac.rotorDiameter / 2, 2)));
             var descent = -va.y;
@@ -494,8 +506,9 @@ namespace Rotorcraft.Sim
                     if (Math.Abs(c.cyclicPitch) < 0.15) thetaT += Clamp(gF * 0.025, -0.1, 0.1) * hoverish;
                     if (Math.Abs(c.cyclicRoll) < 0.15) phiT += Clamp(-gR * 0.03, -0.12, 0.12) * hoverish;
                 }
-                qCmd = Clamp((thetaT - s.theta) * 2.6, -ac.pitchRate, ac.pitchRate) + ac.blowback * 0.4 * vaF;
-                pCmd = Clamp((phiT - s.phi) * 2.8, -ac.rollRate, ac.rollRate);
+                // damped so that it settles on the attitude instead of rocking past it (the browser game overshot by up to 20% on the twins)
+                qCmd = Clamp((thetaT - s.theta) * ATT_PITCH_GAIN, -ac.pitchRate, ac.pitchRate) - s.q * AttitudeDamping(ATT_PITCH_GAIN, ac.controlTau) + ac.blowback * 0.4 * vaF;
+                pCmd = Clamp((phiT - s.phi) * ATT_ROLL_GAIN, -ac.rollRate, ac.rollRate) - s.p * AttitudeDamping(ATT_ROLL_GAIN, ac.controlTau);
             }
             qCmd = qCmd * ctrlPower + turb.q * gustScale;
             pCmd = pCmd * ctrlPower + turb.p * gustScale;
@@ -510,13 +523,13 @@ namespace Rotorcraft.Sim
             var fin = Smoothstep(5, 14, vaF);
             double torqueYaw;
             if (assist == AssistMode.Realistic) torqueYaw = ac.torqueYaw * (ac.hasAFCS ? 0.25 : 1) * torqueFrac * (1 - 0.85 * fin);
-            else if (assist == AssistMode.Standard) torqueYaw = ac.torqueYaw * (torque - s.torqueSmoothed) / 100 * 1.5 * (1 - 0.85 * fin); // transients only
+            else if (assist == AssistMode.Standard) torqueYaw = ac.torqueYaw * (torque - s.torqueSmoothed) / 100 * 0.7 * (1 - 0.85 * fin); // transients only, a nudge rather than a kick
             else torqueYaw = 0;
             torqueYaw *= rotorSign;
             // the turn rate of a level turn at this bank and speed (a light aircraft without AFCS in Realistic needs some pedal)
             var followTurn = fin * (assist == AssistMode.Realistic && !ac.hasAFCS ? 0.7 : 1) * G * Math.Tan(Clamp(s.phi, -45 * DEG, 45 * DEG)) / Math.Max(vaF, 5);
             // the nose swings into the relative wind; near the hover the assisted modes hold it against that
-            var windvane = ac.weathervane * vaR * (assist == AssistMode.Realistic ? 1 : assist == AssistMode.Standard ? 0.4 + 0.6 * fin : fin);
+            var windvane = ac.weathervane * vaR * (assist == AssistMode.Realistic ? 1 : fin);
             var rCmd = c.pedals * ac.yawRate * ctrlPower + torqueYaw * ctrlPower + followTurn + windvane + turb.r * gustScale;
             // pedals centred: the yaw rate settles quickly on what the turn needs, so the nose stops where it is put
             if (Math.Abs(c.pedals) < 0.05) rCmd -= (s.r - followTurn) * (assist != AssistMode.Realistic ? 1 : ac.hasAFCS ? 0.5 : 0);
@@ -686,6 +699,13 @@ namespace Rotorcraft.Sim
             o.etlShudder = s.onGround ? 0 : Smoothstep(4, 6.5, vh) * (1 - Smoothstep(8, 11, vh)) * rpmFrac;
             o.windKt = windH * KT;
             o.windFromDeg = HdgDeg(Math.Atan2(-wind.x, wind.z));
+            // what the instruments show: the wind here, steadied over a few seconds so that the figures can be read
+            var kWind = s.windAvgSet ? Math.Min(1, dt / 2.5) : 1;
+            s.windAvgSet = true;
+            s.windAvgX += (wind.x - s.windAvgX) * kWind;
+            s.windAvgZ += (wind.z - s.windAvgZ) * kWind;
+            o.windAvgKt = Js.Hypot(s.windAvgX, s.windAvgZ) * KT;
+            o.windAvgFromDeg = HdgDeg(Math.Atan2(-s.windAvgX, s.windAvgZ));
             o.sideslipMs = vaR;
             o.surfaceBelow = g2.surface;
             // torque% to hover OGE at current mass/density (no wind) — useful planning number

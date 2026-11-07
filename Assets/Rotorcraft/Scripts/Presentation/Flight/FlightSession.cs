@@ -199,6 +199,7 @@ namespace Rotorcraft.Presentation
                 }
                 if (Runtime.weatherVersion != wxVer) { wxVer = Runtime.weatherVersion; SkyEnvironment.Current?.Apply(Setup.tod, Runtime.WeatherAt(s.t)); }
                 UpdateDoors(s);
+                heli.GetComponent<LoadingParty>()?.Show(Runtime.Active);
                 if (heli.Aircraft.retractableGear) GearWarning(s);
                 // translational-lift shudder is felt less in a low hover in a breeze (in ground effect) than in a transition
                 var ige = Mathf.Clamp01((float)(s.@out.aglM / heli.Aircraft.rotorDiameter));
@@ -475,6 +476,7 @@ namespace Rotorcraft.Presentation
 
         void End()
         {
+            heli.GetComponent<LoadingParty>()?.Reset();
             Active = false;
             SkyEnvironment.Current?.SetThermal(false);
             Paused = false;

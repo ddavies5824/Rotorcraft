@@ -43,6 +43,31 @@ namespace Rotorcraft.Presentation
 
         public int AddKind(Kind k) { kinds.Add(k); return kinds.Count - 1; }
 
+        /// <summary>The field in the world now (for sounds that come from trees).</summary>
+        public static TreeField Current { get; private set; }
+        void OnEnable() => Current = this;
+        void OnDisable() { if (Current == this) Current = null; }
+
+        /// <summary>How many trees stand within r of a point (Unity space), counted from the cells about it.</summary>
+        public int TreesNear(Vector3 at, float r)
+        {
+            int n = 0;
+            int x0 = Mathf.FloorToInt((at.x - r) / CellSize), x1 = Mathf.FloorToInt((at.x + r) / CellSize);
+            int z0 = Mathf.FloorToInt((at.z - r) / CellSize), z1 = Mathf.FloorToInt((at.z + r) / CellSize);
+            var r2 = r * r;
+            for (int cx = x0; cx <= x1; cx++)
+                for (int cz = z0; cz <= z1; cz++)
+                {
+                    if (!cells.TryGetValue(((long)cx << 32) ^ (uint)cz, out var c)) continue;
+                    foreach (var list in c.trees)
+                    {
+                        if (list == null) continue;
+                        foreach (var m in list) { float dx = m.m03 - at.x, dz = m.m23 - at.z; if (dx * dx + dz * dz < r2) n++; }
+                    }
+                }
+            return n;
+        }
+
         public void Add(int kind, Vector3 pos, float yawDeg, Vector3 scale)
         {
             var cx = Mathf.FloorToInt(pos.x / CellSize); var cz = Mathf.FloorToInt(pos.z / CellSize);

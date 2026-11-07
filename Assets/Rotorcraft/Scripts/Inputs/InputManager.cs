@@ -134,8 +134,8 @@ namespace Rotorcraft.Inputs
             var a = Math.Abs(v);
             if (a < dz) return 0;
             var n = (a - dz) / (1 - dz);
-            // mild expo: finer control near centre
-            return Math.Sign(v) * Clamp((0.45 * n + 0.55 * n * n * n) * sens, 0, 1);
+            // expo: finer control near centre (softer than the browser game's 0.45 and 0.55: a thumbstick has little travel)
+            return Math.Sign(v) * Clamp((0.35 * n + 0.65 * n * n * n) * sens, 0, 1);
         }
 
         /// <summary>Called once per rendered frame with real elapsed time.</summary>
@@ -185,10 +185,10 @@ namespace Rotorcraft.Inputs
             if (Math.Abs(padCol) > 0.12 && Math.Abs(padPed) < Math.Abs(padCol) * 0.6) padPed = 0;
             else if (Math.Abs(padPed) > 0.05 && Math.Abs(padCol) < Math.Abs(padPed) * 0.6) padCol = 0;
             // ---- collective (positional) ----
-            var colRate = Shift ? 0.12 : 0.38;
+            var colRate = Shift ? 0.08 : 0.26;
             if (K(s.KeyFor("collectiveUp")) || K(Key.PageUp)) collective += colRate * dt;
             if (K(s.KeyFor("collectiveDown")) || K(Key.PageDown)) collective -= colRate * dt;
-            if (Math.Abs(padCol) > 0.12) collective += Shape(padCol, 1) * 0.45 * dt;
+            if (Math.Abs(padCol) > 0.12) collective += Shape(padCol, 1) * 0.32 * dt;
             // An absolute hardware lever sets the collective whenever it moves; between movements the
             // keyboard can still adjust it.
             if (padLever != null)
@@ -217,7 +217,7 @@ namespace Rotorcraft.Inputs
             if (keyCyc) { targetX = trimX + tx * 0.55 * s.cyclicSensitivity; targetY = trimY + ty * 0.55 * s.cyclicSensitivity; }
             if (padCyc != null) { targetX = trimX + Shape(padCyc.Value.x, s.cyclicSensitivity); targetY = trimY + Shape(padCyc.Value.y, s.cyclicSensitivity); }
             if (s.invertCyclicY) targetY = trimY - (targetY - trimY);
-            var rate = keyCyc ? 2.2 : 9; // keyboard ramps; analogue follows quickly
+            var rate = keyCyc ? 1.6 : 6; // keyboard ramps; analogue follows quickly, though not at once
             cycX += Clamp(targetX - cycX, -rate * dt, rate * dt);
             cycY += Clamp(targetY - cycY, -rate * dt, rate * dt);
             if (held.cyclic) { cycX = Clamp(held.cyclicX, -1, 1); cycY = Clamp(held.cyclicY, -1, 1); lastSource = InputSourceKind.Controller; }

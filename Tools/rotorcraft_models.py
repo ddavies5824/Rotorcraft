@@ -1420,6 +1420,17 @@ def ribbon(m, part, name, H, side, z0, z1, ymid, half, mat, off, n=120):
     return o
 
 
+TWIN_BOOM_Z0, TWIN_BOOM_Z1, TWIN_TAIL_DZ = 4.3, 6.5, 1.8   # the stretch of boom lengthened, and by how much (m)
+
+
+def stretch_tail(m, z0, z1, dz):
+    """Move everything aft of z1 back by dz, stretching what lies between z0 and z1 to join it up. The rotors are left
+    alone: the main rotor is built round the mast (its blade pointing aft would be stretched), the tail rotor is placed later."""
+    def f(z): return z + dz * min(1.0, max(0.0, (z - z0) / (z1 - z0)))
+    for o in m.objs:
+        if o.part not in ("tail_rotor", "blades"): o.v = [(x, y, f(z)) for x, y, z in o.v]
+
+
 def build_twin(sar):
     m = Model(); H = Hull(TWIN_FUS); E = "body"
     body_c = "paint"; belly = "belly_sar" if sar else "belly_ns"
@@ -1647,6 +1658,14 @@ def build_twin(sar):
                      "cabin_r": [cdw, [2.0, cdw[1]]], "cabin_l": [[-cdw[0], cdw[1]], [-2.0, cdw[1]]]},
         "exhausts": [[-0.86, 3.02, 2.85, -0.5, 0.05, 0.85], [0.86, 3.02, 2.85, 0.5, 0.05, 0.85]],
     })
+    # the tail stands clear of the main rotor: the boom behind the cabin is stretched, and the fin, tailplane and tail rotor move
+    # back with it (built short, the 7.5 m blades passed through the top of the fin and the tail rotor)
+    stretch_tail(m, TWIN_BOOM_Z0, TWIN_BOOM_Z1, TWIN_TAIL_DZ)
+    def aft(p): return [p[0], p[1], p[2] + TWIN_TAIL_DZ] if p[2] > TWIN_BOOM_Z1 else p
+    pts = meta["points"]
+    pts["tailPos"] = aft(pts["tailPos"])
+    pts["lights"]["tail"] = aft(pts["lights"]["tail"])
+    pts["lights"]["strobes"] = [aft(s) for s in pts["lights"]["strobes"]]
     build_tail_rotor(m, meta["tailRotor"])
     return m, meta
 

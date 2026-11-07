@@ -29,6 +29,8 @@ namespace Rotorcraft.Sim
         public double dragM;            // horizontal distance between aircraft and grounded winchman
         public string abortReason;
         public double errSum, errN;     // hover accuracy while the winchman is on the wire or on scene
+        /// <summary>Lowered as far as the ground allows but out of reach of the casualty: kept just off the ground until the pilot moves him over.</summary>
+        public bool heldOff;
     }
 
     public static class Hoist
@@ -38,7 +40,9 @@ namespace Rotorcraft.Sim
         public const double sceneTime = 10;     // s to secure the casualty in the strop
         public const double reachM = 6;         // winchman must land within this of the casualty
         public const double maxDragM = 14;      // aircraft drift from a grounded winchman before the lift is aborted
-        public const double maxSwingDeg = 32;   // operator pauses the winch above this
+        public const double maxSwingDeg = 32;   // operator pauses the winch above this while lowering, and winds in slowly while raising
+        public const double holdOffM = 1.0;     // short of the casualty, the winchman is kept this far off the ground
+        public const double swingRaiseRate = 0.35;   // share of the winch speed while raising a swinging load
         public const double minHeightFt = 30, maxHeightFt = 220;
         public const double loadKg = 90;        // winchman
         public const double casualtyKg = 85;
@@ -95,11 +99,31 @@ namespace Rotorcraft.Sim
             if (h.phase == HoistPhase.Stowed || h.phase == HoistPhase.Aboard) return h.phase == HoistPhase.Aboard ? loadKg + (h.attached ? casualtyKg : 0) : 0;
             var arm = ArmPoint(s, scale);
             var g = Ground.Current.GroundAt(h.hook.x, h.hook.z);
-            var groundY = Math.Max(g.h, target.y);
-            // winch drive
-            var swingOk = h.swingDeg < maxSwingDeg;
-            if (h.phase == HoistPhase.Lowering && swingOk) h.cable = Math.Min(maxCable, h.cable + speed * dt);
-            if (h.phase == HoistPhase.Raising && swingOk) h.cable = Math.Max(0, h.cable - speed * dt);
+            var inReach = Js.Hypot(h.hook.x - target.x, h.hook.z - target.z) <= reachM;
+            // the casualty's own height (a ledge, a deck) only counts where the winchman can reach them; elsewhere it is the ground under him.
+            // (The browser game always used the casualty's: off target he could stop in mid-air.)
+            var groundY = inReach ? Math.Max(g.h, target.y) : g.h;
+            var hookFree = h.phase != HoistPhase.OnScene && h.hook.y > groundY + 0.95;
+            var swinging = h.swingDeg >= maxSwingDeg && hookFree;
+            // winch drive. Two departures from the browser game, which paid out to the full 90 m whenever the winchman landed short of the
+            // casualty, leaving him lying there for good and up to a minute of slack to wind in, and which stopped raising altogether while
+            // the cable swung, so that a drifting aircraft could leave him hanging for ever:
+            if (h.phase == HoistPhase.Lowering)
+            {
+                if (!swinging) h.cable = Math.Min(maxCable, h.cable + speed * dt);
+                // the operator stops paying out at the ground; short of the casualty he keeps the winchman just off it while the pilot
+                // moves him across, and lets him down the moment he is within reach
+                var stopAt = Js.Hypot(h.hook.x - arm.x, groundY + 0.9 + (inReach ? 0 : holdOffM) - arm.y, h.hook.z - arm.z) + (inReach ? 0.3 : 0);
+                h.heldOff = !inReach && h.cable >= stopAt;
+                h.cable = Math.Min(h.cable, stopAt);
+            }
+            else h.heldOff = false;
+            if (h.phase == HoistPhase.Raising)
+            {
+                // slack is taken in at once, and a swinging load comes up slowly rather than not at all
+                h.cable = Math.Min(h.cable, Js.Hypot(h.hook.x - arm.x, h.hook.y - arm.y, h.hook.z - arm.z) + 0.5);
+                h.cable = Math.Max(0, h.cable - speed * (swinging ? swingRaiseRate : 1) * dt);
+            }
             // hook dynamics: point mass on a cable
             var onGround = h.phase == HoistPhase.OnScene;
             if (!onGround)
