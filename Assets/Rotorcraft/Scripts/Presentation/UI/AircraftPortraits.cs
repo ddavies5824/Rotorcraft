@@ -26,7 +26,8 @@ namespace Rotorcraft.Presentation.UI
             return t;
         }
 
-        static Texture2D Render(GameObject prefab, AircraftConfig ac)
+        /// <summary>One portrait at any size (the hangar's are 640 x 360; the website's are larger).</summary>
+        public static Texture2D Render(GameObject prefab, AircraftConfig ac, int w = W, int h = H)
         {
             var stage = new GameObject("Portrait stage");
             stage.transform.position = new Vector3(0, -6000, 0);
@@ -55,13 +56,13 @@ namespace Rotorcraft.Presentation.UI
             var key = new GameObject("Key").AddComponent<Light>(); key.type = LightType.Directional; key.intensity = 1.6f; key.cullingMask = 1 << LAYER; key.transform.rotation = Quaternion.Euler(40, 110, 0); key.shadows = LightShadows.Soft;
             var fill = new GameObject("Fill").AddComponent<Light>(); fill.type = LightType.Directional; fill.intensity = 0.55f; fill.cullingMask = 1 << LAYER; fill.transform.rotation = Quaternion.Euler(20, -80, 0);
 
-            var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+            var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
             var req = new RenderPipeline.StandardRequest { destination = rt };
             if (RenderPipeline.SupportsRenderRequest(cam, req)) RenderPipeline.SubmitRenderRequest(cam, req);
             else { cam.targetTexture = rt; cam.Render(); cam.targetTexture = null; }
             var prev = RenderTexture.active; RenderTexture.active = rt;
-            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false) { name = prefab.name + " portrait" };
-            tex.ReadPixels(new Rect(0, 0, W, H), 0, 0); tex.Apply();
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { name = prefab.name + " portrait" };
+            tex.ReadPixels(new Rect(0, 0, w, h), 0, 0); tex.Apply();
             RenderTexture.active = prev;
             rt.Release();
             // at once, not at the end of the frame: the next portrait is rendered straight after this one

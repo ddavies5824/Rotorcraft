@@ -721,6 +721,28 @@ namespace Rotorcraft.Preview.Tests
             File.WriteAllBytes("Logs/paint-clean.png", sheet.EncodeToPNG());
             Assert.IsEmpty(flipped, "materials still reading their texture upside down:\n" + string.Join("\n", flipped));
         }
+        /// <summary>The hangar's portrait of each aircraft, large and on a clear background, for the website: Logs/site-&lt;id&gt;.png.</summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator WebsitePortraits()
+        {
+            yield return OpenScene();
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+#if UNITY_EDITOR
+            // the editor draws a shader variant it has not compiled yet in flat placeholder colour (the first Kestrel came out mint green)
+            UnityEditor.ShaderUtil.allowAsyncCompilation = false;
+            foreach (var (id, file) in new[] { ("kestrel", "kestrel_k2"), ("northstar", "northstar_175"), ("guardian", "guardian_s9"), ("nightjar", "nightjar_n4"), ("peregrine", "peregrine_p3") })
+            {
+                var ac = Aircraft.Get(id);
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Rotorcraft/Models/Aircraft/{file}.gltf");
+                var tex = AircraftPortraits.Render(prefab, Loadout.Fit(ac, Loadout.DefaultKit(ac)).ac, 2560, 1440);
+                File.WriteAllBytes($"Logs/site-{id}.png", tex.EncodeToPNG());
+                Object.Destroy(tex);
+                yield return null;
+            }
+#endif
+            Assert.Pass("pictures written to Logs/");
+        }
+
         /// <summary>Every paint scheme of the Nightjar, and that no two come out the same.</summary>
         [UnityTest, Timeout(900000)]
         public IEnumerator NightjarPaint()

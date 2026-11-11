@@ -6,6 +6,12 @@
       "runtimeExecutable": "F:\\Blender\\5.2\\python\\bin\\python.exe",
       "runtimeArgs": ["-m", "http.server", "8000", "--directory", "F:\\Rotorcraft\\Builds\\Web"],
       "port": 8000
+    },
+    {
+      "name": "site",
+      "runtimeExecutable": "F:\\Blender\\5.2\\python\\bin\\python.exe",
+      "runtimeArgs": ["-I", "F:\\Rotorcraft\\Rotorcraft-Unity\\Tools\\serve_site.py", "8020", "F:\\Rotorcraft\\Builds\\Site"],
+      "port": 8020
     }
   ]
 }

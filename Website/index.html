@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rotorcraft · Helicopter Flight Simulator</title>
+<meta name="description" content="Learn to fly helicopters on the Scottish coast: from your first lesson to offshore crew changes, air ambulance, police, military and search-and-rescue flying. Free for Windows, PC VR and your web browser.">
+<meta name="theme-color" content="#0d1317">
+<link rel="canonical" href="https://rotorcraft.netlify.app/">
+<link rel="icon" type="image/png" href="img/icon.png">
+<link rel="apple-touch-icon" href="img/icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Rotorcraft">
+<meta property="og:title" content="Rotorcraft · Helicopter Flight Simulator">
+<meta property="og:description" content="Learn to fly helicopters on the Scottish coast, from your first lesson to search-and-rescue. Free for Windows, PC VR and the web.">
+<meta property="og:url" content="https://rotorcraft.netlify.app/">
+<meta property="og:image" content="https://rotorcraft.netlify.app/img/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="fonts/BarlowCondensed-Bold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="brand" href="#main" aria-label="Rotorcraft, back to the top"><img src="img/icon.png" alt="" width="34" height="34">ROTORCRAFT</a>
+    <nav class="nav" id="nav" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#trailer">Trailer</a>
+      <a href="#aircraft">Aircraft</a>
+      <a href="#screens">Screens</a>
+      <a href="#download">Download</a>
+    </nav>
+    <a class="btn btn-primary btn-small play-top" href="play">Play now</a>
+    <button class="menu-btn" id="menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span></button>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" aria-labelledby="title">
+    <div class="hero-art">
+      <picture>
+        <source media="(max-width: 820px)" srcset="img/hero-sm.jpg">
+        <img src="img/hero.jpg" alt="A twin-engine helicopter flying low along the coast at dusk, its lights on" fetchpriority="high">
+      </picture>
+    </div>
+    <div class="wrap">
+      <div class="hero-copy">
+        <div class="eyebrow">Helicopter flight simulator</div>
+        <h1 id="title">Rotorcraft</h1>
+        <p class="lead">Learn to fly helicopters on the Scottish coast. Start with your first hover in a two-seat trainer and work your way up to offshore crew changes, air ambulance, police, military and search-and-rescue flying.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="#download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg>
+            Download for Windows <small>{{WIN_MB}} MB</small>
+          </a>
+          <a class="btn btn-ghost" href="play">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+            Play in your browser
+          </a>
+        </div>
+        <ul class="chips" aria-label="Available on">
+          <li class="hot">Free</li><li>Windows 10 &amp; 11</li><li>PC VR</li><li>Web browser</li><li>Version {{VERSION}}</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" aria-labelledby="features-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="features-h">A whole flying career</h2>
+        <p>Kinloch is a stretch of Highland coast with towns, glens, an airfield and the North Sea beyond it. Everything in it is there to fly to.</p>
+      </div>
+      <div class="features">
+        <article class="card rise">
+          <img src="img/f-career.jpg" alt="The career home screen: flight hours, balance, qualifications and the next step in training" loading="lazy" width="960" height="640">
+          <div class="card-body">
+            <h3>Learn, then earn</h3>
+            <p>Enrol at the Kinloch Rotor School. Work through 12 ground-school modules and 8 exams to a private licence and then a commercial one, with night and instrument ratings and type ratings on the twins. After that, seven employers have work for you.</p>
+          </div>
+        </article>
+        <article class="card rise">
+          <img src="img/f-world.jpg" alt="A helicopter crossing a patchwork of fields with the sea behind" loading="lazy" width="960" height="640">
+          <div class="card-body">
+            <h3>A whole Highland region</h3>
+            <p>Towns, glens, castles, a distillery, a harbour and a lighthouse. There are 88,000 trees, hedges and drystone walls, traffic on the roads, people in the streets, and fishing boats and gas platforms out at sea.</p>
+          </div>
+        </article>
+        <article class="card rise">
+          <img src="img/f-weather.jpg" alt="A helicopter breaking out above a layer of cloud" loading="lazy" width="960" height="640">
+          <div class="card-body">
+            <h3>Weather that changes the job</h3>
+            <p>Rain, gusts, coastal haar and real cloud layers to climb through. Fly by day, at dusk or at night, with lit towns, landing lights, searchlights and a thermal camera.</p>
+          </div>
+        </article>
+        <article class="card rise">
+          <img src="img/f-flying.jpg" alt="Inside a cockpit: instrument displays, switches and the glazed chin window" loading="lazy" width="960" height="640">
+          <div class="card-body">
+            <h3>A flight model that means it</h3>
+            <p>Ground effect, vortex ring, blade stall and autorotation. All five cockpits are live, with working instruments, a walk-round and a real start-up. Choose Beginner, Standard or Realistic handling, and use trim and autopilot when you need them.</p>
+          </div>
+        </article>
+        <article class="card rise">
+          <img src="img/f-company.jpg" alt="Freeplay set-up: choosing a helicopter, its kit and the shift" loading="lazy" width="960" height="640">
+          <div class="card-body">
+            <h3>Freeplay and your own company</h3>
+            <p>Pick a helicopter, fit the kit the job needs and take random callouts, or start an operator of your own: buy aircraft, win contracts and fly the work.</p>
+          </div>
+        </article>
+        <article class="card rise">
+          <img src="img/f-vr.jpg" alt="Virtual reality: the pilot's hands on the cyclic and collective" loading="lazy" width="960" height="640">
+          <div class="card-body">
+            <h3>Fly it in VR</h3>
+            <p>Quest over Link or Virtual Desktop, or any OpenXR headset. Reach out and take hold of the cyclic and collective, and press the switches with your fingertip.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="trailer" aria-labelledby="trailer-h">
+    <div class="wrap">
+      <div class="sec-head center">
+        <h2 id="trailer-h">Watch the trailer</h2>
+      </div>
+      <div class="player rise">
+        <video id="video" controls preload="none" playsinline poster="img/poster.jpg" aria-label="Rotorcraft trailer">
+          <source src="{{TRAILER_URL}}" type="video/mp4">
+          Your browser cannot play this video. <a href="{{TRAILER_URL}}">Download the trailer</a>.
+        </video>
+        <button class="play" id="play" aria-label="Play the trailer ({{TRAILER_LEN}})">
+          <img src="img/poster.jpg" alt="" loading="lazy">
+          <span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3.5v17l15-8.5z"/></svg></span>
+        </button>
+      </div>
+      <p class="player-note">{{TRAILER_LEN}} · recorded in the game · {{TRAILER_MB}} MB</p>
+    </div>
+  </section>
+
+  <section id="jobs" aria-labelledby="jobs-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="jobs-h">Every kind of helicopter work</h2>
+        <p>Each employer has its own missions, from training flights to callouts. Each mission is briefed, flown and debriefed, with your landings, fuel and handling marked.</p>
+      </div>
+      <div class="jobs">
+        <figure class="job rise"><img src="img/j-winch.jpg" alt="" loading="lazy" width="640" height="480"><figcaption><b>Winch rescues</b><span>Hold the hover while the winchman goes down</span></figcaption></figure>
+        <figure class="job rise"><img src="img/j-offshore.jpg" alt="" loading="lazy" width="640" height="480"><figcaption><b>Offshore</b><span>Crew changes onto North Sea helidecks</span></figcaption></figure>
+        <figure class="job rise"><img src="img/j-hospital.jpg" alt="" loading="lazy" width="640" height="480"><figcaption><b>Air ambulance</b><span>Rooftop helipads at city hospitals</span></figcaption></figure>
+        <figure class="job rise"><img src="img/j-roadside.jpg" alt="" loading="lazy" width="640" height="480"><figcaption><b>Roadside</b><span>Land beside accidents, wherever they happen</span></figcaption></figure>
+        <figure class="job rise"><img src="img/j-police.jpg" alt="" loading="lazy" width="640" height="480"><figcaption><b>Police</b><span>Search for people and suspects from the air</span></figcaption></figure>
+        <figure class="job rise"><img src="img/j-search.jpg" alt="" loading="lazy" width="640" height="480"><figcaption><b>Searches</b><span>Find the missing, by day and by night</span></figcaption></figure>
+        <figure class="job rise"><img src="img/j-military.jpg" alt="" loading="lazy" width="640" height="480"><figcaption><b>Military</b><span>Troop insertions and low-level navigation</span></figcaption></figure>
+        <figure class="job rise"><img src="img/j-confined.jpg" alt="" loading="lazy" width="640" height="480"><figcaption><b>Confined areas</b><span>Bring it down between the trees</span></figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="aircraft" aria-labelledby="aircraft-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="aircraft-h">Five helicopters</h2>
+        <p>Each one handles differently, from a light piston trainer to medium twins with autopilots. Each one has its own cockpit, paint schemes and role kit.</p>
+      </div>
+      <div class="hangar">
+        <div class="ac-list" role="tablist" aria-label="Aircraft">
+          <button class="ac-tab" role="tab" id="t-kestrel" aria-controls="p-kestrel" aria-selected="true"><b>Kestrel K2</b><span>Two-seat piston trainer</span></button>
+          <button class="ac-tab" role="tab" id="t-northstar" aria-controls="p-northstar" aria-selected="false" tabindex="-1"><b>Northstar 175</b><span>Offshore crew change</span></button>
+          <button class="ac-tab" role="tab" id="t-guardian" aria-controls="p-guardian" aria-selected="false" tabindex="-1"><b>Guardian S9</b><span>Search and rescue</span></button>
+          <button class="ac-tab" role="tab" id="t-nightjar" aria-controls="p-nightjar" aria-selected="false" tabindex="-1"><b>Nightjar N4</b><span>Air ambulance and police</span></button>
+          <button class="ac-tab" role="tab" id="t-peregrine" aria-controls="p-peregrine" aria-selected="false" tabindex="-1"><b>Peregrine P3</b><span>Police and military</span></button>
+        </div>
+        <div class="ac-view">
+          <div class="ac-panel" role="tabpanel" id="p-kestrel" aria-labelledby="t-kestrel">
+            <img src="img/ac-kestrel.png" alt="The Kestrel K2, white with an orange stripe" width="1200" height="600" loading="lazy">
+            <div class="ac-head"><h3>Kestrel K2</h3><span class="tag">Trainer</span></div>
+            <p>Two-seat piston trainer. Light, responsive and inexpensive, with a low-inertia rotor that rewards smooth collective handling. You learn on it.</p>
+            <dl class="specs"><div><dt>Engine</dt><dd>1 · 92 kW piston</dd></div><div><dt>Max mass</dt><dd>640 kg</dd></div><div><dt>Rotor</dt><dd>7.7 m</dd></div><div><dt>Never exceed</dt><dd>102 kt</dd></div></dl>
+          </div>
+          <div class="ac-panel" role="tabpanel" id="p-northstar" aria-labelledby="t-northstar" hidden>
+            <img src="img/ac-northstar.png" alt="The Northstar 175, a large white twin with floats" width="1200" height="600" loading="lazy">
+            <div class="ac-head"><h3>Northstar 175</h3><span class="tag">Offshore</span></div>
+            <p>Twin-turbine medium helicopter configured for offshore crew change: 16 seats, emergency floats, large fuel tanks and a four-axis autopilot.</p>
+            <dl class="specs"><div><dt>Engines</dt><dd>2 · 2,100 kW</dd></div><div><dt>Max mass</dt><dd>7,800 kg</dd></div><div><dt>Rotor</dt><dd>14.8 m</dd></div><div><dt>Never exceed</dt><dd>150 kt</dd></div></dl>
+          </div>
+          <div class="ac-panel" role="tabpanel" id="p-guardian" aria-labelledby="t-guardian" hidden>
+            <img src="img/ac-guardian.png" alt="The Guardian S9 search and rescue helicopter with its winch and thermal camera" width="1200" height="600" loading="lazy">
+            <div class="ac-head"><h3>Guardian S9</h3><span class="tag">Search and rescue</span></div>
+            <p>Twin-turbine search and rescue helicopter with a rescue winch, a FLIR turret, a searchlight, a night-vision cockpit and a flight director that can hover for you.</p>
+            <dl class="specs"><div><dt>Engines</dt><dd>2 · 2,300 kW</dd></div><div><dt>Max mass</dt><dd>8,500 kg</dd></div><div><dt>Rotor</dt><dd>15.6 m</dd></div><div><dt>Never exceed</dt><dd>150 kt</dd></div></dl>
+          </div>
+          <div class="ac-panel" role="tabpanel" id="p-nightjar" aria-labelledby="t-nightjar" hidden>
+            <img src="img/ac-nightjar.png" alt="The Nightjar N4 in yellow and green air ambulance paint" width="1200" height="600" loading="lazy">
+            <div class="ac-head"><h3>Nightjar N4</h3><span class="tag">Air ambulance · Police</span></div>
+            <p>Light twin-turbine helicopter for air ambulance and police work: a deep cabin with sliding doors and rear clamshell doors for stretcher loading, a shrouded tail fan, skids and a four-axis autopilot. Quick, agile and quiet.</p>
+            <dl class="specs"><div><dt>Engines</dt><dd>2 · 1,300 kW</dd></div><div><dt>Max mass</dt><dd>3,800 kg</dd></div><div><dt>Rotor</dt><dd>11.0 m</dd></div><div><dt>Never exceed</dt><dd>145 kt</dd></div></dl>
+          </div>
+          <div class="ac-panel" role="tabpanel" id="p-peregrine" aria-labelledby="t-peregrine" hidden>
+            <img src="img/ac-peregrine.png" alt="The Peregrine P3 in dark blue police paint" width="1200" height="600" loading="lazy">
+            <div class="ac-head"><h3>Peregrine P3</h3><span class="tag">Police · Military</span></div>
+            <p>Fast medium twin for police and military work, modelled on the AS365 N3 Dauphin. It has a sleek fuselage, wheels that retract, a shrouded fan in the fin and a four-axis autopilot. Its four-blade rotor turns clockwise, so it needs right pedal as you lift.</p>
+            <dl class="specs"><div><dt>Engines</dt><dd>2 · 1,270 kW</dd></div><div><dt>Max mass</dt><dd>4,300 kg</dd></div><div><dt>Rotor</dt><dd>11.9 m</dd></div><div><dt>Never exceed</dt><dd>175 kt</dd></div></dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screens" aria-labelledby="screens-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="screens-h">Screenshots</h2>
+        <p>All taken in the game.</p>
+      </div>
+      <div class="gallery" id="gallery">
+        <button class="shot rise" data-full="img/g1.jpg"><img src="img/g1-t.jpg" alt="A gas platform out in the North Sea, its flare burning" loading="lazy" width="640" height="360"></button>
+        <button class="shot rise" data-full="img/g2.jpg"><img src="img/g2-t.jpg" alt="The Northstar 175 low over the firth" loading="lazy" width="640" height="360"></button>
+        <button class="shot rise" data-full="img/g3.jpg"><img src="img/g3-t.jpg" alt="Rotor wash whipping spray off the sea" loading="lazy" width="640" height="360"></button>
+        <button class="shot rise" data-full="img/g4.jpg"><img src="img/g4-t.jpg" alt="The walk-round: pre-flight checks before every flight" loading="lazy" width="640" height="360"></button>
+        <button class="shot rise" data-full="img/g5.jpg"><img src="img/g5-t.jpg" alt="Overhead at dusk" loading="lazy" width="640" height="360"></button>
+        <button class="shot rise" data-full="img/g6.jpg"><img src="img/g6-t.jpg" alt="The full instrument panel, every gauge working" loading="lazy" width="640" height="360"></button>
+        <button class="shot rise" data-full="img/g7.jpg"><img src="img/g7-t.jpg" alt="A mission briefing: objectives, weather, route and fuel" loading="lazy" width="640" height="360"></button>
+        <button class="shot rise" data-full="img/g8.jpg"><img src="img/g8-t.jpg" alt="The Peregrine P3 in police paint" loading="lazy" width="640" height="360"></button>
+        <button class="shot rise" data-full="img/g9.jpg"><img src="img/g9-t.jpg" alt="Freeplay: pick a helicopter, fit its kit and choose the shift" loading="lazy" width="640" height="360"></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="download" aria-labelledby="download-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="download-h">Get Rotorcraft</h2>
+        <p>It's free. Download it for Windows, or play straight away in your browser. Sign in with Google from the main menu to carry your career between the two.</p>
+      </div>
+      <div class="get">
+        <div class="get-card main rise">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>Windows</h3>
+          <div class="meta">Version {{VERSION}} · {{WIN_MB}} MB zip · includes PC VR</div>
+          <a class="btn btn-primary" href="{{DOWNLOAD_URL}}" id="dl">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg>
+            Download Rotorcraft
+          </a>
+          <ol class="steps">
+            <li><b>Unzip it</b> anywhere you like. Right-click the zip and choose <b>Extract All</b>.</li>
+            <li><b>Run <code>Rotorcraft.exe</code></b>. The game isn't code-signed, so Windows may say it "protected your PC". Choose <b>More info</b>, then <b>Run anyway</b>.</li>
+            <li><b>For VR</b>, connect your headset first (a Quest over Link or Virtual Desktop, or any OpenXR headset), then run <code>Start in VR.bat</code>.</li>
+          </ol>
+          <ul class="req" aria-label="What you need">
+            <li>Windows 10 or 11, 64-bit, and a graphics card that runs DirectX 12.</li>
+            <li>Keyboard and mouse are enough. A joystick, gamepad, HOTAS, rudder pedals or VR headset are all optional.</li>
+            <li>Saves stay on your computer. No account is needed.</li>
+          </ul>
+        </div>
+        <div class="side">
+          <div class="get-card rise">
+            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.8 3.9 6 3.9 9.5s-1.3 6.7-3.9 9.5c-2.6-2.8-3.9-6-3.9-9.5s1.3-6.7 3.9-9.5z"/></svg>Browser</h3>
+            <div class="meta">Nothing to install · about {{WEB_MB}} MB the first time</div>
+            <a class="btn btn-ghost" href="play">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+              Play now
+            </a>
+            <p class="note">Best in Chrome, Edge or Firefox on a desktop or laptop. On phones and tablets, an on-screen lever, pedals and stick appear. Your career is kept in this browser.</p>
+          </div>
+          <details class="rise">
+            <summary>Controls</summary>
+            <div class="details-body">
+              <table class="keys">
+                <tr><th>Collective up / down</th><td><kbd>W</kbd> <kbd>S</kbd> (hold <kbd>Shift</kbd> for fine)</td></tr>
+                <tr><th>Cyclic</th><td>Arrow keys</td></tr>
+                <tr><th>Pedals</th><td><kbd>A</kbd> <kbd>D</kbd></td></tr>
+                <tr><th>Engine start / stop</th><td><kbd>E</kbd></td></tr>
+                <tr><th>Throttle open / idle</th><td><kbd>R</kbd> <kbd>F</kbd></td></tr>
+                <tr><th>Trim / release trim</th><td><kbd>T</kbd> <kbd>U</kbd></td></tr>
+                <tr><th>Camera · panel · map</th><td><kbd>C</kbd> <kbd>I</kbd> <kbd>M</kbd></td></tr>
+                <tr><th>Winch · thermal camera</th><td><kbd>X</kbd> <kbd>J</kbd></td></tr>
+                <tr><th>Pause</th><td><kbd>P</kbd> or <kbd>Esc</kbd></td></tr>
+                <tr><th>Gamepad</th><td>Right stick cyclic; left stick collective and pedals; <kbd>A</kbd> engine, <kbd>Y</kbd> trim</td></tr>
+              </table>
+              <p class="note">You can change every key in Settings, and set up joysticks, HOTAS and pedals there too.</p>
+            </div>
+          </details>
+          <details class="rise">
+            <summary>Questions</summary>
+            <div class="details-body">
+              <p><b>Is it really free?</b> Yes. It has no adverts, no purchases and no tracking.</p>
+              <p><b>Do I need to be online?</b> Only to sign in. The Windows version flies offline.</p>
+              <p><b>Mac or Linux?</b> Play the browser version.</p>
+              <p><b>Are the licences real?</b> No. The qualifications are part of the game and carry no real-world privileges.</p>
+              <p style="margin:0"><b>Where are my saves?</b> On Windows they're in <code>%USERPROFILE%\AppData\LocalLow\Rotorcraft\Rotorcraft\Saves</code>. In <b>Settings</b>, <b>Export save</b> makes a backup.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="#main"><img src="img/icon.png" alt="" width="30" height="30">ROTORCRAFT</a>
+        <div>Helicopter flight simulator · version {{VERSION}}</div>
+      </div>
+      <nav aria-label="More">
+        <a href="play">Play in your browser</a>
+        <a href="{{DOWNLOAD_URL}}">Download for Windows</a>
+        <a href="privacy">Privacy</a>
+        <a href="THIRD-PARTY-NOTICES.txt">Third-party notices</a>
+      </nav>
+    </div>
+    <p class="fine">Rotorcraft is a game. Its aircraft, operators, places and qualifications are fictional or simulated and carry no real-world privileges. The Peregrine P3 is modelled on the AS365 N3 Dauphin, but none of the types is a licensed reproduction of a real product. Made with Unity. The typefaces are B612 and Barlow under the SIL Open Font License.</p>
+  </div>
+</footer>
+
+<dialog class="lightbox" id="lightbox" aria-label="Screenshot">
+  <figure>
+    <img id="lb-img" alt="">
+    <figcaption id="lb-cap"></figcaption>
+  </figure>
+  <button class="lb-btn lb-close" id="lb-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <button class="lb-btn lb-prev" id="lb-prev" aria-label="Previous screenshot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button class="lb-btn lb-next" id="lb-next" aria-label="Next screenshot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+</dialog>
+
+<script src="site.js" defer></script>
+</body>
+</html>

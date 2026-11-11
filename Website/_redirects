@@ -1,0 +1,5 @@
+# The game stays beside the site's own front page (not in a folder of its own), because the web version keys its
+# saves to the folder its page is served from: moving it would lose every player's browser career.
+/play/      /play           301
+/play       /play.html      200
+/privacy    /privacy.html   200

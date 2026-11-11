@@ -147,14 +147,28 @@ Values pasted this way are saved on that computer or browser only.
 
 ---
 
-## Uploading the web version to Netlify
+## Uploading the website and the web version to Netlify
+
+The site is the game's front page (`Website/`: features, trailer, aircraft, screenshots, download, privacy policy) with the web version beside it at `/play`. Put it together after a build with:
+
+```
+F:/Blender/5.2/python/bin/python.exe -I Tools/package_site.py
+```
+
+That zips the Windows build (`Rotorcraft-Windows.zip`) and writes `F:\Rotorcraft\Builds\Rotorcraft-Site.zip` (and the same files unzipped in `Builds\Site`, which `Tools/serve_site.py` serves at http://localhost:8020 to look at first).
 
 1. Log in at **https://app.netlify.com/**.
-2. Go to **Sites** › **Add new site** › **Deploy manually**.
-3. Drag the zip `Rotorcraft-Web.zip` (in `F:\Rotorcraft\Builds`) onto the page. Netlify accepts the zip as it is. If it doesn't, unzip it and drag the folder that holds `index.html`.
+2. Go to **Sites** › **Add new site** › **Deploy manually** (or open the existing site › **Deploys**).
+3. Drag `Rotorcraft-Site.zip` onto the page. Netlify accepts the zip as it is. If it doesn't, unzip it and drag the folder that holds `index.html`.
 4. Netlify gives you an address like `https://random-name-123.netlify.app`. To change it, go to **Site configuration › Change site name**. Put that address in the Google web client and in Firebase (Parts 1.6 and 2.3).
 5. To update later, open the site › **Deploys** and drag the new zip onto the page.
 
+The game page must stay at the top of the site (`/play`, served from `play.html`), never in a folder of its own: the web version keys its saves to the folder its page is in, so moving it would lose every player's browser career.
+
+**The Windows download.** The site links to `Rotorcraft-Windows.zip` as a GitHub release asset, at `https://github.com/ddavies5824/Rotorcraft-Releases/releases/latest/download/Rotorcraft-Windows.zip`: a *public* repository named `Rotorcraft-Releases` holding no code, with each release carrying a file of exactly that name. "latest" always points at the newest release, so publishing a new release updates the button with no change to the site. To serve it from Netlify instead, run `package_site.py --bundle-windows`. That puts the zip in the site, but Netlify's free plan counts every download against its monthly allowance, and drag-and-drop uploads that big can stall. To link somewhere else, use `--download-url <address>`.
+
+**Google consent screen.** Under **Branding**, the home page is the site's address and the privacy policy is `<address>/privacy`.
+
 No server settings are needed: the game files decompress themselves in the browser, so any static host works.
 
-The game needs a desktop browser with WebGL 2: Chrome, Edge or Firefox. Phones and tablets are not supported, and a mouse or a joystick is recommended. The first start downloads about 70 MB; later visits load from the browser cache. The first flight builds the world in the browser, which takes longer than on Windows, so the loading screen can sit for a minute or two. Progress is saved in the browser (and in Google Drive when signed in).
+The game needs a browser with WebGL 2: Chrome, Edge or Firefox on a desktop is best, and a mouse or a joystick is recommended. Phones and tablets get on-screen controls. The first start downloads about 40 MB; later visits load from the browser cache. The first flight builds the world in the browser, which takes longer than on Windows, so the loading screen can sit for a minute or two. Progress is saved in the browser (and in Google Drive when signed in).
