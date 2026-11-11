@@ -19,6 +19,8 @@ namespace Rotorcraft.Presentation
         [Tooltip("Grow grass blades near the camera.")]
         public bool grass = true;
         public int treeBudget = 100000;
+        [Tooltip("Hedges, walls, fences and ground clutter round the camera.")]
+        public bool scenery = true;
         [Tooltip("Re-rendered once the world is built, so paint and glass reflect the real surroundings.")]
         public ReflectionProbe reflectionProbe;
 
@@ -64,6 +66,8 @@ namespace Rotorcraft.Presentation
             yield return null;
             Debug.Log($"World build: trees done at {Time.realtimeSinceStartup - t0:F1} s");
             KinlochDressing.Build(transform, WorldMaterials.Make(), landmarks);
+            // hedges, walls, fences and the small things on the ground, built round the camera as it moves
+            if (scenery) new GameObject("Scenery").AddComponent<SceneryStreaming>().transform.SetParent(transform, false);
             progress?.Invoke(0.85f, "Switching on the lights");
             yield return null;
             Debug.Log($"World build: buildings done at {Time.realtimeSinceStartup - t0:F1} s");

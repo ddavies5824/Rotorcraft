@@ -56,6 +56,8 @@ namespace Rotorcraft.Presentation.UI
     }
     public sealed class PilotEntry { public string uid; public PilotProfile profile; }
 
+    // after GameApp on the same object (which chooses the save folder this finds its sign-in in), never before it
+    [DefaultExecutionOrder(100)]
     public sealed class Cloud : MonoBehaviour
     {
         public static Cloud Instance { get; private set; }
@@ -86,16 +88,20 @@ namespace Rotorcraft.Presentation.UI
 
         string Dir => GameApp.Instance != null ? GameApp.Instance.Saves.Folder : Path.Combine(Application.persistentDataPath, "Saves");
 
+        /// <summary>A screenshot tour, benchmark or trailer: it must never sign in to the player's account or sync its test career.</summary>
+        static bool Isolated => GameApp.Instance != null && GameApp.Instance.Isolated;
+
         void Awake()
         {
             Instance = this;
             LoadConfig();
-            try { var p = Path.Combine(Dir, "cloud.json"); if (File.Exists(p)) prefs = JsonConvert.DeserializeObject<Prefs>(File.ReadAllText(p)) ?? new Prefs(); } catch { prefs = new Prefs(); }
-            Status = config.HasGoogle ? CloudStatus.SignedOut : CloudStatus.Unconfigured;
+            try { var p = Path.Combine(Dir, "cloud.json"); if (!Isolated && File.Exists(p)) prefs = JsonConvert.DeserializeObject<Prefs>(File.ReadAllText(p)) ?? new Prefs(); } catch { prefs = new Prefs(); }
+            Status = config.HasGoogle && !Isolated ? CloudStatus.SignedOut : CloudStatus.Unconfigured;
         }
 
         async void Start()
         {
+            if (Isolated) { prefs = new Prefs(); return; }
             // signed in last time: renew quietly and sync
             if (config.HasGoogle && !string.IsNullOrEmpty(prefs.refreshToken)) { await RenewAccess(); if (accessToken != null) { await PilotSignIn(); await SyncNow(); } }
         }

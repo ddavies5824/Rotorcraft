@@ -48,6 +48,9 @@ namespace Rotorcraft.Presentation.UI
         public readonly Dictionary<string, object> ScreenState = new Dictionary<string, object>();
         readonly List<Action> deferred = new List<Action>();
 
+        /// <summary>A screenshot tour, benchmark or trailer run: its own saves in its own folder, and never the player's cloud account.</summary>
+        public bool Isolated { get; private set; }
+
         void Awake()
         {
             Instance = this;
@@ -66,6 +69,7 @@ namespace Rotorcraft.Presentation.UI
             if (trailerAt >= 0 && trailerAt + 1 < trailerArgs.Length) saveRoot = trailerArgs[trailerAt + 1];
 #endif
             Saves = new SaveManager(saveRoot != null ? Path.Combine(saveRoot, "saves") : null);
+            Isolated = saveRoot != null;
             if (shots != null) gameObject.AddComponent<ShotTour>().folder = shots;
 #if !UNITY_WEBGL
             if (perf != null) gameObject.AddComponent<PerfRun>().folder = perf;
@@ -123,6 +127,33 @@ namespace Rotorcraft.Presentation.UI
             List<Action> run = null;
             lock (deferred) { if (deferred.Count > 0) { run = new List<Action>(deferred); deferred.Clear(); } }
             if (run != null) foreach (var a in run) a();
+            pad.Tick(PadScopes(), PadBack);
+        }
+
+        // ------------------------------------------------------------------------------- gamepad menus
+        readonly MenuNavigation pad = new MenuNavigation();
+        readonly List<VisualElement> padScopes = new List<VisualElement>();
+
+        /// <summary>What the gamepad works now: a dialog over the screen, the screen, or in flight the card that has the controller.</summary>
+        List<VisualElement> PadScopes()
+        {
+            padScopes.Clear();
+            if (screenLayer == null) return padScopes;
+            if (flight != null && flight.Active) { flight.PadScopes(padScopes); return padScopes; }
+            var dialog = false;
+            foreach (var c in overlayLayer.Children()) if (c.resolvedStyle.display != DisplayStyle.None && c.Query<Button>().First() != null) { dialog = true; break; }
+            padScopes.Add(dialog ? overlayLayer : screenLayer);
+            return padScopes;
+        }
+
+        /// <summary>B with no Back button on screen: home (the headquarters, or the main menu).</summary>
+        bool PadBack()
+        {
+            if (flight != null && flight.Active) return flight.PadBack();
+            var home = Career != null ? "hq" : "menu";
+            if (Current.id == home || Current.id == "menu") return false;
+            Go(home);
+            return true;
         }
 
         void Render()

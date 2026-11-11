@@ -29,7 +29,11 @@ namespace Rotorcraft.Preview.Tests
         {
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
-            SceneManager.LoadScene("Kinloch");
+            LogAssert.ignoreFailingMessages = true;   // the preview scene logs complaints about old references as it opens
+#if UNITY_EDITOR
+            // by path: the scene is not in the build list (the game builds its own)
+            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode("Assets/Rotorcraft/Scenes/Kinloch.unity", new LoadSceneParameters(LoadSceneMode.Single));
+#endif
             yield return null;
             yield return new WaitForSeconds(1);
             var cam = Camera.main;
@@ -44,6 +48,8 @@ namespace Rotorcraft.Preview.Tests
                 ("heliport low", new Vector2(80, 120), new Vector2(-150, -60), 12),
                 ("woods low", new Vector2(-3300, -1500), new Vector2(-4200, -400), 60),
                 ("farmland 300m", new Vector2(-1500, -1500), new Vector2(-3000, -2600), 300),
+                ("farmland low", new Vector2(-1500, -1500), new Vector2(-3000, -2600), 40),
+                ("- no scenery", new Vector2(-1500, -1500), new Vector2(-3000, -2600), 40),
                 ("village low", new Vector2(-600, 400), new Vector2(-1400, 900), 40),
                 ("- no grass", new Vector2(80, 120), new Vector2(-150, -60), 12),
                 ("- no trees", new Vector2(80, 120), new Vector2(-150, -60), 12),
@@ -53,6 +59,7 @@ namespace Rotorcraft.Preview.Tests
             };
             var terrains = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
             var treeField = Object.FindAnyObjectByType<TreeField>();
+            var scenery = Object.FindAnyObjectByType<SceneryStreaming>();   // hedges, walls, fences and ground clutter
             var sun = Object.FindObjectsByType<Light>(FindObjectsSortMode.None).FirstOrDefault(l => l.type == LightType.Directional);
             var main = ProfilerRecorder.StartNew(ProfilerCategory.Internal, "Main Thread", 1);
             var batches = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Batches Count", 1);
@@ -68,6 +75,7 @@ namespace Rotorcraft.Preview.Tests
                 // the last legs repeat the heliport with one thing switched off, to see what each costs
                 foreach (var t in terrains) t.drawTreesAndFoliage = leg.name != "- no grass";
                 if (treeField != null) treeField.enabled = leg.name != "- no trees";
+                if (scenery != null) scenery.gameObject.SetActive(leg.name != "- no scenery");
                 if (sun != null) sun.shadows = leg.name == "- no shadows" ? LightShadows.None : LightShadows.Soft;
                 if (leg.name.StartsWith("night") && SkyEnvironment.Current != null && SkyEnvironment.Current.timeOfDay != TimeOfDay.Night)
                 {

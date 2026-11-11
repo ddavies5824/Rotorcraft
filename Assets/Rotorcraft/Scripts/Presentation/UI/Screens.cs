@@ -130,6 +130,7 @@ namespace Rotorcraft.Presentation.UI
             var brand = E("menu-brand", E("menu-logo"), Up("Rotorcraft", "menu-title"),
                 T("Learn to fly helicopters at Kinloch on the Scottish coast, earn your licences, and work towards offshore and rescue flying.", "menu-tag"));
             if (app.SaveProblem != null) brand.Add(T(app.SaveProblem, "err small"));
+            brand.Add(T($"Version {Application.version}", "muted small menu-ver"));
             menu.Add(brand);
             var list = E("menu-list");
             if (c != null)
@@ -143,7 +144,7 @@ namespace Rotorcraft.Presentation.UI
             list.Add(Btn("Company", "", () => app.Go("company"), "Run your own operator: buy aircraft, win contracts, fly the jobs"));
             list.Add(Btn("Pilot area", "", () => app.Go("pilots"), "Leaderboards and other pilots"));
             list.Add(Btn(c != null ? "Settings" : "Sign in", "", () => app.Go(c != null ? "settings" : "account"), c != null ? "Controls, graphics, sign-in" : "Google login: your save on every device"));
-            list.Add(Btn("Quit", "ghost", Application.Quit, "Back to the desktop"));
+            if (Application.platform != RuntimePlatform.WebGLPlayer) list.Add(Btn("Quit", "ghost", Application.Quit, "Back to the desktop"));   // a browser tab cannot quit
             list.Add(CloudLine(app));
             if (c != null) list.Add(Btn("Start a new career", "ghost small menu-new", () => app.Go("new")));
             menu.Add(list);

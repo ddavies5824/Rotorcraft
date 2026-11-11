@@ -111,8 +111,8 @@ Label, .unity-label { white-space: normal; padding: 0; margin: 0; color: var(--f
 
 /* ---------------------------------------------------------------------------------------- surfaces */
 .panel { background-color: var(--panel); border-width: 1px; border-color: var(--line); border-radius: 8px; padding: 14px; }
-.grid2 { flex-direction: row; flex-wrap: wrap; align-items: stretch; }
-.grid2 > * { width: 48.5%; margin-right: 1.5%; margin-bottom: 14px; }
+.grid2 { flex-direction: row; flex-wrap: wrap; align-items: stretch; margin-left: -0.75%; margin-right: -0.75%; }
+.grid2 > * { width: 48.5%; margin-left: 0.75%; margin-right: 0.75%; margin-bottom: 14px; }   /* the gap shared, so both columns reach the edges */
 .grid3 > * { width: 32%; margin-right: 2%; margin-bottom: 11px; }
 .grid3 { flex-direction: row; flex-wrap: wrap; align-items: stretch; }
 .col { flex-direction: column; flex-grow: 1; flex-basis: 0; }
@@ -166,6 +166,7 @@ Label, .unity-label { white-space: normal; padding: 0; margin: 0; color: var(--f
 .pstep.cur .pstep-bar { background-color: var(--nav); }
 .pstep-l { font-size: 9.5px; color: var(--muted); white-space: nowrap; overflow: hidden; -unity-text-overflow-position: end; text-overflow: ellipsis; }
 .pstep.cur .pstep-l { color: var(--fg); }
+.pstep.cur { flex-grow: 3; }   /* the step you are on always shows its whole name */
 
 /* forms */
 .field { flex-direction: column; margin-bottom: 8px; }
@@ -430,3 +431,28 @@ ScrollView { flex-grow: 1; }
 .unity-scroller--vertical .unity-base-slider__tracker { background-color: rgba(0, 0, 0, 0); border-width: 0; }
 .unity-scroller--vertical .unity-base-slider__dragger { background-color: #2c3a44; border-width: 0; border-radius: 4px; width: 6px; left: 2px; }
 .unity-scroller__low-button, .unity-scroller__high-button { display: none; }
+
+/* on-screen controls for phones and tablets (TouchControls, after the browser game's .touch, .lever, .pedal, .stick) */
+.touch { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.t-lever { position: absolute; width: 62px; top: 138px; bottom: 70px; border-radius: 31px; background-color: rgba(10, 14, 17, 0.42); border-width: 1px; border-color: rgba(255, 255, 255, 0.18); }
+.t-lever-fill { position: absolute; left: 0; right: 0; bottom: 0; border-bottom-left-radius: 31px; border-bottom-right-radius: 31px; background-color: rgba(224, 92, 200, 0.22); }
+.t-lever-knob { position: absolute; left: 4px; right: 4px; height: 40px; border-radius: 20px; background-color: rgba(240, 244, 246, 0.9); align-items: center; justify-content: center; }
+.hud .t-lever-val { color: #11181d; font-size: 12px; -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/B612Mono-Regular.ttf"); text-shadow: 0 0 0 rgba(0, 0, 0, 0); margin: 0; padding: 0; }
+.hud .t-lbl { position: absolute; -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/BarlowCondensed-SemiBold.ttf"); letter-spacing: 1.4px; font-size: 10px; color: rgba(255, 255, 255, 0.7); margin: 0; padding: 0; }
+.t-lbl-lever { top: -16px; left: 6px; }
+.t-pedal { position: absolute; bottom: 10px; height: 46px; width: 220px; border-radius: 23px; background-color: rgba(10, 14, 17, 0.42); border-width: 1px; border-color: rgba(255, 255, 255, 0.18); }
+.t-pedal-knob { position: absolute; top: 3px; width: 54px; height: 38px; border-radius: 19px; background-color: rgba(240, 244, 246, 0.85); }
+.t-lbl-pedal { top: -15px; left: 8px; }
+.t-stick { position: absolute; bottom: 14px; width: 210px; height: 210px; border-radius: 105px; background-color: rgba(10, 14, 17, 0.35); border-width: 1px; border-color: rgba(255, 255, 255, 0.18); }
+.t-cross-h { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background-color: rgba(255, 255, 255, 0.12); }
+.t-cross-v { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background-color: rgba(255, 255, 255, 0.12); }
+.t-trimdot { position: absolute; width: 10px; height: 10px; margin-left: -5px; margin-top: -5px; border-radius: 5px; background-color: var(--nav); }
+.t-stick-knob { position: absolute; width: 58px; height: 58px; margin-left: -29px; margin-top: -29px; border-radius: 29px; background-color: rgba(240, 244, 246, 0.88); }
+.t-lbl-stick { top: -16px; left: 42%; }
+.t-trim { position: absolute; bottom: 14px; margin: 0; }
+/* where the gamepad is in a menu (MenuNavigation) */
+.pad-focus { border-color: var(--nav); background-color: rgba(224, 92, 200, 0.2); }
+.check.pad-focus { border-radius: 4px; }
+.menu-ver { margin-top: 8px; opacity: 0.7; }
+.kv-k-wide { color: var(--muted); font-size: 12px; flex-shrink: 1; margin-right: 12px; }
+.kv-amt { -unity-font-definition: url("project://database/Assets/Rotorcraft/UI/Fonts/B612-Regular.ttf"); font-size: 13px; flex-shrink: 0; }

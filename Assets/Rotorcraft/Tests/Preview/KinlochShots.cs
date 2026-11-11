@@ -358,6 +358,213 @@ namespace Rotorcraft.Preview.Tests
 #endif
         }
 
+        /// <summary>The nearest point to (cx, cz), on a 23 m grid, that passes a test (sim x, z), or null.</summary>
+        static (double x, double z)? FindNear(double cx, double cz, double maxR, System.Func<double, double, bool> ok)
+        {
+            for (double r = 0; r <= maxR; r += 23)
+            {
+                var n = System.Math.Max(1, (int)(r * 2 * System.Math.PI / 23));
+                for (int i = 0; i < n; i++)
+                {
+                    double a = i * 2 * System.Math.PI / n, x = cx + System.Math.Cos(a) * r, z = cz + System.Math.Sin(a) * r;
+                    if (ok(x, z)) return (x, z);
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Hedges, drystone walls and fences along the fields, the small things on the ground, and the modelled houses
+        /// with their gardens and cars, by day and with rooms lit after dark. Logs how much each kind of tile holds and how long
+        /// they take to build.</summary>
+        [UnityTest, Timeout(1800000)]
+        public IEnumerator FieldsAndHouses()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            var scenery = Object.FindAnyObjectByType<SceneryStreaming>();
+            Assert.IsNotNull(scenery, "the world builds its scenery streamer");
+            cam.fieldOfView = 55;
+            var farm = S("moss_farm");
+            double Farmland(double x, double z) { var h = WorldMap.TerrainHeight(x, z); return KinlochTerrain.FarmMask(x, z, h, 0); }
+            (double x, double z)? EdgeOf(Boundary kind, double cx, double cz, bool high) => FindNear(cx, cz, 5000, (x, z) =>
+            {
+                var h = WorldMap.TerrainHeight(x, z);
+                if ((h > 105) != high) return false;
+                var (d, k) = FieldBoundaries.NearestEdge(x, z);
+                if (d > 1.5 || k != kind || RoadNet.RoadEdgeDistance(x, z) < 30) return false;
+                // the boundary is only drawn through farmland (judged with the slope, as FieldBoundaries does)
+                const double e = 3;
+                double sx = WorldMap.TerrainHeight(x + e, z) - WorldMap.TerrainHeight(x - e, z), sz = WorldMap.TerrainHeight(x, z + e) - WorldMap.TerrainHeight(x, z - e);
+                if (KinlochTerrain.FarmMask(x, z, h, System.Math.Atan(System.Math.Sqrt(sx * sx + sz * sz) / (2 * e))) < 0.6) return false;
+                foreach (var s in WorldMap.STRUCTURES) if (System.Math.Abs(x - s.x) < 40 && System.Math.Abs(z - s.z) < 40) return false;
+                return true;
+            });
+            var views = new System.Collections.Generic.List<(string name, Vector3 from, Vector3 to)>();
+            void Look(string name, (double x, double z)? at, double back, double up, double side = 0.6)
+            {
+                if (at == null) { Debug.LogWarning($"Scenery shots: nowhere found for {name}"); return; }
+                var (x, z) = at.Value;
+                views.Add((name, At(x + back, z + back * side, up), At(x, z, 0.8)));
+            }
+            Look("scenery-hedge", EdgeOf(Boundary.Hedge, farm.x, farm.z, false), 26, 7);
+            Look("scenery-hedge-above", EdgeOf(Boundary.Hedge, farm.x, farm.z, false), 90, 140, 0.3);
+            Look("scenery-wall", EdgeOf(Boundary.Wall, farm.x, farm.z, true) ?? EdgeOf(Boundary.Wall, farm.x, farm.z, false), 14, 4);
+            Look("scenery-fence", EdgeOf(Boundary.Fence, farm.x, farm.z, false), 12, 3);
+            // clutter on the open hill, on rough grazing, in the dunes and by the river
+            Look("clutter-moor", FindNear(-3000, -2000, 6000, (x, z) => { var h = WorldMap.TerrainHeight(x, z); return h > 230 && h < 300 && WorldMap.GroundAt(x, z).slope < 0.15; }), 14, 3);
+            Look("clutter-rough", FindNear(farm.x, farm.z, 5000, (x, z) => Farmland(x, z) > 0.8 && FieldLayout.CropOf(FieldLayout.FieldAt(x, z).i, FieldLayout.FieldAt(x, z).row) == Crop.Rough && FieldLayout.FieldAt(x, z).edge > 30), 12, 2.5);
+            Look("clutter-dunes", FindNear(0, -3000, 6000, (x, z) => { var c = Rotorcraft.World.Terrain.CoastX(z) - x; return c > 60 && c < 140 && WorldMap.TerrainHeight(x, z) < 12 && RoadNet.RoadEdgeDistance(x, z) > 20; }), 12, 3);
+            // houses: one of each size, seen from the road side
+            foreach (var (label, pick) in new (string, System.Func<Structure, bool>)[] { ("semi", s => s.w > 15), ("villa", s => s.w <= 15 && s.h > 7), ("house", s => s.w <= 15 && s.h <= 7) })
+            {
+                Structure st = null;
+                foreach (var s in WorldMap.STRUCTURES) if (s.kind == StructureKind.House && pick(s)) { st = s; break; }
+                if (st == null) { Debug.LogWarning($"Scenery shots: no {label} house"); continue; }
+                var rd = RoadNet.NearestRoad(st.x, st.z);
+                double fx = 1, fz = 0.4;
+                if (rd != null) { var L = rd.road; var i1 = System.Math.Min(rd.i + 1, L.x.Length - 1); fx = L.x[rd.i] + (L.x[i1] - L.x[rd.i]) * rd.t - st.x; fz = L.z[rd.i] + (L.z[i1] - L.z[rd.i]) * rd.t - st.z; }
+                var l = System.Math.Max(1, System.Math.Sqrt(fx * fx + fz * fz)); fx /= l; fz /= l;
+                views.Add(($"house-{label}", At(st.x + fx * 26 - fz * 12, st.z + fz * 26 + fx * 12, 6), At(st.x, st.z, 3)));
+            }
+            var town = Places.SETTLEMENTS[0];
+            views.Add(("houses-village", At(town.x + town.r * 1.1, town.z + town.r * 0.6, 120), At(town.x, town.z, 0)));
+            views.Add(("scenery-farm-low", At(farm.x + 260, farm.z + 180, 45), At(farm.x, farm.z, 0)));
+            views.Add(("scenery-farm-high", At(farm.x + 900, farm.z + 700, 420), At(farm.x - 300, farm.z - 200, 0)));
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var v in views)
+            {
+                cam.transform.position = v.from;
+                cam.transform.LookAt(v.to);
+                var t0 = watch.Elapsed.TotalSeconds;
+                scenery.Settle(cam.transform.position, 600);
+                Debug.Log($"Scenery shots: {v.name} settled in {watch.Elapsed.TotalSeconds - t0:F1} s: {scenery.Fields.Built} boundary tiles ({scenery.Fields.Vertices / 1000}k vertices), {scenery.Clutter.Built} clutter tiles ({scenery.Clutter.Vertices / 1000}k vertices)");
+                for (int i = 0; i < 10; i++) yield return null;
+                Capture(cam, v.name);
+            }
+            // the village after dark: some rooms lit
+            SkyEnvironment.Current.Apply(TimeOfDay.Night, Rotorcraft.Sim.Weather.Presets["calm"]);
+            var village = views.Find(v => v.name == "houses-village");
+            var semi = views.Find(v => v.name == "house-semi");
+            foreach (var v in new[] { village, semi })
+            {
+                if (v.name == null) continue;
+                cam.transform.position = v.from; cam.transform.LookAt(v.to);
+                for (int i = 0; i < 10; i++) yield return null;
+                Capture(cam, v.name + "-night");
+            }
+            Assert.Pass("pictures written to Logs/");
+        }
+
+        /// <summary>Every model the world is dressed with, for a polish review: each vehicle, each figure pose and outfit, each
+        /// prop, in a row on the heliport apron; and each Blender landmark where it stands. Contact sheets in Logs/lineup-*.png.</summary>
+        [UnityTest, Timeout(1800000)]
+        public IEnumerator ModelLineup()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+#if UNITY_EDITOR
+            var host = new GameObject("World actors");
+            host.SetActive(false);
+            var actors = host.AddComponent<WorldActors>();
+            actors.people = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/people.glb");
+            actors.vehicles = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Rotorcraft/Models/vehicles.glb");
+            host.SetActive(true);
+            System.Collections.Generic.List<string> Keys(GameObject root)
+            {
+                var top = root.transform.childCount == 1 ? root.transform.GetChild(0) : root.transform;
+                var l = new System.Collections.Generic.List<string>();
+                foreach (Transform c in top) l.Add(c.name);
+                return l;
+            }
+            var vehicles = Keys(actors.vehicles);
+            var peopleKeys = Keys(actors.people);
+            Debug.Log($"Lineup: vehicles {string.Join(", ", vehicles)}");
+            Debug.Log($"Lineup: people library {string.Join(", ", peopleKeys)}");
+            var pad = S("kin_h1");
+            var ground = WorldMap.SiteElevation(pad);
+            const int W = 800, H = 450;
+
+            // one row of things, seen from the front three-quarter and from the side, a page of four views per sheet
+            IEnumerator Row(string name, System.Collections.Generic.List<(string label, System.Func<Transform, GameObject> make)> items, float spacing, float camDist, float camUp)
+            {
+                for (int page = 0; page * 6 < items.Count; page++)
+                {
+                    var row = new GameObject("lineup " + name);
+                    var n = Mathf.Min(6, items.Count - page * 6);
+                    for (int i = 0; i < n; i++)
+                    {
+                        var slot = new GameObject(items[page * 6 + i].label).transform;
+                        slot.SetParent(row.transform, false);
+                        slot.position = SimToUnity.Position(new Vec3(pad.x - 40 + i * spacing, ground + 0.08, pad.z + 30));
+                        slot.rotation = Quaternion.Euler(0, 90, 0);   // facing along the row
+                        items[page * 6 + i].make(slot);
+                    }
+                    var mid = SimToUnity.Position(new Vec3(pad.x - 40 + (n - 1) * spacing / 2, ground + camUp * 0.25, pad.z + 30));
+                    var sheet = new Texture2D(W * 2, H * 2, TextureFormat.RGB24, false);
+                    var views = new[] { new Vector3(0.25f, 0.35f, -1f), new Vector3(0, 0.15f, -1f), new Vector3(-0.3f, 0.5f, -1f), new Vector3(0.1f, 0.12f, 1f) };
+                    for (int v = 0; v < 4; v++)
+                    {
+                        cam.fieldOfView = 40;
+                        cam.transform.position = mid + views[v].normalized * camDist + Vector3.up * camUp * 0.3f;
+                        cam.transform.LookAt(mid);
+                        for (int f = 0; f < 4; f++) yield return null;
+                        CaptureInto(cam, sheet, v % 2, W, H, v / 2);
+                    }
+                    sheet.Apply();
+                    File.WriteAllBytes($"Logs/lineup-{name}-{page + 1}.png", sheet.EncodeToPNG());
+                    Object.Destroy(sheet);
+                    Object.Destroy(row);
+                    yield return null;
+                }
+            }
+            var vlist = new System.Collections.Generic.List<(string, System.Func<Transform, GameObject>)>();
+            foreach (var k in vehicles) { var kk = k; vlist.Add((kk, t => actors.SpawnVehicle(kk, t))); }
+            yield return Row("vehicles", vlist, 7, 26, 4);
+            var poses = peopleKeys.FindAll(k => k.StartsWith("pose_") && !k.StartsWith("pose_walk")); poses.Add("pose_walk0");
+            var plist = new System.Collections.Generic.List<(string, System.Func<Transform, GameObject>)>();
+            foreach (var k in poses) { var pose = k.Substring(5); plist.Add((pose, t => actors.MakePerson("casual", pose, 7, t))); }
+            yield return Row("poses", plist, 1.6f, 8, 1.2f);
+            var olist = new System.Collections.Generic.List<(string, System.Func<Transform, GameObject>)>();
+            foreach (var o in new[] { "casual", "walker", "medic", "police", "fire", "hivis", "worker", "scrubs", "winchman", "aircrew", "immersion", "soldier", "armed", "climber" })
+            { var oo = o; olist.Add((oo, t => actors.MakePerson(oo, "stand", 11, t))); }
+            yield return Row("outfits", olist, 1.4f, 7, 1.2f);
+            var props = peopleKeys.FindAll(k => !k.StartsWith("pose_") && !k.StartsWith("helmet_"));
+            var prlist = new System.Collections.Generic.List<(string, System.Func<Transform, GameObject>)>();
+            foreach (var k in props) { var kk = k; prlist.Add((kk, t => actors.SpawnProp(kk, t))); }
+            yield return Row("props", prlist, 6, 18, 2);
+            Object.Destroy(host);
+#endif
+            // the Blender landmarks where they stand, each framed by its own size
+            var structures = GameObject.Find("Structures");
+            Assert.IsNotNull(structures, "the world has its structures");
+            var marks = new System.Collections.Generic.List<Transform>();
+            foreach (Transform c in structures.transform) if (!c.name.StartsWith("Buildings") && !c.name.StartsWith("Houses") && c.GetComponentInChildren<Renderer>() != null && c.GetComponent<MeshFilter>() == null) marks.Add(c);
+            Debug.Log($"Lineup: landmarks {string.Join(", ", marks.ConvertAll(m => m.name))}");
+            for (int page = 0; page * 4 < marks.Count; page++)
+            {
+                var sheet = new Texture2D(W * 2, H * 2, TextureFormat.RGB24, false);
+                for (int i = 0; i < 4 && page * 4 + i < marks.Count; i++)
+                {
+                    var m = marks[page * 4 + i];
+                    var b = new Bounds(m.position, Vector3.zero);
+                    foreach (var r in m.GetComponentsInChildren<Renderer>()) b.Encapsulate(r.bounds);
+                    var size = Mathf.Max(8, b.extents.magnitude);
+                    cam.fieldOfView = 45;
+                    cam.transform.position = b.center + new Vector3(0.75f, 0.45f, -0.75f).normalized * size * 2.3f;
+                    cam.transform.LookAt(b.center);
+                    for (int f = 0; f < 6; f++) yield return null;
+                    CaptureInto(cam, sheet, i % 2, W, H, i / 2);
+                }
+                sheet.Apply();
+                File.WriteAllBytes($"Logs/lineup-landmarks-{page + 1}.png", sheet.EncodeToPNG());
+                Object.Destroy(sheet);
+            }
+            Assert.Pass("pictures written to Logs/");
+        }
+
         /// <summary>The wind farm from two distances, a moment apart: blades, turning, facing the way the nacelle does.</summary>
         [UnityTest, Timeout(900000)]
         public IEnumerator WindFarm()
@@ -473,6 +680,47 @@ namespace Rotorcraft.Preview.Tests
             Assert.Pass("pictures written to Logs/");
         }
 
+        /// <summary>
+        /// Paint the right way up: glTFast flips a shared texture twice for the second material using it, so the tinted livery
+        /// materials read their atlas upside down (streaks of other parts on the Nightjar's boom, the Peregrine's gearbox cover).
+        /// After dressing, no material on any aircraft may still have that flip. Also writes Logs/paint-clean.png.
+        /// </summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator PaintSamplesTheRightWayUp()
+        {
+            yield return OpenScene();
+            var cam = Camera.main;
+            Object.FindAnyObjectByType<HelicopterController>().gameObject.SetActive(false);
+            var pad = S("kin_h1");
+            var at = SimToUnity.Position(new Vec3(pad.x, WorldMap.SiteElevation(pad) + 1.2, pad.z));
+            const int W = 800, H = 450;
+            var sheet = new Texture2D(W * 2, H * 2, TextureFormat.RGB24, false);
+            var flipped = new System.Collections.Generic.List<string>();
+            var shots = 0;
+            foreach (var (id, file) in new[] { ("kestrel", "kestrel_k2"), ("northstar", "northstar_175"), ("guardian", "guardian_s9"), ("nightjar", "nightjar_n4"), ("peregrine", "peregrine_p3") })
+            {
+                var holder = Dressed(id, file, Aircraft.Get(id), at, 0);
+                foreach (var r in holder.GetComponentsInChildren<Renderer>(true))
+                    foreach (var m in r.sharedMaterials)
+                        if (m != null && m.IsKeywordEnabled("_TEXTURE_TRANSFORM") && m.HasProperty("baseColorTexture_ST") && m.GetVector("baseColorTexture_ST") == new Vector4(1, -1, 0, 1))
+                            flipped.Add($"{id}: {m.name}");
+                if (id == "nightjar" || id == "peregrine")
+                    foreach (var off in new[] { new Vector3(-9, 2.6f, -6), new Vector3(-7, 3.4f, 6) })
+                    {
+                        cam.fieldOfView = 40;
+                        cam.transform.position = at + off;
+                        cam.transform.LookAt(at + Vector3.up * 1.2f);
+                        for (int i = 0; i < 6; i++) yield return null;
+                        CaptureInto(cam, sheet, shots % 2, W, H, shots / 2);
+                        shots++;
+                    }
+                Object.Destroy(holder);
+                yield return null;
+            }
+            sheet.Apply();
+            File.WriteAllBytes("Logs/paint-clean.png", sheet.EncodeToPNG());
+            Assert.IsEmpty(flipped, "materials still reading their texture upside down:\n" + string.Join("\n", flipped));
+        }
         /// <summary>Every paint scheme of the Nightjar, and that no two come out the same.</summary>
         [UnityTest, Timeout(900000)]
         public IEnumerator NightjarPaint()

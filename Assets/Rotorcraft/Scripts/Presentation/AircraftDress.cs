@@ -22,6 +22,7 @@ namespace Rotorcraft.Presentation
         {
             if (model == null || ac == null) return;
             var rends = model.GetComponentsInChildren<Renderer>(true);
+            Unflip(rends);
             if (rends.Any(r => r.sharedMaterials.Any(m => m != null && m.name.Contains(" livery"))))
                 foreach (var r in rends)
                 {
@@ -41,6 +42,28 @@ namespace Rotorcraft.Presentation
             Show("fit_seats", !e.medical && (ac.fitted == null || ac.fitted.Contains("seats")));
             var skin = ac.skinId ?? ac.skins?.FirstOrDefault()?.id;
             foreach (var t in all) if (t.name.StartsWith("mark_")) t.gameObject.SetActive(t.name == "mark_" + skin);
+        }
+
+        static readonly string[] TextureSlots = { "baseColorTexture", "metallicRoughnessTexture", "normalTexture", "occlusionTexture", "emissiveTexture" };
+        static readonly Vector4 Flipped = new Vector4(1, -1, 0, 1);
+
+        /// <summary>
+        /// glTFast flips a texture's rows a second time when another texture entry already uses the same image: the livery
+        /// materials share their part's atlas, so they sampled it upside down and showed patches of other parts (the Nightjar's
+        /// streaky tail boom, the Peregrine's striped gearbox cover). None of the models has a texture transform of its own, so
+        /// a bare vertical flip is that mistake: take it off.
+        /// </summary>
+        static void Unflip(Renderer[] rends)
+        {
+            foreach (var r in rends)
+                foreach (var m in r.sharedMaterials)
+                {
+                    if (m == null || !m.IsKeywordEnabled("_TEXTURE_TRANSFORM") || !m.HasProperty("baseColorTexture_ST")) continue;
+                    if (m.GetVector("baseColorTexture_ST") != Flipped) continue;
+                    if (m.HasProperty("baseColorTexture_Rotation") && m.GetVector("baseColorTexture_Rotation") != Vector4.zero) continue;
+                    foreach (var t in TextureSlots) if (m.HasProperty(t + "_ST")) m.SetVector(t + "_ST", new Vector4(1, 1, 0, 0));
+                    m.DisableKeyword("_TEXTURE_TRANSFORM");
+                }
         }
 
         static (int slot, float k) Slot(Material m)

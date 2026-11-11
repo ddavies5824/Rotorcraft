@@ -113,7 +113,7 @@ namespace Rotorcraft.Presentation.UI
                         var a = CareerManager.MissionAvailability(c, m);
                         var pay = Progression.OfferedPay(m, st);
                         list.Add(RowBetween(T(m.shortTitle + (CareerManager.PassedExercise(c, m.id) ? " ✓" : "")),
-                            Row(pay > 0 ? Chip(Money(pay), "nav") : null, Btn(a.available ? "Brief" : "Locked", "small", () => app.Go(Route.Brief(mm.id)), disabled: !a.available))));
+                            E("row nowrap", pay > 0 ? Chip(Money(pay), "nav") : null, Btn(a.available ? "Brief" : "Locked", "small", () => app.Go(Route.Brief(mm.id)), disabled: !a.available))));   // never wrapped: the row would not grow to fit
                     }
                     p.Add(list);
                 }
@@ -303,6 +303,7 @@ namespace Rotorcraft.Presentation.UI
                 E("grid2",
                     Field("Graphics quality", Seg(new[] { (GraphicsQuality.High, "High"), (GraphicsQuality.Balanced, "Balanced"), (GraphicsQuality.Low, "Low") }, s.graphics, v => Change(n => n.graphics = v))),
                     Field("Default camera", Seg(new[] { (CameraPref.Chase, "Chase"), (CameraPref.Cockpit, "Cockpit") }, s.camera, v => Change(n => n.camera = v))),
+                    !TouchControls.Available ? null : Field("Touch layout", Seg(new[] { (false, "Collective left"), (true, "Collective right") }, s.touchSwapped, v => Change(n => n.touchSwapped = v))),
                     Slider("Text size", 0.9f, 1.3f, s.textScale, v => $"{v * 100:0}%", v => Change(n => n.textScale = v), 0.05f),
                     Slider("Volume", 0, 1, s.volume, v => $"{v * 100:0}%", v => Change(n => n.volume = v), 0.05f)),
                 Check("Sound effects", s.sound, v => Change(n => n.sound = v)),
@@ -310,6 +311,9 @@ namespace Rotorcraft.Presentation.UI
                 Row(Btn("Show first-time tips again", "small ghost", () => Change(n => n.seenHints.Clear()), disabled: s.seenHints.Count == 0)),
                 Row(Btn("Restore all defaults", "small ghost", () => { app.CommitSettings(new GameSettings()); app.Later(app.Refresh); }))));
             page.Add(CloudPanel(app));
+            page.Add(Panel(H3("About"),
+                Muted($"Rotorcraft {Application.version}. Aircraft, operators and qualifications are fictional or simulated and give no real-world privileges; the Peregrine P3 is modelled on the AS365 N3 Dauphin.", "small"),
+                Muted("Fonts: B612 and B612 Mono (The B612 Project Authors) and Barlow Condensed (The Barlow Project Authors), under the SIL Open Font License 1.1. World sounds in the Windows version: recordings by Joseph Sardin, BigSoundBank.com (CC0). Made with Unity.", "small")));
             var c = app.Career;
             page.Add(Panel(H3("Career save"),
                 Muted(FileDialog.Available ? $"{c.pilotName} · started {Date(c.createdAt)} · saved on this computer. Export a backup to move it to another computer."

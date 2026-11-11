@@ -186,7 +186,8 @@ namespace Rotorcraft.Presentation
                 if (showTablet) showTablet = false;
                 else TogglePause();
             }
-            heli.Input.menuOpen = showTablet || Runtime.PendingDecision() != null || (Pre?.Active ?? false);
+            // a card that the gamepad works (MenuNavigation): its buttons drive the card, not the aircraft
+            heli.Input.menuOpen = showTablet || Runtime.PendingDecision() != null || (Pre?.Active ?? false) || Paused || s.crashed;
             SkyEnvironment.Current?.SetThermal(Runtime.flir);
             if (!Paused)
             {

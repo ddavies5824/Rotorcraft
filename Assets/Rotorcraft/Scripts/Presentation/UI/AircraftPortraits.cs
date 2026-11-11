@@ -49,7 +49,7 @@ namespace Rotorcraft.Presentation.UI
             var data = cam.GetUniversalAdditionalCameraData(); data.renderPostProcessing = false; data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
             var size = bounds.extents.magnitude;
             var dir = Quaternion.Euler(14, 140, 0) * Vector3.forward;   // from the front left, a little above
-            cam.transform.position = bounds.center - dir * size / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * 0.62f;
+            cam.transform.position = bounds.center - dir * size / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * 0.7f;   // 0.62 cut the skids off
             cam.transform.rotation = Quaternion.LookRotation(bounds.center - cam.transform.position);
 
             var key = new GameObject("Key").AddComponent<Light>(); key.type = LightType.Directional; key.intensity = 1.6f; key.cullingMask = 1 << LAYER; key.transform.rotation = Quaternion.Euler(40, 110, 0); key.shadows = LightShadows.Soft;

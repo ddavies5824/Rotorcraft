@@ -1,0 +1,28 @@
+ROTORCRAFT {VERSION}: THIRD-PARTY NOTICES
+
+Rotorcraft uses the following, with thanks.
+
+
+FONTS
+  B612 and B612 Mono, by The B612 Project Authors (Airbus, Intactile Design, ENAC).
+  Barlow Condensed, by The Barlow Project Authors (Jeremy Tribby).
+  Both under the SIL Open Font License 1.1, copied in full at the end of this file.
+
+
+WORLD SOUNDS (Windows version)
+{SOUNDS}
+
+
+ENGINE
+  Made with Unity.
+
+
+==========================================================================================
+B612 and B612 Mono
+==========================================================================================
+{OFL_B612}
+
+==========================================================================================
+Barlow Condensed
+==========================================================================================
+{OFL_BARLOW}

@@ -28,6 +28,8 @@ namespace Rotorcraft.Presentation.UI
         public float textScale = 1;            // 0.9..1.3
         public GraphicsQuality graphics = GraphicsQuality.High;
         public bool fullscreen = true;
+        /// <summary>On-screen sticks with the collective on the right and the cyclic on the left (the browser game's "swapped" touch layout).</summary>
+        public bool touchSwapped;
         /// <summary>The refresh rate to ask a headset for, in Hz; 0 chooses one the game can hold.</summary>
         public int vrRefreshHz = 0;
         /// <summary>Mechanics the player has already had explained (first-time hints).</summary>

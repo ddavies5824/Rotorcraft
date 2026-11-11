@@ -309,7 +309,7 @@ namespace Rotorcraft.Presentation.UI
                 E("cols", left, right),
                 E("footerbar",
                     Row(Muted("Handling"), Seg(new[] { (AssistMode.Beginner, "Beginner"), (AssistMode.Standard, "Standard"), (AssistMode.Realistic, "Realistic") }, app.Settings.assist, v => { var s = app.Settings.Clone(); s.assist = v; app.CommitSettings(s); app.Later(app.Refresh); })),
-                    Row(Muted("Pre-flight checks are done in the aircraft", "small"), Btn("Back", "ghost", () => app.Go("missions")),
+                    E("row nowrap", Muted("Pre-flight checks are done in the aircraft", "small"), Btn("Back", "ghost", () => app.Go("missions")),
                         Btn("Go to the aircraft", "primary", () => app.FlyMission(m.id, fuel, tod, wxId), disabled: !canFly || overweight || m.objectives.Length == 0))));
             if (!canFly)
                 page.Add(Panel(Row(Chip("Not yet available", "caution"), Muted(string.Join(" · ", a.reasons.Concat(unserviceable).Distinct())),
@@ -411,7 +411,8 @@ namespace Rotorcraft.Presentation.UI
             var emp = u.employer != null ? Employers.ById(u.employer) : null;
             if (led.Count == 0 && emp == null) return null;
             var p = Panel(H3("Pay and reputation"));
-            if (led.Count > 0) p.Add(Kv(led.Select(l => (l.label, l.amount == 0 ? "" : Money(l.amount), l.amount < 0 ? "err" : null)).ToArray()));
+            // a line each, the item across the panel and its amount at the right (the narrow key column of Kv wrapped long items)
+            if (led.Count > 0) p.Add(Tight(led.Select(l => (VisualElement)RowBetween(T(l.label, "kv-k-wide"), T(l.amount == 0 ? "" : Money(l.amount), "kv-amt " + (l.amount < 0 ? "err" : "")))).ToArray()));
             else p.Add(Muted("No charges or fees for this flight."));
             if (emp != null)
             {

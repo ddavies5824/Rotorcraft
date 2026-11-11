@@ -1,8 +1,8 @@
-// InputManager (port of src/input/input.ts): merges keyboard and controllers into one Controls value each frame.
+// InputManager (port of src/input/input.ts): merges keyboard, touch and controllers into one Controls value each frame.
 // Collective is a positional lever (it stays where you leave it, like the real friction-held lever);
 // cyclic and pedals are spring-centred, with a trim offset for each.
 // The browser version reacts to keydown events; this one polls, firing an action on the frame a key goes down.
-// Touch controls are not ported yet.
+// The on-screen sticks (Presentation/UI/TouchControls.cs) write into `touch`, as the browser game's TouchControls do.
 using System;
 using System.Collections.Generic;
 using Rotorcraft.Sim;
@@ -11,10 +11,13 @@ using static Rotorcraft.Sim.SimMath;
 
 namespace Rotorcraft.Inputs
 {
-    public enum InputSourceKind { None, Keyboard, Controller }
+    public enum InputSourceKind { None, Keyboard, Controller, Touch }
 
     /// <summary>Stick positions from a device outside the player's bindings (the VR controllers), each -1..1.</summary>
     public struct ExternalSticks { public double cyclicX, cyclicY, pedals, collective; }
+
+    /// <summary>The on-screen cyclic and pedals (phones and tablets): where the thumbs have them, -1..1, while held.</summary>
+    public sealed class TouchSticks { public double cyclicX, cyclicY, pedals; public bool cyclicActive, pedalActive; }
 
     /// <summary>Controls held in the hand (VR): where the hand has put them, in place of anything else moving them.</summary>
     public struct HeldControls { public bool cyclic, lever; public double cyclicX, cyclicY, leverPosition; }
@@ -30,6 +33,8 @@ namespace Rotorcraft.Inputs
         double pedal;
         public double trimX, trimY, trimPedal;
         public HeldControls held;
+        /// <summary>The on-screen sticks (touch devices).</summary>
+        public readonly TouchSticks touch = new TouchSticks();
         /// <summary>Where the cyclic is now (-1..1), which is where a hand finds it.</summary>
         public double CyclicX => cycX;
         public double CyclicY => cycY;
@@ -68,6 +73,10 @@ namespace Rotorcraft.Inputs
         void Emit(GameAction a) => ActionFired?.Invoke(a);
         /// <summary>An action from a device outside the player's bindings.</summary>
         public void Fire(GameAction a) { lastSource = InputSourceKind.Controller; Emit(a); }
+        /// <summary>An action from an on-screen button.</summary>
+        public void Touch(GameAction a) { lastSource = InputSourceKind.Touch; Emit(a); }
+        /// <summary>Move the lever from the on-screen collective.</summary>
+        public void TouchCollective(double v) { collective = Clamp(v, 0, 1); lastSource = InputSourceKind.Touch; }
 
         bool K(Key k) => k != Key.None && source.IsKeyDown(k);
         bool Shift => K(Key.LeftShift) || K(Key.RightShift);
@@ -120,7 +129,7 @@ namespace Rotorcraft.Inputs
 
         public void SetCollective(double v) { collective = Clamp(v, 0, 1); }
         public double CollectiveLever => collective;
-        public void ResetForFlight(double collective = 0) { this.collective = collective; cycX = cycY = 0; pedal = 0; trimX = trimY = trimPedal = 0; trimReleasing = false; held = default; keysDown.Clear(); }
+        public void ResetForFlight(double collective = 0) { this.collective = collective; cycX = cycY = 0; pedal = 0; trimX = trimY = trimPedal = 0; trimReleasing = false; held = default; keysDown.Clear(); touch.cyclicActive = touch.pedalActive = false; }
 
         /// <summary>Hold the cyclic and pedals where they are now: that becomes where they rest when let go.</summary>
         public void SetTrimFromCurrent() { trimReleasing = false; trimX = Clamp(cycX, -0.6, 0.6); trimY = Clamp(cycY, -0.6, 0.6); trimPedal = Clamp(pedal, -0.6, 0.6); }
@@ -216,6 +225,7 @@ namespace Rotorcraft.Inputs
             double targetX = trimX, targetY = trimY;
             if (keyCyc) { targetX = trimX + tx * 0.55 * s.cyclicSensitivity; targetY = trimY + ty * 0.55 * s.cyclicSensitivity; }
             if (padCyc != null) { targetX = trimX + Shape(padCyc.Value.x, s.cyclicSensitivity); targetY = trimY + Shape(padCyc.Value.y, s.cyclicSensitivity); }
+            if (touch.cyclicActive) { targetX = trimX + Shape(touch.cyclicX, s.cyclicSensitivity); targetY = trimY + Shape(touch.cyclicY, s.cyclicSensitivity); lastSource = InputSourceKind.Touch; }
             if (s.invertCyclicY) targetY = trimY - (targetY - trimY);
             var rate = keyCyc ? 1.6 : 6; // keyboard ramps; analogue follows quickly, though not at once
             cycX += Clamp(targetX - cycX, -rate * dt, rate * dt);
@@ -227,7 +237,8 @@ namespace Rotorcraft.Inputs
             if (keyLeft) tp -= 0.55 * s.pedalSensitivity;
             if (keyRight) tp += 0.55 * s.pedalSensitivity;
             if (Math.Abs(padPed) > 0.05) tp = trimPedal + Shape(padPed, s.pedalSensitivity);
-            var prate = (keyLeft || keyRight) && Math.Abs(padPed) <= 0.05 ? 2.5 : 8;
+            if (touch.pedalActive) tp = trimPedal + Shape(touch.pedals, s.pedalSensitivity);
+            var prate = (keyLeft || keyRight) && Math.Abs(padPed) <= 0.05 && !touch.pedalActive ? 2.5 : 8;
             pedal += Clamp(tp - pedal, -prate * dt, prate * dt);
             return new Controls(collective, Clamp(cycY, -1, 1), Clamp(cycX, -1, 1), Clamp(pedal, -1, 1));
         }

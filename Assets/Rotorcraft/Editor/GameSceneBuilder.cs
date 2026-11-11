@@ -3,6 +3,7 @@
 // game's style sheet, and the game, cloud and flight-session objects. Also makes the Windows and web builds.
 //   Unity.exe -batchmode -projectPath <project> -executeMethod Rotorcraft.EditorTools.GameSceneBuilder.BuildWindows -quit
 using System.IO;
+using System.Linq;
 using Rotorcraft.Presentation;
 using Rotorcraft.Presentation.UI;
 using Rotorcraft.Sim;
@@ -192,6 +193,7 @@ namespace Rotorcraft.EditorTools
             Keep("Rotorcraft/Light Points", "Light points");
             Keep("Rotorcraft/Mission Marker", "Mission marker");
             Keep("Rotorcraft/VR Panel", "VR panel");
+            Keep("Rotorcraft/World Colour", "World colour");
             // the terrain and the instanced trees are made at run time, so the build cannot see their instancing
             // variants in use: keep them all
             var tm = AssetDatabase.LoadAssetAtPath<Material>($"{SettingsDir}/Terrain.mat");
@@ -210,7 +212,7 @@ namespace Rotorcraft.EditorTools
             PlayerSettings.companyName = "Rotorcraft";
             PlayerSettings.productName = "Rotorcraft";
             PlayerSettings.bundleVersion = "1.0.0";
-            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>($"{UiDir}/Images/logo-192.jpg");
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>($"{UiDir}/Images/app-icon.png") ?? AssetDatabase.LoadAssetAtPath<Texture2D>($"{UiDir}/Images/logo-192.jpg");
             if (icon != null) PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
             PlayerSettings.SplashScreen.showUnityLogo = false;
             PlayerSettings.SplashScreen.show = false;
@@ -271,6 +273,7 @@ namespace Rotorcraft.EditorTools
                 Debug.Log($"World-sound recordings: {files.Length} files copied into the build");
             }
             else Debug.LogWarning("No Sounds folder beside Assets: this Windows build will make all its world sounds itself");
+            Notices(Path.GetDirectoryName(out_), true);
         }
 
         [MenuItem("Rotorcraft/Build for the web")]
@@ -280,7 +283,7 @@ namespace Rotorcraft.EditorTools
             Common();
             PlayerSettings.WebGL.template = "PROJECT:Rotorcraft";   // Assets/WebGLTemplates/Rotorcraft: full window, the game's own loading page
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
-            EditorUserBuildSettings.overrideMaxTextureSize = 512;   // a much smaller download (under 30 MB); terrain detail tiles anyway
+            EditorUserBuildSettings.overrideMaxTextureSize = 1024;   // a smaller download than full size; terrain detail tiles anyway (512 when the zip had to stay under 30 MB)
             PlayerSettings.WebGL.decompressionFallback = true;   // works on any static host, Netlify included
             PlayerSettings.WebGL.memorySize = 1024;
             PlayerSettings.WebGL.initialMemorySize = 512;
@@ -292,6 +295,24 @@ namespace Rotorcraft.EditorTools
             var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = out_, target = BuildTarget.WebGL, options = BuildOptions.None });
             EditorUserBuildSettings.overrideMaxTextureSize = 0;
             Report(r, "Web");
+            Notices(out_, false);
+        }
+
+        /// <summary>The player's read-me (Windows) and the third-party notices (both) from Packaging/, with the version and the
+        /// font licences and sound credits filled in.</summary>
+        static void Notices(string dir, bool readme)
+        {
+            var pack = Path.GetFullPath("Packaging");
+            string Read(string p) => File.Exists(p) ? File.ReadAllText(p).Replace("\r\n", "\n").TrimEnd() : "";
+            string Fill(string t) => t.Replace("{VERSION}", PlayerSettings.bundleVersion)
+                .Replace("{SOUNDS}", string.Join("\n", Read(Path.GetFullPath("Sounds/CREDITS.txt")).Split('\n').Select(l => "  " + l)))
+                .Replace("{OFL_B612}", Read($"{UiDir}/Fonts/OFL-B612.txt")).Replace("{OFL_BARLOW}", Read($"{UiDir}/Fonts/OFL-BarlowCondensed.txt"))
+                .Replace("\n", "\r\n");
+            var n = Path.Combine(pack, "THIRD-PARTY-NOTICES.txt");
+            if (File.Exists(n)) File.WriteAllText(Path.Combine(dir, "THIRD-PARTY-NOTICES.txt"), Fill(Read(n)) + "\r\n");
+            var rm = Path.Combine(pack, "README.txt");
+            if (readme && File.Exists(rm)) File.WriteAllText(Path.Combine(dir, "README.txt"), Fill(Read(rm)) + "\r\n");
+            Debug.Log($"Packaging: notices{(readme ? " and read-me" : "")} written to {dir}");
         }
     }
 }

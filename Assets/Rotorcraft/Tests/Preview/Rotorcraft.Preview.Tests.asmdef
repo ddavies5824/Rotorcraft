@@ -9,6 +9,7 @@
         "Rotorcraft.Sim",
         "Rotorcraft.World",
         "Unity.RenderPipelines.Core.Runtime",
+        "Unity.InputSystem",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

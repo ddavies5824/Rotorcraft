@@ -1,6 +1,6 @@
 // Moving life in the world (port of src/world/traffic.ts): road traffic keeping left at each road's speed, with
 // head and tail lights after dark; people walking up and down the pavements in the towns; fishing boats working
-// offshore. Positions are pure functions of the clock, so nothing is saved. Only what is near the camera is
+// offshore; cars parked on the drives of the modelled houses. Positions are pure functions of the clock, so nothing is saved. Only what is near the camera is
 // shown; the models come from the world actors' libraries and are made the first time they come into range.
 using System.Collections.Generic;
 using System.Linq;
@@ -68,6 +68,11 @@ namespace Rotorcraft.Presentation
         sealed class Car { public Path path; public int dir; public float speed, offset, s0; public string kind; public Color paint; public GameObject go; public Vector3[] heads, tails; public bool far; }
         sealed class Walker { public Path path; public float s0, span, side, speed, phase; public int seed; public GameObject go; public MeshFilter[] filters; public Mesh[][] frames; public bool far; }
         sealed class Boat { public float cx, cz, rx, rz, w, ph, scale; public GameObject go; }
+        /// <summary>A car standing on a house's drive (HouseModels): shown only near the camera, and cold on the thermal camera.</summary>
+        sealed class ParkedCar { public HouseModels.Parked at; public GameObject go; }
+        readonly List<ParkedCar> parked = new List<ParkedCar>();
+        int parkedFrom = -1;
+        const float PARKED_RANGE = 800;
 
         WorldActors actors;
         readonly List<Car> cars = new List<Car>();
@@ -132,7 +137,7 @@ namespace Rotorcraft.Presentation
         static Vector3 U(float x, float y, float z) => new Vector3(x, y, -z);
         static Quaternion Facing(float fx, float fz, float pitch = 0) => Quaternion.LookRotation(new Vector3(fx, 0, -fz)) * Quaternion.Euler(-pitch * Mathf.Rad2Deg, 0, 0);
 
-        GameObject MakeCar(Car c)
+        GameObject MakeCar(Car c, bool running = true)
         {
             var g = actors.SpawnVehicle(c.kind, root);
             if (g == null) return null;
@@ -149,8 +154,38 @@ namespace Rotorcraft.Presentation
             float hw = b.extents.x * 0.68f, y = b.min.y + Mathf.Min(0.75f, b.size.y * 0.42f);
             c.heads = new[] { new Vector3(-hw, y, b.max.z - 0.05f), new Vector3(hw, y, b.max.z - 0.05f) };
             c.tails = new[] { new Vector3(-hw, y + 0.1f, b.min.z + 0.05f), new Vector3(hw, y + 0.1f, b.min.z + 0.05f) };
-            HeatSource.Add(g, HeatSource.Engine);
+            if (running) HeatSource.Add(g, HeatSource.Engine);
             return g;
+        }
+
+        /// <summary>Show the cars on the drives near the camera (they never move, so each is looked at now and then).</summary>
+        void ParkedCars(float ex, float ez)
+        {
+            int count;
+            lock (HouseModels.Drives) count = HouseModels.Drives.Count;
+            if (count != parkedFrom)
+            {
+                foreach (var pc in parked) if (pc.go != null) Destroy(pc.go);
+                parked.Clear();
+                lock (HouseModels.Drives) foreach (var d in HouseModels.Drives) parked.Add(new ParkedCar { at = d });
+                parkedFrom = count;
+            }
+            for (int i = 0; i < parked.Count; i++)
+            {
+                var pc = parked[i];
+                if (pc.go != null && (i + frame) % OutOfRangeEvery != 0) continue;
+                float x = (float)pc.at.x, z = (float)pc.at.z;
+                var near = (x - ex) * (x - ex) + (z - ez) * (z - ez) < PARKED_RANGE * PARKED_RANGE;
+                if (!near) { if (pc.go != null && pc.go.activeSelf) pc.go.SetActive(false); continue; }
+                if (pc.go == null)
+                {
+                    pc.go = MakeCar(new Car { kind = pc.at.kind, paint = PAINT[pc.at.paint % PAINT.Length] }, false);
+                    if (pc.go == null) { parked.RemoveAt(i--); continue; }
+                    pc.go.name = "Parked " + pc.at.kind;
+                    pc.go.transform.SetPositionAndRotation(U(x, (float)pc.at.y, z), Facing((float)System.Math.Sin(pc.at.heading), (float)System.Math.Cos(pc.at.heading)));
+                }
+                if (!pc.go.activeSelf) pc.go.SetActive(true);
+            }
         }
 
         void MakeWalker(Walker w)
@@ -229,6 +264,8 @@ namespace Rotorcraft.Presentation
                 SetFrame(w.filters, w.frames[pose]);
                 w.go.transform.SetPositionAndRotation(U(x, Mathf.Max((float)WorldMap.TerrainHeight(x, z), 0.4f), z), Facing(fx, fz));
             }
+
+            ParkedCars(ex, ez);
 
             foreach (var b in boats)
             {

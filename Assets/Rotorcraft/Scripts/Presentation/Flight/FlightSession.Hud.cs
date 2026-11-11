@@ -19,6 +19,7 @@ namespace Rotorcraft.Presentation
     public sealed partial class FlightSession
     {
         WindArrow windArrow;
+        TouchControls touchControls;
         VisualElement hudRoot, readouts, hudBtns, objective, navbox, annun, radio, crewbar, switches, decisionBox, hintBox, trimChip, agl, panelBox, mapBox, preflight, hood, banner, center, tablet, hotspotLayer;
         InstrumentPanel instruments;
         MapView map;
@@ -182,6 +183,9 @@ namespace Rotorcraft.Presentation
             // the top right corner, stacked so that none of these can sit on another
             hudRoot.Add(E("hud-right", navbox, crewbar, mapBox).With(x => x.pickingMode = PickingMode.Ignore));
             trimChip = new Button(() => { heli.Input.ClearTrim(); hudDirty = true; }).Cls("trimchip"); hudRoot.Add(trimChip);
+            // the on-screen sticks, on phones and tablets (under the cards and dialogs, over the view)
+            touchControls = TouchControls.Available ? new TouchControls(heli.Input) : null;
+            if (touchControls != null) hudRoot.Add(touchControls);
             hintBox = E("hintcard"); hudRoot.Add(hintBox);
             decisionBox = E("decision"); hudRoot.Add(decisionBox);
             preflight = E("preflight"); hudRoot.Add(preflight);
@@ -335,6 +339,45 @@ namespace Rotorcraft.Presentation
             }
             if (hint != null && now - hintAt > 22) { hint = null; hudDirty = true; }
             if (showTablet && Director != null) UpdateTablet();
+            UpdateTouch();
+        }
+
+        static bool Shown(VisualElement e) => e != null && e.style.display != DisplayStyle.None && e.childCount > 0;
+
+        /// <summary>The cards a gamepad works in flight, most pressing first (none while flying: then the pad flies).</summary>
+        public void PadScopes(List<VisualElement> into)
+        {
+            if (!Active || loading || hudRoot == null) return;
+            if (Shown(center)) into.Add(center);
+            else if (Shown(decisionBox)) into.Add(decisionBox);
+            else if (showTablet && Shown(tablet)) into.Add(tablet);
+            else if (Pre != null && Pre.Active) { if (Shown(preflight)) into.Add(preflight); into.Add(hotspotLayer); }
+        }
+
+        /// <summary>B in flight: close the tablet, or carry on from the pause card.</summary>
+        public bool PadBack()
+        {
+            if (showTablet) { showTablet = false; hudDirty = true; return true; }
+            if (Paused) { TogglePause(); return true; }
+            return false;
+        }
+
+        /// <summary>A finger has been on the screen (a laptop's touch screen shows no sticks until it is used).</summary>
+        static bool touchSeen;
+
+        /// <summary>Show the on-screen sticks on a phone or tablet, or once a touch screen is touched, unless the game is paused, a
+        /// controller is connected (the browser game's "hide on-screen sticks while a controller is connected", on by default) or a
+        /// headset is in use.</summary>
+        void UpdateTouch()
+        {
+            if (touchControls == null) return;
+            var ts = UnityEngine.InputSystem.Touchscreen.current;
+            if (ts != null && ts.press.isPressed) touchSeen = true;
+            var pad = UnityEngine.InputSystem.Gamepad.current != null || UnityEngine.InputSystem.Joystick.current != null;
+            var show = (Application.isMobilePlatform || touchSeen) && !Paused && !Vr.On && !(pad && App.Settings.controls.controller.enabled) && !heli.State.crashed;
+            if (!show) { if (touchControls.style.display != DisplayStyle.None) { touchControls.Release(); touchControls.Show(false); } return; }
+            touchControls.Show(true);
+            touchControls.Refresh(App.Settings.touchSwapped);
         }
 
         HsiData HsiFor()
@@ -506,7 +549,7 @@ namespace Rotorcraft.Presentation
             if (heli.Input.Trimmed)
             {
                 trimChip.Add(T(heli.Input.trimReleasing ? "TRIM RELEASING" : "TRIM SET", "trimchip-b"));
-                if (!heli.Input.trimReleasing) trimChip.Add(T($"release · {(heli.Input.lastSource == InputSourceKind.Controller ? "RT" : App.Settings.controls.KeyFor("trimRelease").ToString())}", "trimchip-s"));
+                if (!heli.Input.trimReleasing) trimChip.Add(T(touchControls != null && heli.Input.lastSource == InputSourceKind.Touch ? "tap to release" : $"release · {(heli.Input.lastSource == InputSourceKind.Controller ? "RT" : App.Settings.controls.KeyFor("trimRelease").ToString())}", "trimchip-s"));
                 trimChip.EnableInClassList("releasing", heli.Input.trimReleasing);
             }
             // completion banner

@@ -1,6 +1,7 @@
 // A screenshot tour for checking a build: started with "-shots <folder>" on the command line, it walks through
 // the menus with a fresh test career (saved in that folder, not the player's), flies a freeplay shift and a
-// career exercise, captures each view as a .png and quits.
+// career exercise, captures each view as a .png and quits. In the batch-mode editor (the bench: no window, nothing on
+// the desktop) the world and the menus are drawn into textures and laid together instead of capturing the screen.
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,10 @@ namespace Rotorcraft.Presentation.UI
         public string folder;
         GameApp app;
         int n;
+        /// <summary>Set when the tour has finished (the editor ignores Application.Quit).</summary>
+        public static bool Done;
+        const int ShotW = 1600, ShotH = 900;
+        RenderTexture ui;
 
         public static string ArgFolder()
         {
@@ -29,6 +34,13 @@ namespace Rotorcraft.Presentation.UI
         {
             app = GameApp.Instance;
             Directory.CreateDirectory(folder);
+            if (Application.isBatchMode)
+            {
+                // the menus and HUD go to a texture for the whole tour, read at each picture; the panel only draws into one it
+                // was made with, so the test that runs the tour gives the game's panel its texture before the scene opens
+                ui = app.document.panelSettings.targetTexture;
+                if (ui == null) Debug.LogWarning("Shot tour: the game panel has no target texture, so the pictures will have no menus");
+            }
             yield return Wait(2.5f);
             var a = System.Environment.GetCommandLineArgs();
             if (System.Array.IndexOf(a, "-markings-only") >= 0)
@@ -120,6 +132,7 @@ namespace Rotorcraft.Presentation.UI
             yield return Life();
             yield return Markings();
             Debug.Log($"Shot tour done: {n} pictures in {folder}");
+            Done = true;
             Application.Quit();
         }
 
@@ -333,10 +346,54 @@ namespace Rotorcraft.Presentation.UI
         IEnumerator Shot(string name)
         {
             yield return Wait(0.8f);
-            yield return new WaitForEndOfFrame();
             var path = Path.Combine(folder, $"{++n:00}-{name}.png");
+            if (Application.isBatchMode) { yield return Offscreen(path); yield break; }
+            yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(path);
             yield return null; yield return null;
+        }
+
+        /// <summary>No screen to capture: the camera into one texture, the menus and HUD into another (with a depth and stencil
+        /// buffer, which rounded, clipped panels need), then the menus laid over the world.</summary>
+        IEnumerator Offscreen(string path)
+        {
+            const int W = ShotW, H = ShotH;
+            for (int i = 0; i < 2; i++) yield return null;
+            var front = ui != null ? Read(ui) : new Color32[W * H];
+            Color32[] back = null;
+            var cam = Camera.main;
+            if (cam != null && cam.isActiveAndEnabled)
+            {
+                var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+                var req = new UnityEngine.Rendering.RenderPipeline.StandardRequest { destination = rt };
+                if (UnityEngine.Rendering.RenderPipeline.SupportsRenderRequest(cam, req)) UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(cam, req);
+                else { cam.targetTexture = rt; cam.Render(); cam.targetTexture = null; }
+                back = Read(rt);
+                rt.Release();
+            }
+            var px = new Color32[W * H];
+            for (int i = 0; i < px.Length; i++)
+            {
+                var u = front[i]; var a = u.a / 255f;
+                var b = back != null ? back[i] : new Color32(20, 26, 31, 255);
+                // the panel is drawn with premultiplied alpha onto a clear texture
+                px[i] = new Color32((byte)Mathf.Min(255, u.r + b.r * (1 - a)), (byte)Mathf.Min(255, u.g + b.g * (1 - a)), (byte)Mathf.Min(255, u.b + b.b * (1 - a)), 255);
+            }
+            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false);
+            tex.SetPixels32(px); tex.Apply();
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            Destroy(tex);
+        }
+
+        static Color32[] Read(RenderTexture rt)
+        {
+            var prev = RenderTexture.active; RenderTexture.active = rt;
+            var t = new Texture2D(rt.width, rt.height, TextureFormat.RGBA32, false);
+            t.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); t.Apply();
+            RenderTexture.active = prev;
+            var px = t.GetPixels32();
+            Destroy(t);
+            return px;
         }
     }
 }

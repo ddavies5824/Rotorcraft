@@ -177,7 +177,7 @@ namespace Rotorcraft.Presentation
                 double x = mf.x + i * 13, z = mf.z - 95 + (R() - 0.5) * 6;
                 Add(x, WorldMap.TerrainHeight(x, z), z, 15 + R() * 5, Setting.Plantation);
             }
-            // hedgerow trees: along hedged field edges in the core, every 20-50 m
+            // hedgerow trees: along the field edges in the core that have a hedge (not a wall or fence: FieldBoundaries), about every 75 m
             var c = KinlochTerrain.CoreArea;
             for (double gz = c.z0; gz < c.z1; gz += 9)
                 for (double gx = c.x0; gx < c.x1; gx += 9)
@@ -185,6 +185,8 @@ namespace Rotorcraft.Presentation
                     double x = gx + (R() - 0.5) * 8, z = gz + (R() - 0.5) * 8;
                     var (fi, row, edge) = FieldLayout.FieldAt(x, z);
                     if (edge > 2.5 || R() > 0.22) continue;
+                    var (_, kind) = FieldBoundaries.NearestEdge(x, z);
+                    if (kind != Boundary.Hedge) continue;
                     var th = WorldMap.TerrainHeight(x, z);
                     if (th < 1.5 || th > 105 || KinlochTerrain.FarmMask(x, z, th, 0) < 0.45) continue;
                     var g = Ok(x, z); if (g == null) continue;

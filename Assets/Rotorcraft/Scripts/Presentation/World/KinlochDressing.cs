@@ -365,7 +365,16 @@ namespace Rotorcraft.Presentation
                 if (!cells.TryGetValue(k, out var b)) cells[k] = b = new MeshBuilder(U(k.Item1 * 1000 + 500, 0, k.Item2 * 1000 + 500));
                 return b;
             }
-            int placed = 0;
+            // houses and farm sheds are modelled (HouseModels), coloured per vertex, in the same cells
+            var homes = new Dictionary<(int, int), ColourMesh>();
+            ColourMesh Home(double x, double z)
+            {
+                var k = ((int)Math.Floor(x / 1000), (int)Math.Floor(z / 1000));
+                if (!homes.TryGetValue(k, out var b)) homes[k] = b = new ColourMesh(new P3(k.Item1 * 1000 + 500, 0, k.Item2 * 1000 + 500));
+                return b;
+            }
+            lock (HouseModels.Drives) HouseModels.Drives.Clear();
+            int placed = 0, modelled = 0;
             foreach (var st in WorldMap.STRUCTURES)
             {
                 var ground = WorldMap.StructureBase(st, WorldMap.TerrainHeight(st.x, st.z));
@@ -380,11 +389,14 @@ namespace Rotorcraft.Presentation
                     placed++;
                     continue;
                 }
+                if (st.kind == StructureKind.House) { HouseModels.House(Home(st.x, st.z), st, ground, SimMath.Rng(Hash(st.x, st.z) + 4)); modelled++; continue; }
+                if (st.kind == StructureKind.Barn) { HouseModels.Barn(Home(st.x, st.z), st, ground); modelled++; continue; }
                 Footprint(Cell(st.x, st.z), M, st, ground);
             }
             foreach (var kv in cells) kv.Value.Attach($"Buildings {kv.Key.Item1},{kv.Key.Item2}", root);
+            foreach (var kv in homes) kv.Value.Attach($"Houses {kv.Key.Item1},{kv.Key.Item2}", root);
             TurbineRotors.Add(root, M.white);
-            Debug.Log($"Kinloch structures: {placed} Blender landmarks, {WorldMap.STRUCTURES.Count - placed} built from footprints");
+            Debug.Log($"Kinloch structures: {placed} Blender landmarks, {modelled} houses and farm sheds modelled, {WorldMap.STRUCTURES.Count - placed - modelled} built from footprints, {HouseModels.Drives.Count} cars on drives");
         }
 
         static int Hash(double x, double z) { unchecked { var h = (int)(x * 73856093) ^ (int)(z * 19349663); return h & 0x7fffffff; } }
