@@ -49,6 +49,8 @@ namespace Rotorcraft.Presentation
         public FreeplayDirector Director { get; private set; }
         public Preflight Pre { get; private set; }
         public bool Paused { get; private set; }
+        /// <summary>The loading screen is up: the world or the aircraft is still being built.</summary>
+        public bool Loading => loading;
 
         GameApp App => GameApp.Instance;
         ModelAnimator animator;

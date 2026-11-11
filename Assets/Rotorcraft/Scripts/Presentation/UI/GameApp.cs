@@ -85,6 +85,7 @@ namespace Rotorcraft.Presentation.UI
             if (err == LoadError.Corrupt) SaveProblem = "Your saved career could not be read, so a backup copy was kept and a fresh start is available.";
             else if (err == LoadError.Unavailable) SaveProblem = "Saving is not available on this computer, so progress will not be kept after you quit.";
             ApplyDisplaySettings();
+            if (!Isolated && !Application.isBatchMode && DiscordPresence.Available) gameObject.AddComponent<DiscordPresence>();
             Vr.Changed += () => { if (flight == null || !flight.Active) Render(); };
         }
 

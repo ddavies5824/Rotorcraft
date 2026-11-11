@@ -211,7 +211,7 @@ namespace Rotorcraft.EditorTools
             Build();
             PlayerSettings.companyName = "Rotorcraft";
             PlayerSettings.productName = "Rotorcraft";
-            PlayerSettings.bundleVersion = "1.0.0";
+            PlayerSettings.bundleVersion = "1.1.0";
             var icon = AssetDatabase.LoadAssetAtPath<Texture2D>($"{UiDir}/Images/app-icon.png") ?? AssetDatabase.LoadAssetAtPath<Texture2D>($"{UiDir}/Images/logo-192.jpg");
             if (icon != null) PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
             PlayerSettings.SplashScreen.showUnityLogo = false;

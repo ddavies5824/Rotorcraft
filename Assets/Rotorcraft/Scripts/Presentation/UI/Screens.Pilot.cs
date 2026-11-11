@@ -308,6 +308,8 @@ namespace Rotorcraft.Presentation.UI
                     Slider("Volume", 0, 1, s.volume, v => $"{v * 100:0}%", v => Change(n => n.volume = v), 0.05f)),
                 Check("Sound effects", s.sound, v => Change(n => n.sound = v)),
                 Check("Full screen", s.fullscreen, v => Change(n => n.fullscreen = v)),
+                !DiscordPresence.Available ? null : Check("Show what I'm flying on Discord", s.discord, v => Change(n => n.discord = v)),
+                !DiscordPresence.Available || !s.discord ? null : DiscordLine(),
                 Row(Btn("Show first-time tips again", "small ghost", () => Change(n => n.seenHints.Clear()), disabled: s.seenHints.Count == 0)),
                 Row(Btn("Restore all defaults", "small ghost", () => { app.CommitSettings(new GameSettings()); app.Later(app.Refresh); }))));
             page.Add(CloudPanel(app));
@@ -333,6 +335,14 @@ namespace Rotorcraft.Presentation.UI
                 !confirmDelete ? Row(Btn("Delete career", "danger", () => Set(app, "confirmDelete", true)))
                     : Row(T("This cannot be undone.", "err"), Btn("Delete permanently", "danger", () => { app.DeleteCareer(); app.Go("menu"); }), Btn("Cancel", "ghost", () => Set(app, "confirmDelete", false)))));
             return page;
+        }
+
+        /// <summary>Whether Discord is there and taking the activity, kept current while Settings is open.</summary>
+        static VisualElement DiscordLine()
+        {
+            var l = Muted(DiscordPresence.Instance?.StatusLine() ?? "", "small");
+            l.schedule.Execute(() => l.text = DiscordPresence.Instance?.StatusLine() ?? "").Every(1000);
+            return l;
         }
 
         /// <summary>Joystick, HOTAS and pedals: the live device list and axis readouts, presets and inversion.</summary>

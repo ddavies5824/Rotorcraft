@@ -32,6 +32,8 @@ namespace Rotorcraft.Presentation.UI
         public bool touchSwapped;
         /// <summary>The refresh rate to ask a headset for, in Hz; 0 chooses one the game can hold.</summary>
         public int vrRefreshHz = 0;
+        /// <summary>Windows: show what is being flown on the player's Discord profile (DiscordPresence).</summary>
+        public bool discord = true;
         /// <summary>Mechanics the player has already had explained (first-time hints).</summary>
         public List<string> seenHints = new List<string>();
 

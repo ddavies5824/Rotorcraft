@@ -172,3 +172,22 @@ The game page must stay at the top of the site (`/play`, served from `play.html`
 No server settings are needed: the game files decompress themselves in the browser, so any static host works.
 
 The game needs a browser with WebGL 2: Chrome, Edge or Firefox on a desktop is best, and a mouse or a joystick is recommended. Phones and tablets get on-screen controls. The first start downloads about 40 MB; later visits load from the browser cache. The first flight builds the world in the browser, which takes longer than on Windows, so the loading screen can sit for a minute or two. Progress is saved in the browser (and in Google Drive when signed in).
+
+---
+
+## Discord status (Windows). Optional.
+
+The Windows game shows what the player is doing on their Discord profile: "Playing Rotorcraft", the flight or screen, the current task, a picture of the aircraft, the time since it started, and buttons for friends to play in the browser or open the website. It talks to the Discord app on the same computer, so nothing goes through a server of ours. The web version can't do this.
+
+It needs a Discord application, which only gives the game its name and icon in Discord:
+
+1. Go to **https://discord.com/developers/applications** and sign in with your Discord account.
+2. Click **New Application**, name it `Rotorcraft` (people see that name after "Playing"), agree to the terms and click **Create**.
+3. Optional: under **General Information**, set the **App Icon** to `Website/img/discord/logo.png` and add a description.
+4. Copy the **Application ID** into `ApplicationId` in `Assets/Rotorcraft/Scripts/Presentation/UI/DiscordPresence.cs`, then rebuild. The id is not a secret. While it is empty, the feature and its Settings option are hidden.
+
+Nothing else in the Developer Portal is needed: no bot, no OAuth2 and no Rich Presence art. The pictures are served by the website from `img/discord/`, so upload the site after changing them.
+
+Players can untick **Show what I'm flying on Discord** in Settings; the line under it says whether Discord is connected. Discord only shows it to others if the player's own **User Settings › Activity Privacy** shares their activity.
+
+To check it with Discord running on this PC: `bench.ps1 edit Rotorcraft.Presentation.Tests.DiscordPresenceTests`. `DiscordTakesAFlight` puts a flight on the signed-in Discord account for a moment and saves Discord's answer to `Logs/discord-reply.json`; set `RC_DISCORD_HOLD=30` to keep it up long enough to look at.
