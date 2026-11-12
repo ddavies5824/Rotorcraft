@@ -171,7 +171,7 @@ The game page must stay at the top of the site (`/play`, served from `play.html`
 
 No server settings are needed: the game files decompress themselves in the browser, so any static host works.
 
-The game needs a browser with WebGL 2: Chrome, Edge or Firefox on a desktop is best, and a mouse or a joystick is recommended. Phones and tablets get on-screen controls. The first start downloads about 40 MB; later visits load from the browser cache. The first flight builds the world in the browser, which takes longer than on Windows, so the loading screen can sit for a minute or two. Progress is saved in the browser (and in Google Drive when signed in).
+The game needs a browser with WebGL 2: Chrome, Edge or Firefox on a desktop is best, and a mouse or a joystick is recommended. Phones and tablets get on-screen controls. The first start downloads about 55 MB; later visits load from the browser cache. The first flight builds the world in the browser, which takes longer than on Windows, so the loading screen can sit for a minute or two. Progress is saved in the browser (and in Google Drive when signed in).
 
 ---
 
