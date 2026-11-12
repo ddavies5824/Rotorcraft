@@ -1,0 +1,191 @@
+{
+ "pilot": {
+  "file": "pilot.glb",
+  "label": "Pilot",
+  "height_m": 1.8378,
+  "hip_height_m": 1.0434,
+  "triangles": 20055,
+  "meshes": [
+   "pilot_body",
+   "pilot_brows",
+   "pilot_eyes",
+   "pilot_suit",
+   "pilot_shoes",
+   "pilot_hair",
+   "pilot_helmet",
+   "pilot_visor",
+   "pilot_lifejacket"
+  ]
+ },
+ "copilot": {
+  "file": "copilot.glb",
+  "label": "Co-pilot",
+  "height_m": 1.7835,
+  "hip_height_m": 0.9893,
+  "triangles": 21019,
+  "meshes": [
+   "copilot_body",
+   "copilot_brows",
+   "copilot_eyes",
+   "copilot_suit",
+   "copilot_hair",
+   "copilot_shoes",
+   "copilot_helmet",
+   "copilot_visor",
+   "copilot_lifejacket"
+  ]
+ },
+ "winch_operator": {
+  "file": "winch_operator.glb",
+  "label": "Winch operator",
+  "height_m": 1.8623,
+  "hip_height_m": 1.0531,
+  "triangles": 18202,
+  "meshes": [
+   "winch_operator_body",
+   "winch_operator_brows",
+   "winch_operator_eyes",
+   "winch_operator_suit",
+   "winch_operator_shoes",
+   "winch_operator_hair",
+   "winch_operator_helmet",
+   "winch_operator_visor",
+   "winch_operator_harness"
+  ]
+ },
+ "winchman_paramedic": {
+  "file": "winchman_paramedic.glb",
+  "label": "Winchman paramedic",
+  "height_m": 1.8761,
+  "hip_height_m": 1.0658,
+  "triangles": 20890,
+  "meshes": [
+   "winchman_paramedic_body",
+   "winchman_paramedic_brows",
+   "winchman_paramedic_eyes",
+   "winchman_paramedic_suit",
+   "winchman_paramedic_shoes",
+   "winchman_paramedic_hair",
+   "winchman_paramedic_helmet",
+   "winchman_paramedic_visor",
+   "winchman_paramedic_harness",
+   "winchman_paramedic_lifejacket"
+  ]
+ },
+ "casualty_hiker_m": {
+  "file": "casualty_hiker_m.glb",
+  "label": "Casualty: hiker (man)",
+  "height_m": 1.6973,
+  "hip_height_m": 0.9509,
+  "triangles": 11766,
+  "meshes": [
+   "casualty_hiker_m_body",
+   "casualty_hiker_m_brows",
+   "casualty_hiker_m_eyes",
+   "casualty_hiker_m_suit",
+   "casualty_hiker_m_shoes",
+   "casualty_hiker_m_hair",
+   "casualty_hiker_m_backpack",
+   "casualty_hiker_m_packstraps"
+  ]
+ },
+ "casualty_hiker_f": {
+  "file": "casualty_hiker_f.glb",
+  "label": "Casualty: hiker (woman)",
+  "height_m": 1.637,
+  "hip_height_m": 0.9054,
+  "triangles": 15007,
+  "meshes": [
+   "casualty_hiker_f_body",
+   "casualty_hiker_f_hair",
+   "casualty_hiker_f_brows",
+   "casualty_hiker_f_eyes",
+   "casualty_hiker_f_suit",
+   "casualty_hiker_f_shoes",
+   "casualty_hiker_f_backpack",
+   "casualty_hiker_f_packstraps"
+  ]
+ },
+ "casualty_sailor": {
+  "file": "casualty_sailor.glb",
+  "label": "Casualty: sailor",
+  "height_m": 1.7398,
+  "hip_height_m": 0.9805,
+  "triangles": 13378,
+  "meshes": [
+   "casualty_sailor_body",
+   "casualty_sailor_brows",
+   "casualty_sailor_eyes",
+   "casualty_sailor_suit",
+   "casualty_sailor_shoes",
+   "casualty_sailor_hair",
+   "casualty_sailor_lifejacket"
+  ]
+ },
+ "casualty_older_walker": {
+  "file": "casualty_older_walker.glb",
+  "label": "Casualty: older walker",
+  "height_m": 1.5555,
+  "hip_height_m": 0.841,
+  "triangles": 12657,
+  "meshes": [
+   "casualty_older_walker_hair",
+   "casualty_older_walker_body",
+   "casualty_older_walker_brows",
+   "casualty_older_walker_eyes",
+   "casualty_older_walker_suit",
+   "casualty_older_walker_shoes"
+  ]
+ },
+ "ground_marshaller": {
+  "file": "ground_marshaller.glb",
+  "label": "Ground marshaller",
+  "height_m": 1.8575,
+  "hip_height_m": 1.051,
+  "triangles": 20155,
+  "meshes": [
+   "ground_marshaller_body",
+   "ground_marshaller_brows",
+   "ground_marshaller_eyes",
+   "ground_marshaller_suit",
+   "ground_marshaller_shoes",
+   "ground_marshaller_hair",
+   "ground_marshaller_hivis",
+   "ground_marshaller_eardefenders"
+  ]
+ },
+ "offshore_hdo": {
+  "file": "offshore_hdo.glb",
+  "label": "Offshore helideck officer",
+  "height_m": 1.8017,
+  "hip_height_m": 1.0155,
+  "triangles": 19354,
+  "meshes": [
+   "offshore_hdo_body",
+   "offshore_hdo_brows",
+   "offshore_hdo_eyes",
+   "offshore_hdo_suit",
+   "offshore_hdo_shoes",
+   "offshore_hdo_hair",
+   "offshore_hdo_hivis",
+   "offshore_hdo_hardhat",
+   "offshore_hdo_eardefenders"
+  ]
+ },
+ "offshore_passenger": {
+  "file": "offshore_passenger.glb",
+  "label": "Offshore passenger (survival suit)",
+  "height_m": 1.6851,
+  "hip_height_m": 0.9149,
+  "triangles": 18234,
+  "meshes": [
+   "offshore_passenger_hair",
+   "offshore_passenger_body",
+   "offshore_passenger_brows",
+   "offshore_passenger_eyes",
+   "offshore_passenger_suit",
+   "offshore_passenger_shoes",
+   "offshore_passenger_lifejacket"
+  ]
+ }
+}

@@ -112,6 +112,13 @@ namespace Rotorcraft.EditorTools
             doc.panelSettings = Panel();
             var lib = game.AddComponent<AircraftLibrary>();
             lib.kestrel = Model("Aircraft/kestrel_k2.gltf"); lib.northstar = Model("Aircraft/northstar_175.gltf"); lib.guardian = Model("Aircraft/guardian_s9.gltf"); lib.nightjar = Model("Aircraft/nightjar_n4.gltf"); lib.peregrine = Model("Aircraft/peregrine_p3.gltf");
+            // the people pack: prefabs on compressed textures (NpcImport), the shared clips and the tables
+            if (!NpcImport.Generated()) NpcImport.Generate();   // when the pack is new or a look was added to NpcRoles
+            var npcs = game.AddComponent<NpcLibrary>();
+            npcs.characters = NpcImport.Prefabs(); npcs.clips = NpcImport.Clips();
+            npcs.charactersTable = AssetDatabase.LoadAssetAtPath<TextAsset>($"{NpcImport.Dir}/npc_characters.json");
+            npcs.clipsTable = AssetDatabase.LoadAssetAtPath<TextAsset>($"{NpcImport.Dir}/npc_clips.json");
+            npcs.groundTable = AssetDatabase.LoadAssetAtPath<TextAsset>($"{NpcImport.Dir}/npc_ground.json");
             var actors = game.AddComponent<WorldActors>();
             actors.people = Model("people.glb"); actors.vehicles = Model("vehicles.glb");
             var flight = game.AddComponent<FlightSession>();

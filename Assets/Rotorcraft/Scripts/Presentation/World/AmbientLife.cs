@@ -1,7 +1,9 @@
 // Moving life in the world (port of src/world/traffic.ts): road traffic keeping left at each road's speed, with
 // head and tail lights after dark; people walking up and down the pavements in the towns; fishing boats working
 // offshore; cars parked on the drives of the modelled houses. Positions are pure functions of the clock, so nothing is saved. Only what is near the camera is
-// shown; the models come from the world actors' libraries and are made the first time they come into range.
+// shown; the models come from the world actors' libraries and are made the first time they come into range. The
+// townsfolk are the people pack's four casual characters (the casualty set), walking in step with the ground they cover,
+// out to PED_RANGE: beyond that a person is a few pixels tall and not worth a skinned character on a handheld.
 using System.Collections.Generic;
 using System.Linq;
 using Rotorcraft.Sim;
@@ -12,9 +14,7 @@ namespace Rotorcraft.Presentation
 {
     public sealed class AmbientLife : MonoBehaviour
     {
-        public const int WALK_FRAMES = 8;
-        public const float STRIDE = 1.4f;
-        const float RANGE = 2600, PED_RANGE = 1400, FAR = 1000, FAR_WALKER = 300;
+        const float RANGE = 2600, PED_RANGE = 400, FAR = 1000, FAR_WALKER = 300;
         const int OutOfRangeEvery = 32, FarEvery = 4;
 
         sealed class Path
@@ -66,7 +66,7 @@ namespace Rotorcraft.Presentation
         };
 
         sealed class Car { public Path path; public int dir; public float speed, offset, s0; public string kind; public Color paint; public GameObject go; public Vector3[] heads, tails; public bool far; }
-        sealed class Walker { public Path path; public float s0, span, side, speed, phase; public int seed; public GameObject go; public MeshFilter[] filters; public Mesh[][] frames; public bool far; }
+        sealed class Walker { public Path path; public float s0, span, side, speed, phase; public int seed; public GameObject go; public Npc npc; public bool far; }
         sealed class Boat { public float cx, cz, rx, rz, w, ph, scale; public GameObject go; }
         /// <summary>A car standing on a house's drive (HouseModels): shown only near the camera, and cold on the thermal camera.</summary>
         sealed class ParkedCar { public HouseModels.Parked at; public GameObject go; }
@@ -190,14 +190,8 @@ namespace Rotorcraft.Presentation
 
         void MakeWalker(Walker w)
         {
-            var frames = new Mesh[WALK_FRAMES][];
-            for (int f = 0; f < WALK_FRAMES; f++) frames[f] = actors.FrameMeshes("pose_walk" + f);
-            if (frames[0] == null || frames[0].Length == 0) return;
-            w.go = actors.MakePerson("casual", "walk0", w.seed, root);
-            if (w.go == null) return;
-            w.filters = w.go.GetComponentsInChildren<MeshFilter>();
-            w.frames = frames;
-            foreach (var r in w.go.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            w.npc = actors.MakePerson("casual", "walk", w.seed, root);
+            w.go = w.npc != null ? w.npc.gameObject : null;
         }
 
         void Update()
@@ -260,9 +254,8 @@ namespace Rotorcraft.Presentation
                 if (w.go == null) { MakeWalker(w); if (w.go == null) continue; }
                 if (!w.go.activeSelf) w.go.SetActive(true);
                 float fx = back ? -p.dx : p.dx, fz = back ? -p.dz : p.dz;
-                var pose = Mathf.FloorToInt((t * w.speed + w.phase) / STRIDE % 1 * WALK_FRAMES) % WALK_FRAMES;
-                SetFrame(w.filters, w.frames[pose]);
-                w.go.transform.SetPositionAndRotation(U(x, Mathf.Max((float)WorldMap.TerrainHeight(x, z), 0.4f), z), Facing(fx, fz));
+                w.npc.Cycle("walk", (t * w.speed + w.phase) / w.npc.Stride("walk"));
+                w.go.transform.SetPositionAndRotation(U(x, Mathf.Max(NpcLibrary.Ground(x, -z), 0), z), Facing(fx, fz));
             }
 
             ParkedCars(ex, ez);
@@ -316,13 +309,6 @@ namespace Rotorcraft.Presentation
                 if (d < bd) { bd = d; best = p; }
             }
             return best;
-        }
-
-        /// <summary>Show one frame of a walk: each part of the figure gets that frame's mesh.</summary>
-        public static void SetFrame(MeshFilter[] filters, Mesh[] frame)
-        {
-            if (filters == null || frame == null) return;
-            for (int i = 0; i < filters.Length && i < frame.Length; i++) if (filters[i].sharedMesh != frame[i]) filters[i].sharedMesh = frame[i];
         }
     }
 }

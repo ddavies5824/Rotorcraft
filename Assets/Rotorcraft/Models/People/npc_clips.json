@@ -1,0 +1,278 @@
+{
+ "reference_hip_height": 1.0434,
+ "hips_bone": "mixamorig:Hips",
+ "clips": {
+  "idle": {
+   "frames": 181,
+   "fps": 30,
+   "seconds": 6.0,
+   "loop": true,
+   "description": "Standing, breathing",
+   "source": "Mixamo: Standing Idle"
+  },
+  "idle_look_around": {
+   "frames": 191,
+   "fps": 30,
+   "seconds": 6.333,
+   "loop": true,
+   "description": "Standing, looking around",
+   "source": "Mixamo: Looking Around"
+  },
+  "walk": {
+   "frames": 36,
+   "fps": 30,
+   "seconds": 1.167,
+   "loop": true,
+   "description": "Walk cycle, in place",
+   "source": "Mixamo: Standard Walk"
+  },
+  "run": {
+   "frames": 78,
+   "fps": 30,
+   "seconds": 2.567,
+   "loop": true,
+   "description": "Jog/run cycle, in place",
+   "source": "Mixamo: Jogging"
+  },
+  "talk": {
+   "frames": 309,
+   "fps": 30,
+   "seconds": 10.267,
+   "loop": true,
+   "description": "Standing conversation with hand gestures",
+   "source": "Mixamo: Talking"
+  },
+  "point": {
+   "frames": 142,
+   "fps": 30,
+   "seconds": 4.7,
+   "loop": false,
+   "description": "Looks down then points forward",
+   "source": "Mixamo: Pointing Forward"
+  },
+  "wave_help": {
+   "frames": 96,
+   "fps": 30,
+   "seconds": 3.167,
+   "loop": true,
+   "description": "Waving with both arms for help",
+   "source": "Mixamo: Waving"
+  },
+  "injured_walk": {
+   "frames": 50,
+   "fps": 30,
+   "seconds": 1.633,
+   "loop": true,
+   "description": "Limping walk, in place",
+   "source": "Mixamo: Injured Walk"
+  },
+  "injured_idle": {
+   "frames": 281,
+   "fps": 30,
+   "seconds": 9.333,
+   "loop": true,
+   "description": "Standing hurt, holding side",
+   "source": "Mixamo: Injured Idle"
+  },
+  "sit_ground": {
+   "frames": 327,
+   "fps": 30,
+   "seconds": 10.867,
+   "loop": true,
+   "description": "Sitting on the ground",
+   "source": "Mixamo: Sitting Idle"
+  },
+  "lie_back": {
+   "frames": 105,
+   "fps": 30,
+   "seconds": 3.467,
+   "loop": true,
+   "description": "Lying on back",
+   "source": "Mixamo: Laying"
+  },
+  "tread_water": {
+   "frames": 91,
+   "fps": 30,
+   "seconds": 3.0,
+   "loop": true,
+   "description": "Treading water / floating upright",
+   "source": "Mixamo: Treading Water"
+  },
+  "swim": {
+   "frames": 137,
+   "fps": 30,
+   "seconds": 4.533,
+   "loop": true,
+   "description": "Swimming, in place",
+   "source": "Mixamo: Swimming"
+  },
+  "sit_chair": {
+   "frames": 193,
+   "fps": 30,
+   "seconds": 6.4,
+   "loop": true,
+   "description": "Seated in a chair, hands on thighs",
+   "source": "Mixamo: Sitting Idle"
+  },
+  "stand_to_sit": {
+   "frames": 68,
+   "fps": 30,
+   "seconds": 2.233,
+   "loop": false,
+   "description": "Standing to seated",
+   "source": "Mixamo: Stand To Sit"
+  },
+  "sit_to_stand": {
+   "frames": 69,
+   "fps": 30,
+   "seconds": 2.267,
+   "loop": false,
+   "description": "Seated to standing",
+   "source": "Mixamo: Sit To Stand"
+  },
+  "kneel_idle": {
+   "frames": 129,
+   "fps": 30,
+   "seconds": 4.267,
+   "loop": true,
+   "description": "Kneeling, e.g. treating a casualty",
+   "source": "Mixamo: Kneeling Idle"
+  },
+  "crouch_walk": {
+   "frames": 32,
+   "fps": 30,
+   "seconds": 1.033,
+   "loop": true,
+   "description": "Crouched walk, in place (under the rotor disc)",
+   "source": "Mixamo: Crouched Walking"
+  },
+  "hang_idle": {
+   "frames": 71,
+   "fps": 30,
+   "seconds": 2.333,
+   "loop": true,
+   "description": "Hanging by the hands, gently swaying",
+   "source": "Mixamo: Hanging Idle"
+  },
+  "climb_ladder": {
+   "frames": 24,
+   "fps": 30,
+   "seconds": 0.767,
+   "loop": true,
+   "description": "Climbing a ladder, in place",
+   "source": "Mixamo: Climbing Ladder"
+  },
+  "thumbs_up_big": {
+   "frames": 126,
+   "fps": 30,
+   "seconds": 4.167,
+   "loop": false,
+   "description": "Big, animated thumbs up with a lunge (as downloaded)",
+   "source": "Mixamo: Standing Thumbs Up"
+  },
+  "winch_hang_idle": {
+   "frames": 121,
+   "fps": 30,
+   "seconds": 4.0,
+   "loop": true,
+   "description": "On the winch hook, steady",
+   "source": "hand-authored"
+  },
+  "winch_descend": {
+   "frames": 91,
+   "fps": 30,
+   "seconds": 3.0,
+   "loop": true,
+   "description": "On the winch hook going down, looking down",
+   "source": "hand-authored"
+  },
+  "winch_ascend": {
+   "frames": 91,
+   "fps": 30,
+   "seconds": 3.0,
+   "loop": true,
+   "description": "On the winch hook going up, looking up",
+   "source": "hand-authored"
+  },
+  "winch_double_rescuer": {
+   "frames": 121,
+   "fps": 30,
+   "seconds": 4.0,
+   "loop": true,
+   "description": "Double lift: winchman holding the casualty",
+   "source": "hand-authored"
+  },
+  "winch_double_casualty": {
+   "frames": 121,
+   "fps": 30,
+   "seconds": 4.0,
+   "loop": true,
+   "description": "Double lift: casualty in the strop",
+   "source": "hand-authored"
+  },
+  "marshal_hover": {
+   "frames": 61,
+   "fps": 30,
+   "seconds": 2.0,
+   "loop": true,
+   "description": "Marshalling: hover (arms out level)",
+   "source": "hand-authored"
+  },
+  "marshal_approach": {
+   "frames": 37,
+   "fps": 30,
+   "seconds": 1.2,
+   "loop": true,
+   "description": "Marshalling: move ahead / approach (beckoning)",
+   "source": "hand-authored"
+  },
+  "marshal_land": {
+   "frames": 61,
+   "fps": 30,
+   "seconds": 2.0,
+   "loop": true,
+   "description": "Marshalling: land (arms crossed low in front)",
+   "source": "hand-authored"
+  },
+  "marshal_hold": {
+   "frames": 61,
+   "fps": 30,
+   "seconds": 2.0,
+   "loop": true,
+   "description": "Marshalling: hold / stop (arms crossed overhead)",
+   "source": "hand-authored"
+  },
+  "marshal_shutdown": {
+   "frames": 43,
+   "fps": 30,
+   "seconds": 1.4,
+   "loop": true,
+   "description": "Marshalling: cut engines (hand across throat)",
+   "source": "hand-authored"
+  },
+  "stretcher_carry_walk": {
+   "frames": 36,
+   "fps": 30,
+   "seconds": 1.167,
+   "loop": true,
+   "description": "Walk cycle with both hands gripping stretcher handles",
+   "source": "Mixamo: Standard Walk + arms"
+  },
+  "pilot_seated_controls": {
+   "frames": 193,
+   "fps": 30,
+   "seconds": 6.4,
+   "loop": true,
+   "description": "Seated with hands on cyclic and collective",
+   "source": "Mixamo: Sitting Idle + arms"
+  },
+  "thumbs_up": {
+   "frames": 67,
+   "fps": 30,
+   "seconds": 2.2,
+   "loop": false,
+   "description": "Calm thumbs up with the right hand",
+   "source": "hand-authored"
+  }
+ }
+}

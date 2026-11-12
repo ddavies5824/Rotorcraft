@@ -21,7 +21,9 @@ namespace Rotorcraft.Presentation
         sealed class Figure
         {
             public string outfit; public int seed;
-            public GameObject walk, stand; public MeshFilter[] filters; public Mesh[][] frames;
+            public Npc npc;
+            /// <summary>The walking clip: walk, run (soldiers and armed police), injured_walk (a walker helped aboard).</summary>
+            public string gait = "walk";
         }
 
         sealed class Unit
@@ -133,9 +135,9 @@ namespace Rotorcraft.Presentation
             int people = Count(what);
             if (what.Contains("net six on")) { Group(2, false); Group(8, true); }
             else if (patient) Stretcher();
-            else if (what.Contains("soldier")) Group(people > 0 ? people : 6, d.pickup, "soldier", JOG);
-            else if (what.Contains("firearms")) Group(4, d.pickup, "armed", JOG);
-            else if (what.Contains("walker")) Group(1, d.pickup, "walker");
+            else if (what.Contains("soldier")) Group(people > 0 ? people : 6, d.pickup, "soldier", JOG, "run");
+            else if (what.Contains("firearms")) Group(4, d.pickup, "armed", JOG, "run");
+            else if (what.Contains("walker")) Group(1, d.pickup, "walker", WALK, "injured_walk");
             else if (what.Contains("adviser")) Group(1, d.pickup, "hivis");
             else if (what.Contains("observer")) { Group(1, d.pickup, "police"); Boxes(1, d.pickup); }
             else if (what.Contains("passenger"))
@@ -147,12 +149,12 @@ namespace Rotorcraft.Presentation
             foreach (var u in units) Route(u);
             Schedule(seconds);
 
-            void Group(int n, bool inbound, string outfit = null, float speed = WALK)
+            void Group(int n, bool inbound, string outfit = null, float speed = WALK, string gait = "walk")
             {
                 for (int i = 0; i < n; i++)
                 {
                     var o = outfit ?? (offshore ? "immersion" : "casual");
-                    var u = new Unit { a = new Figure { outfit = o, seed = seed + i * 7 }, inbound = inbound, speed = speed };
+                    var u = new Unit { a = new Figure { outfit = o, seed = seed + i * 7, gait = gait }, inbound = inbound, speed = speed };
                     var queue = gather + outward * (i % 3) * 0.9f + fwd * ((i / 3) - 1) * 0.9f;
                     if (lying != null && n == 1) queue = Unity(lying.Value);
                     u.from = inbound ? OnGround(queue) : door;
@@ -346,38 +348,44 @@ namespace Rotorcraft.Presentation
             if (dir.sqrMagnitude < 1e-4f) dir = transform.forward;
             var face = Quaternion.LookRotation(dir.normalized);
             var walked = u.length * (u.roundTrip ? k * 2 : k);
-            var phase = walked / AmbientLife.STRIDE % 1;
             if (u.carry == Carry.Stretcher)
             {
-                // the carriers at either end, the stretcher between them at hand height
+                // the carriers at either end, the stretcher between them at hand height, out of step with each other
                 var along = face * Vector3.forward;
-                Place(u.a, pos + along * STRETCHER_HALF, face, shown, moving, phase);
-                Place(u.b, pos - along * STRETCHER_HALF, face, shown, moving, (phase + 0.5f) % 1);
+                Place(u.a, pos + along * STRETCHER_HALF, face, shown, moving, walked, carrying);
+                Place(u.b, pos - along * STRETCHER_HALF, face, shown, moving, walked + 0.5f * (u.b.npc != null ? u.b.npc.Stride(CARRY_CLIP) : 1.6f), carrying);
                 Load(u, carrying && shown, pos, face, 0.82f);
             }
             else
             {
-                Place(u.a, pos, face, shown, moving, phase);
-                if (u.carry == Carry.Box) Load(u, carrying && shown, pos + face * Vector3.forward * 0.38f, face, 1.05f);
+                Place(u.a, pos, face, shown, moving, walked, carrying);
+                // the carry clip holds the hands down at the sides (as for a stretcher's end handles), so a box is carried at the side,
+                // long way forward, its top at the hand
+                if (u.carry == Carry.Box) Load(u, carrying && shown, pos + face * new Vector3(0.36f, 0, 0.04f), face * Quaternion.Euler(0, 90, 0), 0.6f);
             }
         }
 
-        void Place(Figure f, Vector3 pos, Quaternion face, bool shown, bool moving, float phase)
+        const string CARRY_CLIP = "stretcher_carry_walk";
+
+        /// <summary>One person of a unit: walking (in step with the ground covered), carrying (hands forward on the handles or the box),
+        /// crouched under turning blades, or standing; a carrier standing with the load keeps hold of it.</summary>
+        void Place(Figure f, Vector3 pos, Quaternion face, bool shown, bool moving, float walked, bool carrying)
         {
             if (f == null) return;
             if (shown) Ensure(f);
-            if (f.walk != null) f.walk.SetActive(shown && moving);
-            if (f.stand != null) f.stand.SetActive(shown && !moving);
+            if (f.npc == null) return;
+            if (f.npc.gameObject.activeSelf != shown) f.npc.gameObject.SetActive(shown);
             if (!shown) return;
-            var g = moving ? f.walk : f.stand;
-            if (g == null) return;
-            if (moving && f.frames != null) AmbientLife.SetFrame(f.filters, f.frames[Mathf.FloorToInt(phase * AmbientLife.WALK_FRAMES) % AmbientLife.WALK_FRAMES]);
-            pos.y = Ground(pos);
-            // stooping under turning blades, as the crew do
             var s = heli.State;
-            if (s.@out.rpm > 30 && Vector2.Distance(new Vector2(pos.x, pos.z), new Vector2(transform.position.x, transform.position.z)) < heli.Aircraft.rotorDiameter * 0.62f)
-                face *= Quaternion.Euler(16, 0, 0);
-            g.transform.SetPositionAndRotation(pos, face);
+            var under = s.@out.rpm > 30 && Vector2.Distance(new Vector2(pos.x, pos.z), new Vector2(transform.position.x, transform.position.z)) < heli.Aircraft.rotorDiameter * 0.62f;
+            if (carrying) f.npc.Cycle(CARRY_CLIP, moving ? walked / f.npc.Stride(CARRY_CLIP) : 0);
+            else if (moving)
+            {
+                var clip = under && f.gait != "injured_walk" ? "crouch_walk" : f.gait;
+                f.npc.Cycle(clip, walked / f.npc.Stride(clip));
+            }
+            else f.npc.Play("idle", 0.3f);
+            f.npc.transform.SetPositionAndRotation(OnGround(pos), face);
         }
 
         void Load(Unit u, bool shown, Vector3 pos, Quaternion face, float height)
@@ -434,19 +442,13 @@ namespace Rotorcraft.Presentation
 
         void Ensure(Figure f)
         {
-            if (f.walk != null || actors == null) return;
-            var helmet = f.outfit == "soldier" || f.outfit == "armed" || f.outfit == "worker";
-            f.frames = new Mesh[AmbientLife.WALK_FRAMES][];
-            for (int i = 0; i < AmbientLife.WALK_FRAMES; i++) f.frames[i] = actors.FrameMeshes((helmet ? "helmet_walk" : "pose_walk") + i);
-            f.walk = actors.MakePerson(f.outfit, "walk0", f.seed, root);
-            f.stand = actors.MakePerson(f.outfit, "stand", f.seed, root);
-            if (f.walk != null) f.filters = f.walk.GetComponentsInChildren<MeshFilter>();
-            foreach (var g in new[] { f.walk, f.stand }) if (g != null) g.SetActive(false);
+            if (f.npc != null || actors == null) return;
+            f.npc = actors.MakePerson(f.outfit, "stand", f.seed, root);
         }
 
         void Hide(Unit u)
         {
-            foreach (var f in new[] { u.a, u.b }) if (f != null) { if (f.walk != null) f.walk.SetActive(false); if (f.stand != null) f.stand.SetActive(false); }
+            foreach (var f in new[] { u.a, u.b }) if (f?.npc != null) f.npc.gameObject.SetActive(false);
             if (u.load != null) u.load.SetActive(false);
             u.t0 = u.t1 = float.MaxValue;
         }
@@ -479,6 +481,6 @@ namespace Rotorcraft.Presentation
 
         static Vector3 Unity(Vector2 sim) => new Vector3(sim.x, 0, -sim.y);
         static Vector3 OnGround(Vector3 p) { p.y = Ground(p); return p; }
-        static float Ground(Vector3 p) => (float)WorldMap.GroundAt(p.x, -p.z).h;
+        static float Ground(Vector3 p) => NpcLibrary.Ground(p.x, p.z);
     }
 }

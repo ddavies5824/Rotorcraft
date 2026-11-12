@@ -525,11 +525,11 @@ namespace Rotorcraft.Preview.Tests
             yield return Row("vehicles", vlist, 7, 26, 4);
             var poses = peopleKeys.FindAll(k => k.StartsWith("pose_") && !k.StartsWith("pose_walk")); poses.Add("pose_walk0");
             var plist = new System.Collections.Generic.List<(string, System.Func<Transform, GameObject>)>();
-            foreach (var k in poses) { var pose = k.Substring(5); plist.Add((pose, t => actors.MakePerson("casual", pose, 7, t))); }
+            foreach (var k in poses) { var pose = k.Substring(5); plist.Add((pose, t => actors.MakePerson("casual", pose, 7, t)?.gameObject)); }
             yield return Row("poses", plist, 1.6f, 8, 1.2f);
             var olist = new System.Collections.Generic.List<(string, System.Func<Transform, GameObject>)>();
             foreach (var o in new[] { "casual", "walker", "medic", "police", "fire", "hivis", "worker", "scrubs", "winchman", "aircrew", "immersion", "soldier", "armed", "climber" })
-            { var oo = o; olist.Add((oo, t => actors.MakePerson(oo, "stand", 11, t))); }
+            { var oo = o; olist.Add((oo, t => actors.MakePerson(oo, "stand", 11, t)?.gameObject)); }
             yield return Row("outfits", olist, 1.4f, 7, 1.2f);
             var props = peopleKeys.FindAll(k => !k.StartsWith("pose_") && !k.StartsWith("helmet_"));
             var prlist = new System.Collections.Generic.List<(string, System.Func<Transform, GameObject>)>();
@@ -816,7 +816,7 @@ namespace Rotorcraft.Preview.Tests
             foreach (var (x, z, outfit, pose) in new[] { (34.0, 28.0, "walker", "wave"), (28.0, 36.0, "casual", "stand"), (44.0, 40.0, "medic", "kneel"), (22.0, 22.0, "casual", "lie"), (50.0, 26.0, "worker", "stand") })
             {
                 var p = actors.MakePerson(outfit, pose, seed++, holder);
-                p.transform.position = SimToUnity.Position(new Vec3(x, WorldMap.TerrainHeight(x, z), z));
+                p.transform.position = NpcLibrary.OnGround(SimToUnity.Position(new Vec3(x, 0, z)));
             }
             var car = actors.SpawnVehicle("saloon", holder);
             car.transform.position = SimToUnity.Position(new Vec3(62, WorldMap.TerrainHeight(62, 30), 30));

@@ -3,7 +3,9 @@
 // everyone, pilot included, walks away from the aircraft (towards the hangar at a base). They wait for their
 // door to open, duck under turning blades, leave and return clear of the tail rotor, and hurry back aboard
 // when the pilot raises the collective or starts up. Purely visual: the flight model and the mission rules do
-// not depend on it.
+// not depend on it. They are the people pack's aircrew: pilot, co-pilot (the winch operator on a winch aircraft),
+// paramedic and winchman, walking, running back, crouching under turning blades and kneeling by the casualty, with
+// every step taken from the ground they cover so their feet do not slide.
 using System.Collections.Generic;
 using System.Linq;
 using Rotorcraft.Sim;
@@ -35,9 +37,9 @@ namespace Rotorcraft.Presentation
         {
             public string outfit, role; public int seed;
             public State state; public Vector3 pos; public Vector3 face = Vector3.forward;
-            public List<Vector3> path = new List<Vector3>(); public float phase; public bool kneel, toCasualty;
+            public List<Vector3> path = new List<Vector3>(); public float walked; public bool kneel, toCasualty;
             public string door; public float doorT = 99;
-            public GameObject walk, stand, kneelGo; public MeshFilter[] walkFilters; public Mesh[][] frames;
+            public Npc npc;
         }
 
         HelicopterController heli;
@@ -63,12 +65,12 @@ namespace Rotorcraft.Presentation
                 root = new GameObject("Crew on foot").transform;
                 heli.WasReset += () => { flown = false; foreach (var m in crew) m.state = State.Aboard; };
             }
-            foreach (var m in crew) foreach (var g in new[] { m.walk, m.stand, m.kneelGo }) if (g != null) Destroy(g);
+            foreach (var m in crew) if (m.npc != null) Destroy(m.npc.gameObject);
             crew.Clear();
             aircraftId = heli.Aircraft.id;
             var ac = heli.Aircraft;
-            crew.Add(new Member { outfit = "aircrew", role = "pilot", seed = 81 });
-            if (ac.engines > 1) crew.Add(new Member { outfit = "aircrew", role = "crew", seed = 82 });
+            crew.Add(new Member { outfit = "pilot", role = "pilot", seed = 81 });
+            if (ac.engines > 1) crew.Add(new Member { outfit = ac.equipment.hoist ? "winch_operator" : "copilot", role = "crew", seed = 82 });
             if (ac.equipment.medical) crew.Add(new Member { outfit = "medic", role = "medic", seed = 83 });
             if (ac.equipment.hoist) crew.Add(new Member { outfit = "winchman", role = "winchman", seed = 84 });
             flown = false; airFor = landedFor = shutFor = 0;
@@ -88,20 +90,13 @@ namespace Rotorcraft.Presentation
             return p;
         }
 
-        static float Ground(Vector3 p) => (float)WorldMap.GroundAt(p.x, -p.z).h;
+        static float Ground(Vector3 p) => NpcLibrary.Ground(p.x, p.z);
 
         void Ensure(Member m)
         {
-            if (m.walk != null || actors == null) return;
-            var helmet = m.outfit == "aircrew" || m.outfit == "winchman";
-            var prefix = helmet ? "helmet_walk" : "pose_walk";
-            m.frames = new Mesh[AmbientLife.WALK_FRAMES][];
-            for (int f = 0; f < AmbientLife.WALK_FRAMES; f++) m.frames[f] = actors.FrameMeshes(prefix + f);
-            m.walk = actors.MakePerson(m.outfit, "walk0", m.seed, root);
-            m.stand = actors.MakePerson(m.outfit, "stand", m.seed, root);
-            m.kneelGo = actors.MakePerson(m.outfit, "kneel", m.seed, root);
-            if (m.walk != null) m.walkFilters = m.walk.GetComponentsInChildren<MeshFilter>();
-            foreach (var g in new[] { m.walk, m.stand, m.kneelGo }) if (g != null) g.SetActive(false);
+            if (m.npc != null || actors == null) return;
+            m.npc = actors.MakePerson(m.outfit, "stand", m.seed, root);
+            if (m.npc != null) m.npc.gameObject.SetActive(false);
         }
 
         void LateUpdate()
@@ -195,8 +190,8 @@ namespace Rotorcraft.Presentation
                         m.face = new Vector3(d.x, 0, d.y) / dist;
                         var step = Mathf.Min(dist, left);
                         m.pos += m.face * step; left -= step;
+                        m.walked += step;
                     }
-                    m.phase = (m.phase + dt * speed / AmbientLife.STRIDE) % 1;
                     if (m.path.Count == 0) m.state = m.state == State.Back ? State.Boarding : State.There;
                 }
                 if (m.state == State.There)
@@ -214,34 +209,29 @@ namespace Rotorcraft.Presentation
                 foreach (var m in crew) if (m.state == State.Leaving || m.state == State.Boarding || ((m.state == State.Out || m.state == State.Back) && (m.doorT < 1.6f || (m.state == State.Back && m.path.Count <= 1)))) animator.crewHeld.Add(m.door);
             }
 
-            // draw: walking figures get a frame of the walk cycle, and stoop under turning blades
+            // draw: walking, running back or crouched under turning blades, in step with the ground covered; standing or kneeling once there
             foreach (var m in crew)
             {
                 var show = m.state == State.Out || m.state == State.Back || m.state == State.There;
                 if (show) Ensure(m);
-                var walking = m.state == State.Out || m.state == State.Back;
-                var there = m.state == State.There;
-                if (m.walk != null) m.walk.SetActive(show && walking);
-                if (m.stand != null) m.stand.SetActive(show && there && !m.kneel);
-                if (m.kneelGo != null) m.kneelGo.SetActive(show && there && m.kneel);
+                if (m.npc == null) continue;
+                if (m.npc.gameObject.activeSelf != show) m.npc.gameObject.SetActive(show);
                 if (!show) continue;
-                var g = walking ? m.walk : m.kneel ? m.kneelGo : m.stand;
-                if (g == null) continue;
-                var pos = new Vector3(m.pos.x, Ground(m.pos), m.pos.z);
-                var rot = Quaternion.LookRotation(m.face);
+                var walking = m.state == State.Out || m.state == State.Back;
                 if (walking)
                 {
-                    AmbientLife.SetFrame(m.walkFilters, m.frames[Mathf.FloorToInt(m.phase * AmbientLife.WALK_FRAMES) % AmbientLife.WALK_FRAMES]);
                     var under = rpm > 0.3f && Vector2.Distance(new Vector2(m.pos.x, m.pos.z), new Vector2(here.x, here.z)) < R * 1.25f;
-                    if (under) { rot *= Quaternion.Euler(18, 0, 0); pos += Vector3.down * 0.1f; }
+                    var clip = under ? "crouch_walk" : m.state == State.Back || rpm > 0.3f ? "run" : "walk";
+                    m.npc.Cycle(clip, m.walked / m.npc.Stride(clip));
                 }
-                g.transform.SetPositionAndRotation(pos, rot);
+                else m.npc.Play(m.kneel ? "kneel_idle" : "idle", 0.35f);
+                m.npc.transform.SetPositionAndRotation(new Vector3(m.pos.x, Ground(m.pos), m.pos.z), Quaternion.LookRotation(m.face));
             }
         }
 
         void Hide()
         {
-            foreach (var m in crew) { m.state = State.Aboard; foreach (var g in new[] { m.walk, m.stand, m.kneelGo }) if (g != null) g.SetActive(false); }
+            foreach (var m in crew) { m.state = State.Aboard; if (m.npc != null) m.npc.gameObject.SetActive(false); }
             if (animator != null) animator.crewHeld.Clear();
         }
     }
